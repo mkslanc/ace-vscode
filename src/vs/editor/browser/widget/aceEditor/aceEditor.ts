@@ -10,7 +10,6 @@ import {fromAceDelta} from 'vs/editor/browser/widget/aceEditor/converters';
 import {mapToAceMode} from 'vs/editor/browser/widget/aceEditor/modesMapper';
 
 //TODO: other event types
-//TODO: eol
 //TODO: single line editor
 //TODO: keybindings
 //TODO: disposal

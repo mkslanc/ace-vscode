@@ -1733,32 +1733,29 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		}));
 
 		const [view, hasRealView] = this._createView(viewModel);
-
-
+		
 		if (hasRealView) {
+			let keys = Object.keys(this._contentWidgets);
+			for (let i = 0, len = keys.length; i < len; i++) {
+				const widgetId = keys[i];
+				view.addContentWidget(this._contentWidgets[widgetId]);
+			}
+
+			keys = Object.keys(this._overlayWidgets);
+			for (let i = 0, len = keys.length; i < len; i++) {
+				const widgetId = keys[i];
+				view.addOverlayWidget(this._overlayWidgets[widgetId]);
+			}
+
+			keys = Object.keys(this._glyphMarginWidgets);
+			for (let i = 0, len = keys.length; i < len; i++) {
+				const widgetId = keys[i];
+				view.addGlyphMarginWidget(this._glyphMarginWidgets[widgetId]);
+			}
 			if (!model.isForSimpleWidget && !this._contextKeyService.getContextKeyValue('isInDiffEditor')) {
 				this.aceEditor.setModel(model);
 			} else {
 				this._domElement.appendChild(view.domNode.domNode);
-
-
-				let keys = Object.keys(this._contentWidgets);
-				for (let i = 0, len = keys.length; i < len; i++) {
-					const widgetId = keys[i];
-					view.addContentWidget(this._contentWidgets[widgetId]);
-				}
-
-				keys = Object.keys(this._overlayWidgets);
-				for (let i = 0, len = keys.length; i < len; i++) {
-					const widgetId = keys[i];
-					view.addOverlayWidget(this._overlayWidgets[widgetId]);
-				}
-
-				keys = Object.keys(this._glyphMarginWidgets);
-				for (let i = 0, len = keys.length; i < len; i++) {
-					const widgetId = keys[i];
-					view.addGlyphMarginWidget(this._glyphMarginWidgets[widgetId]);
-				}
 
 				view.render(false, true);
 				view.domNode.domNode.setAttribute('data-uri', model.uri.toString());

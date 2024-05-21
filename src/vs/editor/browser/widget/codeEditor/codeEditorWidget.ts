@@ -261,7 +261,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._decorationTypeKeysToIds = {};
 		this._decorationTypeSubtypes = {};
 		this._telemetryData = codeEditorWidgetOptions.telemetryData;
-		this.aceEditor = new AceEditor(this._domElement);
+		this.aceEditor = new AceEditor(this._domElement, languageFeaturesService);
 
 		this._configuration = this._register(this._createConfiguration(codeEditorWidgetOptions.isSimpleWidget || false,
 			codeEditorWidgetOptions.contextMenuId ?? (codeEditorWidgetOptions.isSimpleWidget ? MenuId.SimpleEditorContext : MenuId.EditorContext),
@@ -1628,6 +1628,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 			this._themeService,
 			attachedView,
 		);
+		this.aceEditor.setViewModel(viewModel);
 
 
 
@@ -1718,6 +1719,8 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 				case OutgoingViewModelEventKind.ModelContentChanged:
 					if (e.event.isEolChange) {
 						this.aceEditor?.editor?.session.setNewLineMode(this.aceEditor.getNewLineMode(e.event.eol));
+					} else {
+						this.aceEditor?.applyDeltas(e.event.changes);
 					}
 					this._onDidChangeModelContent.fire(e.event);
 					console.log(e.event);
@@ -1733,7 +1736,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		}));
 
 		const [view, hasRealView] = this._createView(viewModel);
-		
+
 		if (hasRealView) {
 			let keys = Object.keys(this._contentWidgets);
 			for (let i = 0, len = keys.length; i < len; i++) {
@@ -1753,7 +1756,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 				view.addGlyphMarginWidget(this._glyphMarginWidgets[widgetId]);
 			}
 			if (!model.isForSimpleWidget && !this._contextKeyService.getContextKeyValue('isInDiffEditor')) {
-				this.aceEditor.setModel(model);
+				this.aceEditor.setTextModel(model);
 			} else {
 				this._domElement.appendChild(view.domNode.domNode);
 

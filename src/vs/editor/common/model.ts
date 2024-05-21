@@ -1485,6 +1485,7 @@ export class ApplyEditsResult {
 export interface IInternalModelContentChange extends IModelContentChange {
 	range: Range;
 	forceMoveMarkers: boolean;
+	identifier: ISingleEditOperationIdentifier | null;
 }
 
 /**

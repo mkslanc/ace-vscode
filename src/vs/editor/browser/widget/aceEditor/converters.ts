@@ -3,6 +3,7 @@ import {Ace} from './ace-editor';
 import {IIdentifiedSingleEditOperation} from 'vs/editor/common/model';
 import {Position} from 'vs/editor/common/core/position';
 import type {CompletionItem, CompletionItemRanges} from 'vs/editor/common/languages';
+import {IMarker, MarkerSeverity} from 'vs/platform/markers/common/markers';
 
 export function toAceRange(range: IRange): Ace.IRange {
 	return {
@@ -48,22 +49,21 @@ export function fromAceDelta(delta: Ace.Delta, eol: string, aceIdentifier: numbe
 
 export function toCompletion(item: CompletionItem) {
 	const itemKind = item.kind;
+	//@ts-ignore
 	const kind = itemKind ? Object.keys(CompletionItemKind)[Object.values(CompletionItemKind).indexOf(itemKind)] : undefined;
 	const text = item.insertText ?? item.label;
-	const command = (item.command?.title === 'editor.action.triggerSuggest') ? 'startAutocomplete' : undefined; //TODO:
+	//const command = (item.command?.title === 'editor.action.triggerSuggest') ? 'startAutocomplete' : undefined; TODO
 	const range = item.range ? getTextEditRange(item.range) : undefined;
-	const completion = {
+	const completion: any = {
 		meta: kind,
 		caption: typeof item.label === 'string' ? item.label : item.label.label,
-		score: undefined,
 		range,
 		item,
-		command,
-		documentation: item.documentation,
+		//documentation: item.documentation,
 		triggerCharacters: item.commitCharacters
 	};
 
-	if (item.kind === CompletionItemKind.Snippet) {
+	if (itemKind === 27) {
 		completion['snippet'] = text;
 	} else {
 		completion['value'] = text ?? '';
@@ -115,6 +115,35 @@ function comparePoints(p1: Ace.Point, p2: Ace.Point) {
 
 function isEmptyRange(range: Ace.IRange) {
 	return (range.start.row === range.end.row && range.start.column === range.end.column);
+}
+
+export function toAnnotations(diagnostics: IMarker[]): Ace.Annotation[] {
+	return diagnostics?.map((el) => {
+		return {
+			row: el.startLineNumber - 1,
+			column: el.startColumn - 1,
+			text: el.message,
+			type: toAceErrorType(el.severity)
+		};
+	});
+}
+
+export function toAceErrorType(severity: MarkerSeverity) {
+	return severity === 8 ? 'error' : severity === 4 ? 'warning' : 'info';
+}
+
+export function toMarkerGroupItemDiagnostics(range: Ace.Range, severity: MarkerSeverity, tooltipText?: string): Ace.MarkerGroupItem {
+	const errorType = toAceErrorType(severity);
+	const className = `language_highlight_${errorType}`;
+	const markerGroupItem = {
+		range: range,
+		className: className
+	};
+	if (tooltipText) {
+		//@ts-ignore
+		markerGroupItem["tooltipText"] = tooltipText;
+	}
+	return markerGroupItem;
 }
 
 enum CompletionItemKind {

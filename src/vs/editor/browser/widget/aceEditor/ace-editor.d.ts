@@ -1729,6 +1729,14 @@ export const Range: {
 	comparePoints(p1: Ace.Point, p2: Ace.Point): number;
 };
 
+export class MarkerGroup {
+	constructor(session: Ace.EditSession);
+
+	setMarkers(markers: Ace.MarkerGroupItem[]): void;
+
+	getMarkerAtPosition(pos: Ace.Position): Ace.MarkerGroupItem;
+}
+
 
 type InlineAutocompleteAction = "prev" | "next" | "first" | "last";
 

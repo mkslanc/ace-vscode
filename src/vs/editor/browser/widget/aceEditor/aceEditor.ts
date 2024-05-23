@@ -4,8 +4,16 @@ import {
 	VirtualRenderer,
 	Ace,
 	createEditSession,
+	Range,
+	MarkerGroup
 } from 'vs/editor/browser/widget/aceEditor/ace-editor';
-import {fromAceDelta, fromAcePosition, toAceRange, toCompletion} from 'vs/editor/browser/widget/aceEditor/converters';
+import {
+	fromAceDelta,
+	fromAcePosition,
+	toAceRange,
+	toAnnotations,
+	toCompletion, toMarkerGroupItemDiagnostics
+} from 'vs/editor/browser/widget/aceEditor/converters';
 import {mapToAceMode} from 'vs/editor/browser/widget/aceEditor/modesMapper';
 import IModelContentChange = monaco.editor.IModelContentChange;
 import {ViewModel} from 'vs/editor/common/viewModel/viewModelImpl';
@@ -14,6 +22,14 @@ import {ILanguageFeaturesService} from 'vs/editor/common/services/languageFeatur
 import {CompletionOptions, provideSuggestionItems} from 'vs/editor/contrib/suggest/browser/suggest';
 import {CompletionContext, CompletionTriggerKind} from 'vs/editor/common/languages';
 import {CancellationTokenSource} from 'vs/base/common/cancellation';
+import {IMarker, IMarkerService} from "vs/platform/markers/common/markers";
+import {URI} from "vs/base/common/uri";
+
+interface FileSession {
+	session: Ace.EditSession;
+	occurrenceMarkers?: MarkerGroup;
+	diagnosticMarkers?: MarkerGroup;
+}
 
 //TODO: other event types
 //TODO: single line editor
@@ -24,14 +40,17 @@ export class AceEditor {
 	private textModel?: ITextModel;
 	public editor?: Ace.Editor;
 	private domElement: HTMLElement;
-	private sessions: { [id: string]: Ace.EditSession } = {};
+	private sessions: { [uri: string]: FileSession } = {};
 	private changesIdentifier: number;
 	private viewModel?: ViewModel;
 	private applyingDeltas: boolean;
 	private languageFeaturesService: ILanguageFeaturesService;
 	private _requestToken?: CancellationTokenSource;
+	private markerService: IMarkerService;
 
-	constructor(domElement: HTMLElement, languageFeaturesService: ILanguageFeaturesService) {
+	constructor(domElement: HTMLElement, languageFeaturesService: ILanguageFeaturesService, markerService: IMarkerService) {
+		this.markerService = markerService;
+		this.subscribeToDiagnosticChanges();
 		this.domElement = domElement;
 		this.changesIdentifier = 12345;
 		this.applyingDeltas = false;
@@ -58,6 +77,38 @@ export class AceEditor {
 		editor.completers = [
 			completer
 		];
+	}
+
+	private subscribeToDiagnosticChanges() {
+		this.markerService.onMarkerChanged((resources: readonly URI[]) => {
+			this.handleDiagnosticChanges(resources);
+		});
+	}
+
+	private handleDiagnosticChanges(resources: readonly URI[]) {
+		console.log(resources);
+		resources.forEach(resource => {
+			const diagnostics = this.markerService.read({resource});
+			const fileSession = this.sessions[resource.toString()];
+			if (fileSession) {
+				this.applyDiagnosticsToSession(diagnostics, fileSession);
+			}
+		});
+	}
+
+	private applyDiagnosticsToSession(diagnostics: IMarker[], fileSession: FileSession) {
+		if (!diagnostics || !this.editor) {
+			return;
+		}
+		fileSession.session.clearAnnotations();
+		let annotations = toAnnotations(diagnostics);
+		if (annotations && annotations.length > 0) {
+			fileSession.session.setAnnotations(annotations);
+		}
+		if (!fileSession.diagnosticMarkers) {
+			fileSession.diagnosticMarkers = new MarkerGroup(fileSession.session);
+		}
+		fileSession.diagnosticMarkers.setMarkers(diagnostics?.map((el) => toMarkerGroupItemDiagnostics(new Range(el.startLineNumber - 1, el.startColumn - 1, el.endLineNumber - 1, el.endColumn - 1), el.severity, el.message)));
 	}
 
 	private $selectionChange = () => {
@@ -99,6 +150,7 @@ export class AceEditor {
 			customScrollbar: true
 		});
 		this.registerCompleters(editor);
+		this.setStyle(editor); //TODO: I really don't like this part
 		return editor;
 	}
 
@@ -127,21 +179,23 @@ export class AceEditor {
 	}
 
 	setSession() {
-		const id = this.textModel?.id || '';
-		if (!this.sessions[id]) {
-			this.createSession();
-		}
-		this.editor?.setSession(this.sessions[id]);
+		const uri = this.textModel?.uri.toString() || '';
+		const session = this.sessions[uri]?.session ?? this.createSession(uri);
+		this.editor?.setSession(session);
 	}
 
-	createSession() {
-		const id = this.textModel?.id || '';
-		this.sessions[id] = createEditSession(this.textModel?.getValue() || '', mapToAceMode(this.textModel!.getLanguageId()));
-		this.sessions[id].doc.on('change', this.$changeListener, true);
-		this.sessions[id].selection.on('changeSelection', this.$selectionChange);
-		this.sessions[id].setNewLineMode(this.getNewLineMode(this.textModel?.getEOL()));
+	createSession(uri?: string) {
+		uri ??= this.textModel?.uri.toString() || '';
 
-		return this.sessions[id];
+		const fileSession = {
+			session: createEditSession(this.textModel?.getValue() || '', mapToAceMode(this.textModel!.getLanguageId()))
+		};
+		fileSession.session.doc.on('change', this.$changeListener, true);
+		fileSession.session.selection.on('changeSelection', this.$selectionChange);
+		fileSession.session.setNewLineMode(this.getNewLineMode(this.textModel?.getEOL()));
+		this.sessions[uri] = fileSession;
+
+		return fileSession.session;
 	}
 
 	applyDeltas(changes: IModelContentChange[]) {
@@ -176,5 +230,50 @@ export class AceEditor {
 			this._requestToken.token
 		);
 		return completions.items.map((el) => toCompletion(el.completion));
+	}
+
+	setStyle(editor: Ace.Editor) {
+		//@ts-ignore
+		editor.renderer['$textLayer'].dom.importCssString(`.ace_tooltip * {
+    margin: 0;
+    font-size: 12px;
+}
+
+.ace_tooltip code {
+    font-style: italic;
+    font-size: 11px;
+}
+
+.language_highlight_error {
+    position: absolute;
+    border-bottom: dotted 1px #e00404;
+    z-index: 2000;
+    border-radius: 0;
+}
+
+.language_highlight_warning {
+    position: absolute;
+    border-bottom: solid 1px #DDC50F;
+    z-index: 2000;
+    border-radius: 0;
+}
+
+.language_highlight_info {
+    position: absolute;
+    border-bottom: dotted 1px #999;
+    z-index: 2000;
+    border-radius: 0;
+}
+
+.language_highlight_text, .language_highlight_read, .language_highlight_write {
+    position: absolute;
+    box-sizing: border-box;
+    border: solid 1px #888;
+    z-index: 2000;
+}
+
+.language_highlight_write {
+    border: solid 1px #F88;
+}`, "linters.css");
 	}
 }

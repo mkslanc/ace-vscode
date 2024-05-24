@@ -135,13 +135,12 @@ export function toAceErrorType(severity: MarkerSeverity) {
 export function toMarkerGroupItemDiagnostics(range: Ace.Range, severity: MarkerSeverity, tooltipText?: string): Ace.MarkerGroupItem {
 	const errorType = toAceErrorType(severity);
 	const className = `language_highlight_${errorType}`;
-	const markerGroupItem = {
+	const markerGroupItem: Ace.MarkerGroupItem = {
 		range: range,
 		className: className
 	};
 	if (tooltipText) {
-		//@ts-ignore
-		markerGroupItem["tooltipText"] = tooltipText;
+		markerGroupItem.tooltipText = tooltipText;
 	}
 	return markerGroupItem;
 }

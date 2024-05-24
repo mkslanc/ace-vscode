@@ -30429,7 +30429,7 @@ class HoverTooltip extends Tooltip {
     }
 }
 
-__webpack_unused_export__ = HoverTooltip;
+exports.MZ = HoverTooltip;
 
 
 /***/ }),
@@ -33501,6 +33501,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   EditSession: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.EditSession),
 /* harmony export */   Editor: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Editor),
+/* harmony export */   HoverTooltip: () => (/* reexport safe */ ace_code_src_tooltip__WEBPACK_IMPORTED_MODULE_3__.MZ),
 /* harmony export */   MarkerGroup: () => (/* reexport safe */ ace_code_src_marker_group__WEBPACK_IMPORTED_MODULE_2__.Y),
 /* harmony export */   Range: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Range),
 /* harmony export */   UndoManager: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.UndoManager),
@@ -33511,6 +33512,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var ace_code_src_ext_language_tools__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(54224);
 /* harmony import */ var ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(28151);
 /* harmony import */ var ace_code_src_marker_group__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(43287);
+/* harmony import */ var ace_code_src_tooltip__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(71692);
+
 
 
 

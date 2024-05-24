@@ -394,6 +394,7 @@ export namespace Ace {
 	export interface MarkerGroupItem {
 		range: Range;
 		className: string;
+		tooltipText?: string;
 	}
 
 	export class MarkerGroup {
@@ -1748,4 +1749,94 @@ interface TooltipCommand extends Ace.Command {
 	type: "button" | "text" | "checkbox"
 	iconCssClass: string,
 	cssClass: string
+}
+
+export class HoverTooltip extends Tooltip {
+	constructor(parentNode?: HTMLElement);
+	timeout: number;
+	lastT: number;
+	idleTime: number;
+	onMouseOut(e: any): void;
+	/**
+	 * @param {MouseEvent} e
+	 * @param {Editor} editor
+	 */
+	onMouseMove(e: MouseEvent, editor: Ace.Editor): void;
+	waitForHover(): void;
+	/**
+	 * @param {Editor} editor
+	 */
+	addToEditor(editor: Ace.Editor): void;
+	/**
+	 * @param {Editor} editor
+	 */
+	removeFromEditor(editor: Ace.Editor): void;
+	/**
+	 * @param {MouseEvent} e
+	 */
+	isOutsideOfText(e: MouseEvent): boolean;
+	/**
+	 * @param {any} value
+	 */
+	setDataProvider(value: any): void;
+	/**
+	 * @param {Editor} editor
+	 * @param {Range} range
+	 * @param {any} domNode
+	 * @param {MouseEvent} startingEvent
+	 */
+	showForRange(editor: Ace.Editor, range: Ace.Range, domNode: any, startingEvent: MouseEvent): void;
+	range: Range;
+	/**
+	 * @param {Range} range
+	 * @param {EditSession} [session]
+	 */
+	addMarker(range: Range, session?: Ace.EditSession): void;
+	marker: number;
+	row: number;
+}
+export class Tooltip {
+	/**
+	 * @param {Element} parentNode
+	 **/
+	constructor(parentNode: Element);
+	isOpen: boolean;
+	/**
+	 * @returns {HTMLElement}
+	 **/
+	getElement(): HTMLElement;
+	/**
+	 * @param {String} text
+	 **/
+	setText(text: string): void;
+	/**
+	 * @param {String} html
+	 **/
+	setHtml(html: string): void;
+	/**
+	 * @param {Number} x
+	 * @param {Number} y
+	 **/
+	setPosition(x: number, y: number): void;
+	/**
+	 * @param {String} className
+	 **/
+	setClassName(className: string): void;
+	setTheme(theme: any): void;
+	/**
+	 * @param {String} [text]
+	 * @param {Number} [x]
+	 * @param {Number} [y]
+	 **/
+	show(text?: string, x?: number, y?: number): void;
+	hide(e: any): void;
+	/**
+	 * @returns {Number}
+	 **/
+	getHeight(): number;
+	/**
+	 * @returns {Number}
+	 **/
+	getWidth(): number;
+	destroy(): void;
 }

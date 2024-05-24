@@ -5,11 +5,11 @@ import {
 	Ace,
 	createEditSession,
 	Range,
-	MarkerGroup
+	MarkerGroup, HoverTooltip
 } from 'vs/editor/browser/widget/aceEditor/ace-editor';
 import {
 	fromAceDelta,
-	fromAcePosition,
+	fromAcePosition, mergeRanges,
 	toAceRange,
 	toAnnotations,
 	toCompletion, toMarkerGroupItemDiagnostics
@@ -21,9 +21,10 @@ import {ISelection, Selection} from 'vs/editor/common/core/selection';
 import {ILanguageFeaturesService} from 'vs/editor/common/services/languageFeatures';
 import {CompletionOptions, provideSuggestionItems} from 'vs/editor/contrib/suggest/browser/suggest';
 import {CompletionContext, CompletionTriggerKind} from 'vs/editor/common/languages';
-import {CancellationTokenSource} from 'vs/base/common/cancellation';
-import {IMarker, IMarkerService} from "vs/platform/markers/common/markers";
-import {URI} from "vs/base/common/uri";
+import {CancellationToken, CancellationTokenSource} from 'vs/base/common/cancellation';
+import {IMarker, IMarkerService} from 'vs/platform/markers/common/markers';
+import {URI} from 'vs/base/common/uri';
+import {getHoversPromise} from 'vs/editor/contrib/hover/browser/getHover';
 
 interface FileSession {
 	session: Ace.EditSession;
@@ -47,6 +48,7 @@ export class AceEditor {
 	private languageFeaturesService: ILanguageFeaturesService;
 	private _requestToken?: CancellationTokenSource;
 	private markerService: IMarkerService;
+	private $hoverTooltip: HoverTooltip;
 
 	constructor(domElement: HTMLElement, languageFeaturesService: ILanguageFeaturesService, markerService: IMarkerService) {
 		this.markerService = markerService;
@@ -55,6 +57,7 @@ export class AceEditor {
 		this.changesIdentifier = 12345;
 		this.applyingDeltas = false;
 		this.languageFeaturesService = languageFeaturesService;
+		this.$hoverTooltip = new HoverTooltip();
 	}
 
 	registerCompleters(editor: Ace.Editor) {
@@ -86,7 +89,6 @@ export class AceEditor {
 	}
 
 	private handleDiagnosticChanges(resources: readonly URI[]) {
-		console.log(resources);
 		resources.forEach(resource => {
 			const diagnostics = this.markerService.read({resource});
 			const fileSession = this.sessions[resource.toString()];
@@ -151,7 +153,70 @@ export class AceEditor {
 		});
 		this.registerCompleters(editor);
 		this.setStyle(editor); //TODO: I really don't like this part
+		this.createHoverTooltip(editor);
 		return editor;
+	}
+
+	createHoverTooltip(editor: Ace.Editor) {
+		this.$hoverTooltip.setDataProvider(async (e: any, editor: Ace.Editor) => {
+			const uri = this.textModel?.uri.toString() || '';
+			const session = this.sessions[uri].session;
+			const docPos: Ace.Point = e.getDocumentPosition();
+
+			if (!session) {
+				return;
+			}
+			const errorMarker = this.sessions[uri].diagnosticMarkers?.getMarkerAtPosition(docPos);
+			const hovers = await getHoversPromise(this.languageFeaturesService.hoverProvider, this.textModel!, fromAcePosition(docPos), CancellationToken.None);
+			if (!errorMarker && hovers.length === 0) {
+				return;
+			}
+
+			let allRanges = hovers.map((hover) => {
+				if (hover.range) {
+					return toAceRange(hover.range);
+				}
+				return;
+			}).filter((range): range is Ace.IRange => !!range);
+			allRanges = mergeRanges(allRanges);
+			let hoverRange;
+			if (allRanges.length > 0) {
+				hoverRange = allRanges[0] as Ace.Range;
+			}
+
+			let range = hoverRange || errorMarker?.range;
+			range = range ? Range.fromPoints(range.start, range.end) : session.getWordRange(docPos.row, docPos.column);
+			const hoverNode = document.createElement('div');
+			if (hoverNode) {
+				//TODO render markdown using ace markdown mode
+				hoverNode.innerHTML = hovers.map((hover) => {
+					if (hover.contents) {
+						return hover.contents.map((el) => {
+							if (el.value !== '') {
+								return el.value;
+							}
+							return;
+						}).join('\n');
+					}
+					return;
+				}).join('\n');
+			}
+
+			const domNode = document.createElement('div');
+
+			if (errorMarker) {
+				const errorDiv = document.createElement('div');
+				const errorText = document.createTextNode(errorMarker.tooltipText?.trim() || '');
+				errorDiv.appendChild(errorText);
+				domNode.appendChild(errorDiv);
+			}
+
+			if (hoverNode) {
+				domNode.appendChild(hoverNode);
+			}
+			this.$hoverTooltip.showForRange(editor, range, domNode, e);
+		});
+		this.$hoverTooltip.addToEditor(editor);
 	}
 
 	getNewLineMode(eol?: string) {

@@ -5,7 +5,8 @@ import {
 	Ace,
 	createEditSession,
 	Range,
-	MarkerGroup, HoverTooltip
+	MarkerGroup, HoverTooltip,
+	config, Autocomplete
 } from 'vs/editor/browser/widget/aceEditor/ace-editor';
 import {
 	fromAceDelta,
@@ -25,6 +26,8 @@ import {CancellationToken, CancellationTokenSource} from 'vs/base/common/cancell
 import {IMarker, IMarkerService} from 'vs/platform/markers/common/markers';
 import {URI} from 'vs/base/common/uri';
 import {getHoversPromise} from 'vs/editor/contrib/hover/browser/getHover';
+import {IColorTheme, IThemeService} from 'vs/platform/theme/common/themeService';
+import {ThemeConverter, VirtualTheme} from 'vs/editor/browser/widget/aceEditor/virtualTheme';
 
 interface FileSession {
 	session: Ace.EditSession;
@@ -49,8 +52,10 @@ export class AceEditor {
 	private _requestToken?: CancellationTokenSource;
 	private markerService: IMarkerService;
 	private $hoverTooltip: HoverTooltip;
+	private themeService: IThemeService;
 
-	constructor(domElement: HTMLElement, languageFeaturesService: ILanguageFeaturesService, markerService: IMarkerService) {
+	constructor(domElement: HTMLElement, languageFeaturesService: ILanguageFeaturesService, markerService: IMarkerService, themeService: IThemeService) {
+		config.set('sharedPopups', true);
 		this.markerService = markerService;
 		this.subscribeToDiagnosticChanges();
 		this.domElement = domElement;
@@ -58,6 +63,10 @@ export class AceEditor {
 		this.applyingDeltas = false;
 		this.languageFeaturesService = languageFeaturesService;
 		this.$hoverTooltip = new HoverTooltip();
+		this.themeService = themeService;
+		this.themeService.onDidColorThemeChange((theme) => {
+			this.applyTheme(theme);
+		});
 	}
 
 	registerCompleters(editor: Ace.Editor) {
@@ -149,12 +158,41 @@ export class AceEditor {
 			enableBasicAutocompletion: true,
 			enableSnippets: true,
 			enableLiveAutocompletion: true,
-			customScrollbar: true
+			customScrollbar: true,
+			displayIndentGuides: true,
+			highlightIndentGuides: true
 		});
 		this.registerCompleters(editor);
 		this.setStyle(editor); //TODO: I really don't like this part
 		this.createHoverTooltip(editor);
+		this.applyTheme(undefined, editor);
 		return editor;
+	}
+
+	applyTheme(theme?: IColorTheme, editor?: Ace.Editor) {
+		theme ??= this.themeService.getColorTheme();
+		const convertedTheme = ThemeConverter.convertTheme(theme);
+		editor ??= this.editor;
+		if (convertedTheme) {
+			//@ts-expect-error
+			editor?.setTheme(convertedTheme);
+			this.setupAutocomplete(convertedTheme, editor);
+		}
+	}
+
+	setupAutocomplete(convertedTheme: VirtualTheme, editor?: Ace.Editor) {
+		if (!editor) {
+			return;
+		}
+		let completer: Ace.Autocomplete;
+		if (!editor.completer) {
+			completer = Autocomplete.for(editor);
+		} else {
+			completer = editor.completer;
+		}
+		completer.editor = editor;
+		const popup = completer.getPopup();
+		popup.setTheme(convertedTheme);
 	}
 
 	createHoverTooltip(editor: Ace.Editor) {

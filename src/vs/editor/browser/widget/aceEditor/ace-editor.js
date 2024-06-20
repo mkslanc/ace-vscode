@@ -33499,6 +33499,7 @@ var __webpack_exports__ = {};
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Autocomplete: () => (/* reexport safe */ ace_code_src_autocomplete__WEBPACK_IMPORTED_MODULE_4__.F2),
 /* harmony export */   EditSession: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.EditSession),
 /* harmony export */   Editor: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Editor),
 /* harmony export */   HoverTooltip: () => (/* reexport safe */ ace_code_src_tooltip__WEBPACK_IMPORTED_MODULE_3__.MZ),
@@ -33506,6 +33507,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   Range: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Range),
 /* harmony export */   UndoManager: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.UndoManager),
 /* harmony export */   VirtualRenderer: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.VirtualRenderer),
+/* harmony export */   config: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.config),
 /* harmony export */   createEditSession: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.createEditSession),
 /* harmony export */   edit: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.edit)
 /* harmony export */ });
@@ -33513,6 +33515,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(28151);
 /* harmony import */ var ace_code_src_marker_group__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(43287);
 /* harmony import */ var ace_code_src_tooltip__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(71692);
+/* harmony import */ var ace_code_src_autocomplete__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(3842);
+
 
 
 

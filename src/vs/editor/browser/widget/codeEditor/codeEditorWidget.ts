@@ -263,7 +263,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._decorationTypeSubtypes = {};
 		this._telemetryData = codeEditorWidgetOptions.telemetryData;
 		const markerService = instantiationService.invokeFunction((accessor) => accessor.get(IMarkerService));
-		this.aceEditor = new AceEditor(this._domElement, languageFeaturesService, markerService);
+		this.aceEditor = new AceEditor(this._domElement, languageFeaturesService, markerService, themeService);
 
 		this._configuration = this._register(this._createConfiguration(codeEditorWidgetOptions.isSimpleWidget || false,
 			codeEditorWidgetOptions.contextMenuId ?? (codeEditorWidgetOptions.isSimpleWidget ? MenuId.SimpleEditorContext : MenuId.EditorContext),

@@ -1287,6 +1287,7 @@ export namespace Ace {
 	}
 
 	export interface Editor extends OptionsProvider, EventEmitter {
+		completer?: Autocomplete;
 		container: HTMLElement;
 		renderer: VirtualRenderer;
 		id: string;
@@ -1658,6 +1659,7 @@ export namespace Ace {
 	export class Autocomplete {
 		constructor();
 
+		editor?: Editor;
 		autoInsert?: boolean;
 		autoSelect?: boolean;
 		autoShown?: boolean;
@@ -1699,6 +1701,8 @@ export namespace Ace {
 		tryShow(pos: Point, lineHeight: number, anchor: "top" | "bottom" | undefined, forceShow?: boolean): boolean;
 
 		goTo(where: AcePopupNavigation): void;
+
+		setTheme(theme: any, callback?: () => void): void;
 	}
 }
 
@@ -1839,4 +1843,31 @@ export class Tooltip {
 	 **/
 	getWidth(): number;
 	destroy(): void;
+}
+
+export class Autocomplete {
+	constructor();
+
+	autoInsert?: boolean;
+	autoSelect?: boolean;
+	autoShown?: boolean;
+	exactMatch?: boolean;
+	inlineEnabled?: boolean;
+	parentNode?: HTMLElement;
+	setSelectOnHover?: Boolean;
+	stickySelectionDelay?: Number;
+	ignoreCaption?: Boolean;
+	showLoadingState?: Boolean;
+
+	emptyMessage?(prefix: String): String;
+
+	getPopup(): Ace.AcePopup;
+
+	showPopup(editor: Ace.Editor, options: Ace.CompletionOptions): void;
+
+	detach(): void;
+
+	destroy(): void;
+
+	static for(editor: Ace.Editor): Autocomplete;
 }

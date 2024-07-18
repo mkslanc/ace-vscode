@@ -4,6 +4,7 @@ import {IIdentifiedSingleEditOperation} from 'vs/editor/common/model';
 import {Position} from 'vs/editor/common/core/position';
 import type {CompletionItem, CompletionItemRanges} from 'vs/editor/common/languages';
 import {IMarker, MarkerSeverity} from 'vs/platform/markers/common/markers';
+import ISelection = monaco.ISelection;
 
 export function toAceRange(range: IRange): Ace.IRange {
 	return {
@@ -14,6 +15,20 @@ export function toAceRange(range: IRange): Ace.IRange {
 		end: {
 			row: range.endLineNumber - 1,
 			column: range.endColumn - 1
+		}
+
+	};
+}
+
+export function toAceRangeFromSelection(range: ISelection): Ace.IRange {
+	return {
+		start: {
+			row: range.selectionStartLineNumber - 1,
+			column: range.selectionStartColumn - 1
+		},
+		end: {
+			row: range.positionLineNumber - 1,
+			column: range.positionColumn - 1
 		}
 
 	};

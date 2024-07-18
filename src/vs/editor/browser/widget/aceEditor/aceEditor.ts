@@ -11,7 +11,7 @@ import {
 import {
 	fromAceDelta,
 	fromAcePosition, mergeRanges,
-	toAceRange,
+	toAceRange, toAceRangeFromSelection,
 	toAnnotations,
 	toCompletion, toMarkerGroupItemDiagnostics
 } from 'vs/editor/browser/widget/aceEditor/converters';
@@ -281,6 +281,12 @@ export class AceEditor {
 		this.viewModel = model;
 	}
 
+	setSelectionRange(selection: ISelection) {
+		this.editor?.selection.setSelectionRange(toAceRangeFromSelection(selection));
+		this.editor?.scrollToRow(selection.selectionStartLineNumber - 1);
+	}
+
+
 	setSession() {
 		const uri = this.textModel?.uri.toString() || '';
 		const session = this.sessions[uri]?.session ?? this.createSession(uri);
@@ -377,6 +383,6 @@ export class AceEditor {
 
 .language_highlight_write {
     border: solid 1px #F88;
-}`, "linters.css");
+}`, 'linters.css');
 	}
 }

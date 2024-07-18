@@ -74,6 +74,7 @@ export class ThemeConverter {
 		'entity.name.function': 'entity.name.function',
 		'entity.name': 'entity.name',
 		'entity.name.tag': 'entity.name.tag',
+		'entity': 'entity',
 
 		'markup.heading': 'markup.heading',
 		'markup.heading.1': 'markup.heading.1',
@@ -90,7 +91,8 @@ export class ThemeConverter {
 	private _fallbackScopes: { [key: string]: string } = {
 		'keyword': 'meta',
 		'support.type': 'storage.type',
-		'variable': 'entity.name.function'
+		'variable': 'entity.name.function',
+		'meta.tag': 'entity.name.tag'
 	};
 
 	// Taken from .ace-tm

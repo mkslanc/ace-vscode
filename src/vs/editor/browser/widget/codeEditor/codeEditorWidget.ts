@@ -1704,6 +1704,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 						reason: e.reason
 					};
 					this._onDidChangeCursorSelection.fire(e2);
+					if (e.source !== "ace") {
+						this.aceEditor.setSelectionRange(e.selections[0]);
+					}
 
 					break;
 				}

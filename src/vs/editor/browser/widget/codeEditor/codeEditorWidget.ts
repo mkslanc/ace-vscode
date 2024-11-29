@@ -61,6 +61,9 @@ import { editorErrorForeground, editorHintForeground, editorInfoForeground, edit
 import { IThemeService, registerThemingParticipant } from 'vs/platform/theme/common/themeService';
 import { MenuId } from 'vs/platform/actions/common/actions';
 
+import {AceEditor} from 'vs/editor/browser/widget/aceEditor/aceEditor';
+import {IMarkerService} from "vs/platform/markers/common/markers";
+
 export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeEditor {
 
 	private static readonly dropIntoEditorDecorationOptions = ModelDecorationOptions.register({
@@ -186,6 +189,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 	private readonly _onDidChangeHiddenAreas: Emitter<void> = this._register(new Emitter<void>({ deliveryQueue: this._deliveryQueue }));
 	public readonly onDidChangeHiddenAreas: Event<void> = this._onDidChangeHiddenAreas.event;
 	//#endregion
+	private aceEditor: AceEditor;
 
 	public get isSimpleWidget(): boolean {
 		return this._configuration.isSimpleWidget;
@@ -258,6 +262,8 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._decorationTypeKeysToIds = {};
 		this._decorationTypeSubtypes = {};
 		this._telemetryData = codeEditorWidgetOptions.telemetryData;
+		const markerService = instantiationService.invokeFunction((accessor) => accessor.get(IMarkerService));
+		this.aceEditor = new AceEditor(this._domElement, languageFeaturesService, markerService, themeService);
 
 		this._configuration = this._register(this._createConfiguration(codeEditorWidgetOptions.isSimpleWidget || false,
 			codeEditorWidgetOptions.contextMenuId ?? (codeEditorWidgetOptions.isSimpleWidget ? MenuId.SimpleEditorContext : MenuId.EditorContext),
@@ -1624,6 +1630,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 			this._themeService,
 			attachedView,
 		);
+		this.aceEditor.setViewModel(viewModel);
+
+
 
 		// Someone might destroy the model from under the editor, so prevent any exceptions by setting a null model
 		listenersToRemove.push(model.onWillDispose(() => this.setModel(null)));
@@ -1640,6 +1649,7 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 					this._onDidScrollChange.fire(e);
 					break;
 				case OutgoingViewModelEventKind.ViewZonesChanged:
+					console.log('ViewZonesChanged');
 					this._onDidChangeViewZones.fire();
 					break;
 				case OutgoingViewModelEventKind.HiddenAreasChanged:
@@ -1694,6 +1704,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 						reason: e.reason
 					};
 					this._onDidChangeCursorSelection.fire(e2);
+					if (e.source !== "ace") {
+						this.aceEditor.setSelectionRange(e.selections[0]);
+					}
 
 					break;
 				}
@@ -1702,13 +1715,20 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 					break;
 				case OutgoingViewModelEventKind.ModelLanguageChanged:
 					this._domElement.setAttribute('data-mode-id', model.getLanguageId());
+					this.aceEditor?.setMode(model.getLanguageId());
 					this._onDidChangeModelLanguage.fire(e.event);
 					break;
 				case OutgoingViewModelEventKind.ModelLanguageConfigurationChanged:
 					this._onDidChangeModelLanguageConfiguration.fire(e.event);
 					break;
 				case OutgoingViewModelEventKind.ModelContentChanged:
+					if (e.event.isEolChange) {
+						this.aceEditor?.editor?.session.setNewLineMode(this.aceEditor.getNewLineMode(e.event.eol));
+					} else {
+						this.aceEditor?.applyDeltas(e.event.changes);
+					}
 					this._onDidChangeModelContent.fire(e.event);
+					console.log(e.event);
 					break;
 				case OutgoingViewModelEventKind.ModelOptionsChanged:
 					this._onDidChangeModelOptions.fire(e.event);
@@ -1721,9 +1741,8 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		}));
 
 		const [view, hasRealView] = this._createView(viewModel);
-		if (hasRealView) {
-			this._domElement.appendChild(view.domNode.domNode);
 
+		if (hasRealView) {
 			let keys = Object.keys(this._contentWidgets);
 			for (let i = 0, len = keys.length; i < len; i++) {
 				const widgetId = keys[i];
@@ -1741,9 +1760,14 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 				const widgetId = keys[i];
 				view.addGlyphMarginWidget(this._glyphMarginWidgets[widgetId]);
 			}
+			if (!model.isForSimpleWidget && !this._contextKeyService.getContextKeyValue('isInDiffEditor')) {
+				this.aceEditor.setTextModel(model);
+			} else {
+				this._domElement.appendChild(view.domNode.domNode);
 
-			view.render(false, true);
-			view.domNode.domNode.setAttribute('data-uri', model.uri.toString());
+				view.render(false, true);
+				view.domNode.domNode.setAttribute('data-uri', model.uri.toString());
+			}
 		}
 
 		this._modelData = new ModelData(model, viewModel, view, hasRealView, listenersToRemove, attachedView);

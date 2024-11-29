@@ -503,6 +503,7 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 
 			const contentChangeRange = new Range(startLineNumber, startColumn, endLineNumber, endColumn);
 			contentChanges.push({
+				identifier: op.identifier,
 				range: contentChangeRange,
 				rangeLength: op.rangeLength,
 				text: op.text,

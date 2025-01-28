@@ -1,12 +1,12 @@
 {
   requesterUsername: "test",
   requesterAvatarIconUri: undefined,
-  responderUsername: "test",
+  responderUsername: "",
   responderAvatarIconUri: undefined,
   initialLocation: "panel",
-  welcomeMessage: undefined,
   requests: [
     {
+      requestId: undefined,
       message: {
         text: "@ChatProviderWithUsedContext test request",
         parts: [
@@ -29,11 +29,12 @@
                 _lower: "nullextensiondescription"
               },
               extensionPublisherId: "",
-              extensionPublisherDisplayName: "",
+              publisherDisplayName: "",
               extensionDisplayName: "",
               locations: [ "panel" ],
               metadata: {  },
-              slashCommands: [  ]
+              slashCommands: [  ],
+              disambiguation: [  ]
             },
             kind: "agent"
           },
@@ -55,10 +56,13 @@
       },
       variableData: { variables: [  ] },
       response: [  ],
+      responseId: undefined,
+      isHidden: false,
       result: { metadata: { metadataKey: "value" } },
       followups: undefined,
       isCanceled: false,
       vote: undefined,
+      voteDownReason: undefined,
       agent: {
         name: "ChatProviderWithUsedContext",
         id: "ChatProviderWithUsedContext",
@@ -67,25 +71,19 @@
           _lower: "nullextensiondescription"
         },
         extensionPublisherId: "",
-        extensionPublisherDisplayName: "",
+        publisherDisplayName: "",
         extensionDisplayName: "",
         locations: [ "panel" ],
         metadata: {  },
-        slashCommands: [  ]
+        slashCommands: [  ],
+        disambiguation: [  ]
       },
+      workingSet: undefined,
       slashCommand: undefined,
       usedContext: {
         documents: [
           {
-            uri: {
-              scheme: "file",
-              authority: "",
-              path: "/test/path/to/file",
-              query: "",
-              fragment: "",
-              _formatted: null,
-              _fsPath: null
-            },
+            uri: URI(file:///test/path/to/file),
             version: 3,
             ranges: [
               {
@@ -99,7 +97,9 @@
         ],
         kind: "usedContext"
       },
-      contentReferences: [  ]
+      contentReferences: [  ],
+      codeCitations: [  ],
+      timestamp: undefined
     }
   ]
 }

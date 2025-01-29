@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { LRUCachedFunction } from 'vs/base/common/cache';
-import { CharCode } from 'vs/base/common/charCode';
-import { Lazy } from 'vs/base/common/lazy';
-import { Constants } from 'vs/base/common/uint';
+import { LRUCachedFunction } from './cache.js';
+import { CharCode } from './charCode.js';
+import { Lazy } from './lazy.js';
+import { Constants } from './uint.js';
 
 export function isFalsyOrWhitespace(str: string | undefined): boolean {
 	if (!str || typeof str !== 'string') {
@@ -90,15 +90,14 @@ export function escapeRegExpCharacters(value: string): string {
 }
 
 /**
- * Counts how often `character` occurs inside `value`.
+ * Counts how often `substr` occurs inside `value`.
  */
-export function count(value: string, character: string): number {
+export function count(value: string, substr: string): number {
 	let result = 0;
-	const ch = character.charCodeAt(0);
-	for (let i = value.length - 1; i >= 0; i--) {
-		if (value.charCodeAt(i) === ch) {
-			result++;
-		}
+	let index = value.indexOf(substr);
+	while (index !== -1) {
+		result++;
+		index = value.indexOf(substr, index + substr.length);
 	}
 	return result;
 }
@@ -250,6 +249,10 @@ export function regExpLeadsToEndlessLoop(regexp: RegExp): boolean {
 	return !!(match && regexp.lastIndex === 0);
 }
 
+export function joinStrings(items: (string | undefined | null | false)[], separator: string): string {
+	return items.filter(item => item !== undefined && item !== null && item !== false).join(separator);
+}
+
 export function splitLines(str: string): string[] {
 	return str.split(/\r\n|\r|\n/);
 }
@@ -303,6 +306,12 @@ export function lastNonWhitespaceIndex(str: string, startIndex: number = str.len
 		}
 	}
 	return -1;
+}
+
+export function getIndentationLength(str: string): number {
+	const idx = firstNonWhitespaceIndex(str);
+	if (idx === -1) { return str.length; }
+	return idx;
 }
 
 /**
@@ -740,7 +749,7 @@ export function isEmojiImprecise(x: number): boolean {
  * happens at favorable positions - such as whitespace or punctuation characters.
  * The return value can be longer than the given value of `n`. Leading whitespace is always trimmed.
  */
-export function lcut(text: string, n: number, prefix = '') {
+export function lcut(text: string, n: number, prefix = ''): string {
 	const trimmed = text.trimStart();
 
 	if (trimmed.length < n) {
@@ -765,9 +774,37 @@ export function lcut(text: string, n: number, prefix = '') {
 	return prefix + trimmed.substring(i).trimStart();
 }
 
+/**
+ * Given a string and a max length returns a shorted version. Shorting
+ * happens at favorable positions - such as whitespace or punctuation characters.
+ * The return value can be longer than the given value of `n`. Trailing whitespace is always trimmed.
+ */
+export function rcut(text: string, n: number, suffix = ''): string {
+	const trimmed = text.trimEnd();
+
+	if (trimmed.length < n) {
+		return trimmed;
+	}
+
+	const parts = text.split(/\b/);
+	let result = '';
+	for (const part of parts) {
+		if (result.length > 0 && result.length + part.length > n) {
+			break;
+		}
+		result += part;
+	}
+
+	if (result === trimmed) {
+		return result;
+	}
+
+	return result.trim().replace(/b$/, '') + suffix;
+}
+
 // Escape codes, compiled from https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Functions-using-CSI-_-ordered-by-the-final-character_s_
 // Plus additional markers for custom `\x1b]...\x07` instructions.
-const CSI_SEQUENCE = /(:?(:?\x1b\[|\x9B)[=?>!]?[\d;:]*["$#'* ]?[a-zA-Z@^`{}|~])|(:?\x1b\].*?\x07)/g;
+const CSI_SEQUENCE = /(?:(?:\x1b\[|\x9B)[=?>!]?[\d;:]*["$#'* ]?[a-zA-Z@^`{}|~])|(:?\x1b\].*?\x07)/g;
 
 /** Iterates over parts of a string with CSI sequences */
 export function* forAnsiStringParts(str: string) {
@@ -1250,6 +1287,16 @@ export class AmbiguousCharacters {
 		return this.confusableDictionary.has(codePoint);
 	}
 
+	public containsAmbiguousCharacter(str: string): boolean {
+		for (let i = 0; i < str.length; i++) {
+			const codePoint = str.codePointAt(i);
+			if (typeof codePoint === 'number' && this.isAmbiguous(codePoint)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Returns the non basic ASCII code point that the given code point can be confused,
 	 * or undefined if such code point does note exist.
@@ -1280,6 +1327,17 @@ export class InvisibleCharacters {
 
 	public static isInvisibleCharacter(codePoint: number): boolean {
 		return InvisibleCharacters.getData().has(codePoint);
+	}
+
+	public static containsInvisibleCharacter(str: string): boolean {
+		for (let i = 0; i < str.length; i++) {
+			const codePoint = str.codePointAt(i);
+			if (typeof codePoint === 'number' && InvisibleCharacters.isInvisibleCharacter(codePoint)) {
+				return true;
+			}
+		}
+		return false;
+
 	}
 
 	public static get codePoints(): ReadonlySet<number> {

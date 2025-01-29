@@ -1,9 +1,9 @@
 import IRange = monaco.IRange;
-import {Ace} from './ace-editor';
-import {IIdentifiedSingleEditOperation} from 'vs/editor/common/model';
-import {Position} from 'vs/editor/common/core/position';
-import type {CompletionItem, CompletionItemRanges} from 'vs/editor/common/languages';
-import {IMarker, MarkerSeverity} from 'vs/platform/markers/common/markers';
+import {Ace} from './ace-code-bundle/ace-editor.js';
+import {IIdentifiedSingleEditOperation} from '../../../common/model.js';
+import {Position} from '../../../common/core/position.js';
+import type {CompletionItem, CompletionItemRanges} from '../../../common/languages.js';
+import {IMarker, MarkerSeverity} from '../../../../platform/markers/common/markers.js';
 import ISelection = monaco.ISelection;
 
 export function toAceRange(range: IRange): Ace.IRange {

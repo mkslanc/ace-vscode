@@ -61,8 +61,8 @@ import { editorErrorForeground, editorHintForeground, editorInfoForeground, edit
 import { IThemeService, registerThemingParticipant } from '../../../../platform/theme/common/themeService.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
 
-import {AceEditor} from 'vs/editor/browser/widget/aceEditor/aceEditor';
-import {IMarkerService} from "vs/platform/markers/common/markers";
+import {AceEditor} from '../aceEditor/aceEditor.js';
+import {IMarkerService} from "../../../../platform/markers/common/markers.js";
 
 export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeEditor {
 

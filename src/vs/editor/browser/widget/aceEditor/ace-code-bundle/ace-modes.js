@@ -1,28 +1,19 @@
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else {
-		var a = factory();
-		for(var i in a) (typeof exports === 'object' ? exports : root)[i] = a[i];
-	}
-})(this, () => {
-return /******/ (() => { // webpackBootstrap
-/******/ 	var __webpack_modules__ = ({
+/******/ var __webpack_modules__ = ({
 
-/***/ 3294:
+/***/ 33294:
 /***/ ((module, exports, __webpack_require__) => {
 
 /* module decorator */ module = __webpack_require__.nmd(module);
 "no use strict";
-var lang = __webpack_require__(732);
-var net = __webpack_require__(8999);
-var dom = __webpack_require__(5336);
-var AppConfig = (__webpack_require__(5704)/* .AppConfig */ .X);
+
+var lang = __webpack_require__(10732);
+var net = __webpack_require__(98999);
+var dom = __webpack_require__(25336);
+var AppConfig = (__webpack_require__(35704)/* .AppConfig */ .X);
 
 module.exports = exports = new AppConfig();
 
+/** @type {import("../ace-internal").Ace.ConfigOptions} */
 var options = {
     packaged: false,
     workerPath: null,
@@ -37,8 +28,9 @@ var options = {
 };
 
 /**
- * @param {string} key
- * @return {*}
+ * @template {keyof import("../ace-internal").Ace.ConfigOptions} K
+ * @param {K} key - The key of the config option to retrieve.
+ * @returns {import("../ace-internal").Ace.ConfigOptions[K]} - The value of the config option.
  */
 exports.get = function(key) {
     if (!options.hasOwnProperty(key))
@@ -47,8 +39,9 @@ exports.get = function(key) {
 };
 
 /**
- * @param {string} key
- * @param value
+ * @template {keyof import("../ace-internal").Ace.ConfigOptions} K
+ * @param {K} key
+ * @param {import("../ace-internal").Ace.ConfigOptions[K]} value
  */
 exports.set = function(key, value) {
     if (options.hasOwnProperty(key))
@@ -59,7 +52,7 @@ exports.set = function(key, value) {
         dom.useStrictCSP(value);
 };
 /**
- * @return {{[key: string]: any}}
+ * @return {import("../ace-internal").Ace.ConfigOptions}
  */
 exports.all = function() {
     return lang.copyObject(options);
@@ -111,15 +104,14 @@ exports.setModuleUrl = function(name, subst) {
 
 var loader = function(moduleName, cb) {
     if (moduleName === "ace/theme/textmate" || moduleName === "./theme/textmate")
-        return cb(null, __webpack_require__(9609));
+        return cb(null, __webpack_require__(39609));
     if (customLoader)
         return customLoader(moduleName, cb);
     console.error("loader is not configured");
 };
 var customLoader;
-/**
- * @param {(moduleName: string, afterLoad: (err: Error | null, module: unknown) => void) => void}cb
- */
+
+/** @arg {(name: string, callback: (error: any, module: any) => void) => void} cb */
 exports.setLoader = function(cb) {
     customLoader = cb;
 };
@@ -211,20 +203,20 @@ var reportErrorIfPathIsNotConfigured = function() {
     }
 };
 
-exports.version = "1.33.1";
+exports.version = "1.37.5";
 
 
 
 
 /***/ }),
 
-/***/ 5704:
+/***/ 35704:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "no use strict";
-var oop = __webpack_require__(2011);
-var EventEmitter = (__webpack_require__(7858)/* .EventEmitter */ .v);
-const reportError = (__webpack_require__(755)/* .reportError */ .e);
+var oop = __webpack_require__(42011);
+var EventEmitter = (__webpack_require__(17858)/* .EventEmitter */ .v);
+const reportError = (__webpack_require__(80755)/* .reportError */ .e);
 const defaultEnglishMessages = (__webpack_require__(5713)/* .defaultEnglishMessages */ .x);
 
 var optionsProvider = {
@@ -282,18 +274,20 @@ function warn(message) {
 }
 
 var messages;
+var nlsPlaceholders;
 
 class AppConfig {
     constructor() {
             this.$defaultOptions = {};
             messages = defaultEnglishMessages;
+            nlsPlaceholders = "dollarSigns";
         }
-    
+
     /**
      * @param {Object} obj
      * @param {string} path
      * @param {{ [key: string]: any }} options
-     * @returns {AppConfig}
+     * @returns {import("../../ace-internal").Ace.AppConfig}
      */
     defineOptions(obj, path, options) {
         if (!obj.$options)
@@ -361,9 +355,13 @@ class AppConfig {
 
     /**
      * @param {any} value
+     * @param {{placeholders?: "dollarSigns" | "curlyBrackets"}} [options]
      */
-    setMessages(value) {
+    setMessages(value, options) {
         messages = value;
+        if (options && options.placeholders) {
+            nlsPlaceholders = options.placeholders;
+        }
     }
 
     /**
@@ -373,18 +371,28 @@ class AppConfig {
      */
     nls(key, defaultString, params) {
         if (!messages[key])  {
-            warn("No message found for the key '" + key + "' in the provided messages, trying to find a translation for the default string '" + defaultString + "'.");
+            warn("No message found for the key '" + key + "' in messages with id " + messages.$id + ", trying to find a translation for the default string '" + defaultString + "'.");
             if (!messages[defaultString]) {
                 warn("No message found for the default string '" + defaultString + "' in the provided messages. Falling back to the default English message.");
             }
-        } 
+        }
 
         var translated = messages[key] || messages[defaultString] || defaultString;
         if (params) {
-            translated = translated.replace(/\$(\$|[\d]+)/g, function(_, name) {
-                if (name == "$") return "$";
-                return params[name];
-            });
+            // We support both $n or {n} as placeholder indicators in the provided translated strings
+            if (nlsPlaceholders === "dollarSigns") {
+                // Replace $n with the nth element in params
+                translated = translated.replace(/\$(\$|[\d]+)/g, function(_, dollarMatch) {
+                    if (dollarMatch == "$") return "$";
+                    return params[dollarMatch];
+                });
+            }
+            if (nlsPlaceholders === "curlyBrackets") {
+                // Replace {n} with the nth element in params
+                translated = translated.replace(/\{([^\}]+)\}/g, function(_, curlyBracketMatch) {
+                    return params[curlyBracketMatch];
+                });
+            }
         }
         return translated;
     }
@@ -400,7 +408,7 @@ exports.X = AppConfig;
 
 /***/ }),
 
-/***/ 692:
+/***/ 90692:
 /***/ ((__unused_webpack_module, exports) => {
 
 exports.deepCopy = function deepCopy(obj) {
@@ -436,7 +444,7 @@ var defaultEnglishMessages = {
     "autocomplete.loading": "Loading...",
     "editor.scroller.aria-roledescription": "editor",
     "editor.scroller.aria-label": "Editor content, press Enter to start editing, press Escape to exit",
-    "editor.gutter.aria-roledescription": "editor",
+    "editor.gutter.aria-roledescription": "editor gutter",
     "editor.gutter.aria-label": "Editor gutter, press Enter to interact with controls using arrow keys, press Escape to exit",
     "error-marker.good-state": "Looks good!",
     "prompt.recently-used": "Recently used",
@@ -469,20 +477,25 @@ var defaultEnglishMessages = {
     "gutter-tooltip.aria-label.warning.singular": "warning",
     "gutter-tooltip.aria-label.warning.plural": "warnings",
     "gutter-tooltip.aria-label.info.singular": "information message",
-    "gutter-tooltip.aria-label.info.plural": "information messages"
+    "gutter-tooltip.aria-label.info.plural": "information messages",
+    "gutter.annotation.aria-label.security": "Security finding, read annotations row $0",
+    "gutter.annotation.aria-label.hint": "Suggestion, read annotations row $0",
+    "gutter-tooltip.aria-label.security.singular": "security finding",
+    "gutter-tooltip.aria-label.security.plural": "security findings",
+    "gutter-tooltip.aria-label.hint.singular": "suggestion",
+    "gutter-tooltip.aria-label.hint.plural": "suggestions"
 }
 
 exports.x = defaultEnglishMessages;
 
 /***/ }),
 
-/***/ 5336:
+/***/ 25336:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var useragent = __webpack_require__(8057); 
+var useragent = __webpack_require__(98057); 
 var XHTML_NS = "http://www.w3.org/1999/xhtml";
 
 /**
@@ -712,6 +725,11 @@ function insertPendingStyles() {
     });
 }
 
+/**
+ * @param {string} cssText
+ * @param {string} [id]
+ * @param {any} [target]
+ */
 function importCssString(cssText, id, target) {
     if (typeof document == "undefined")
         return;
@@ -858,10 +876,9 @@ if (exports.HAS_CSS_TRANSFORMS) {
 
 /***/ }),
 
-/***/ 7858:
+/***/ 17858:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 /**@type {any}*/
 var EventEmitter = {};
@@ -998,16 +1015,17 @@ exports.v = EventEmitter;
 
 /***/ }),
 
-/***/ 732:
+/***/ 10732:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 exports.last = function(a) {
     return a[a.length - 1];
 };
 
+
+/** @param {string} string */
 exports.stringReverse = function(string) {
     return string.split("").reverse().join("");
 };
@@ -1034,8 +1052,13 @@ exports.stringTrimLeft = function (string) {
 exports.stringTrimRight = function (string) {
     return string.replace(trimEndRegexp, '');
 };
-
+/**
+ * @template T
+ * @param {T} obj
+ * @return {T}
+ */
 exports.copyObject = function(obj) {
+    /** @type Object*/
     var copy = {};
     for (var key in obj) {
         copy[key] = obj[key];
@@ -1048,13 +1071,13 @@ exports.copyArray = function(array){
     for (var i=0, l=array.length; i<l; i++) {
         if (array[i] && typeof array[i] == "object")
             copy[i] = this.copyObject(array[i]);
-        else 
+        else
             copy[i] = array[i];
     }
     return copy;
 };
 
-exports.deepCopy = __webpack_require__(692).deepCopy;
+exports.deepCopy = __webpack_require__(90692).deepCopy;
 
 exports.arrayToMap = function(arr) {
     var map = {};
@@ -1132,7 +1155,7 @@ exports.deferredCall = function(fcn) {
         timer = null;
         return deferred;
     };
-    
+
     deferred.isPending = function() {
         return timer;
     };
@@ -1140,19 +1163,25 @@ exports.deferredCall = function(fcn) {
     return deferred;
 };
 
-
+/**
+ * @param {number} [defaultTimeout]
+ */
 exports.delayedCall = function(fcn, defaultTimeout) {
     var timer = null;
     var callback = function() {
         timer = null;
         fcn();
     };
-
+    /**
+     * @param {number} [timeout]
+     */
     var _self = function(timeout) {
         if (timer == null)
             timer = setTimeout(callback, timeout || defaultTimeout);
     };
-
+    /**
+     * @param {number} [timeout]
+     */
     _self.delay = function(timeout) {
         timer && clearTimeout(timer);
         timer = setTimeout(callback, timeout || defaultTimeout);
@@ -1192,10 +1221,9 @@ exports.skipEmptyMatch = function(line, last, supportsUnicodeFlag) {
 
 /***/ }),
 
-/***/ 8999:
+/***/ 98999:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * based on code from:
  *
@@ -1205,7 +1233,7 @@ exports.skipEmptyMatch = function(line, last, supportsUnicodeFlag) {
  */
 
 
-var dom = __webpack_require__(5336);
+var dom = __webpack_require__(25336);
 
 exports.get = function (url, callback) {
     var xhr = new XMLHttpRequest();
@@ -1250,10 +1278,9 @@ exports.qualifyURL = function(url) {
 
 /***/ }),
 
-/***/ 2011:
+/***/ 42011:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 exports.inherits = function(ctor, superCtor) {
@@ -1296,7 +1323,7 @@ exports.implement = function(proto, mixin) {
 
 /***/ }),
 
-/***/ 755:
+/***/ 80755:
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1311,10 +1338,9 @@ exports.e = function reportError(msg, data) {
 
 /***/ }),
 
-/***/ 8057:
+/***/ 98057:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 /*
@@ -1398,17 +1424,16 @@ exports.isMobile = exports.isIOS || exports.isAndroid;
 
 /***/ }),
 
-/***/ 4909:
+/***/ 94909:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var Rules = (__webpack_require__(6580)/* .AbapHighlightRules */ .c);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var oop = __webpack_require__(2011);
+var Rules = (__webpack_require__(86580)/* .AbapHighlightRules */ .c);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
 
 function Mode() {
     this.HighlightRules = Rules;
@@ -1434,10 +1459,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6580:
+/***/ 86580:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * based on
  * " Vim ABAP syntax file
@@ -1449,8 +1473,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var AbapHighlightRules = function() {
 
@@ -1544,20 +1568,19 @@ exports.c = AbapHighlightRules;
 
 /***/ }),
 
-/***/ 8242:
+/***/ 18242:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
  */
 
     
 
-    var oop = __webpack_require__(2011);
-    var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-    var ABCHighlightRules = (__webpack_require__(8935)/* .ABCHighlightRules */ .r);
-    var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+    var oop = __webpack_require__(42011);
+    var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+    var ABCHighlightRules = (__webpack_require__(98935)/* .ABCHighlightRules */ .r);
+    var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
     var Mode = function () {
         this.HighlightRules = ABCHighlightRules;
@@ -1578,10 +1601,9 @@ exports.c = AbapHighlightRules;
 
 /***/ }),
 
-/***/ 8935:
+/***/ 98935:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was partially autogenerated from https://github.com/jimhawkridge/SublimeABC
 
  Modifications
@@ -1594,8 +1616,8 @@ exports.c = AbapHighlightRules;
 
     
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var ABCHighlightRules = function () {
         // regexp must not have capturing parentheses. Use (?:) instead.
@@ -1697,20 +1719,19 @@ exports.c = AbapHighlightRules;
 
 /***/ }),
 
-/***/ 8866:
+/***/ 58866:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ActionScriptHighlightRules = (__webpack_require__(271)/* .ActionScriptHighlightRules */ .U);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ActionScriptHighlightRules = (__webpack_require__(20271)/* .ActionScriptHighlightRules */ .U);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ActionScriptHighlightRules;
@@ -1731,10 +1752,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 271:
+/***/ 20271:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from tm bundles\actionscript.tmbundle\Syntaxes\ActionScript.plist (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -1743,8 +1763,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ActionScriptHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -1848,16 +1868,15 @@ exports.U = ActionScriptHighlightRules;
 
 /***/ }),
 
-/***/ 3699:
+/***/ 63699:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var AdaHighlightRules = (__webpack_require__(8028)/* .AdaHighlightRules */ .S);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var AdaHighlightRules = (__webpack_require__(98028)/* .AdaHighlightRules */ .S);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = AdaHighlightRules;
@@ -1927,14 +1946,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8028:
+/***/ 98028:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var AdaHighlightRules = function() {
 var keywords = "abort|else|new|return|abs|elsif|not|reverse|abstract|end|null|accept|entry|select|" +
@@ -1996,21 +2014,20 @@ exports.S = AdaHighlightRules;
 
 /***/ }),
 
-/***/ 6537:
+/***/ 36537:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var AldaHighlightRules = (__webpack_require__(9990)/* .AldaHighlightRules */ .n);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var AldaHighlightRules = (__webpack_require__(99990)/* .AldaHighlightRules */ .n);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = AldaHighlightRules;
@@ -2030,10 +2047,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9990:
+/***/ 99990:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from ../../src/alda.JSON-tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -2042,8 +2058,8 @@ exports.A = Mode;
 
     
     
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
     
     var AldaHighlightRules = function() {
         // regexp must not have capturing parentheses. Use (?:) instead.
@@ -2187,20 +2203,19 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 821:
+/***/ 30821:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ApacheConfHighlightRules = (__webpack_require__(7411)/* .ApacheConfHighlightRules */ .t);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ApacheConfHighlightRules = (__webpack_require__(37411)/* .ApacheConfHighlightRules */ .t);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ApacheConfHighlightRules;
@@ -2220,10 +2235,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7411:
+/***/ 37411:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.github.com/colinta/ApacheConf.tmLanguage/master/ApacheConf.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -2232,8 +2246,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ApacheConfHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -2427,18 +2441,17 @@ exports.t = ApacheConfHighlightRules;
 
 /***/ }),
 
-/***/ 7253:
+/***/ 37253:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* caption: Apex; extensions: apex,cls,trigger,tgr */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ApexHighlightRules = (__webpack_require__(5980)/* .ApexHighlightRules */ .t);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ApexHighlightRules = (__webpack_require__(75980)/* .ApexHighlightRules */ .t);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 function ApexMode() {
     TextMode.call(this);
@@ -2462,15 +2475,14 @@ exports.A = ApexMode;
 
 /***/ }),
 
-/***/ 5980:
+/***/ 75980:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
 
 var ApexHighlightRules = function() {
     var mainKeywordMapper = this.createKeywordMapper({
@@ -2698,16 +2710,15 @@ exports.t = ApexHighlightRules;
 
 /***/ }),
 
-/***/ 4770:
+/***/ 24770:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var AppleScriptHighlightRules = (__webpack_require__(1757)/* .AppleScriptHighlightRules */ .j);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var AppleScriptHighlightRules = (__webpack_require__(81757)/* .AppleScriptHighlightRules */ .j);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = AppleScriptHighlightRules;
@@ -2728,14 +2739,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1757:
+/***/ 81757:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var AppleScriptHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -2843,14 +2853,13 @@ exports.j = AppleScriptHighlightRules;
 
 /***/ }),
 
-/***/ 6204:
+/***/ 76204:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-  var oop = __webpack_require__(2011);
-  var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+  var oop = __webpack_require__(42011);
+  var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
   var AqlHighlightRules = (__webpack_require__(1751)/* .AqlHighlightRules */ .f);
 
   var Mode = function() {
@@ -2874,11 +2883,10 @@ exports.j = AppleScriptHighlightRules;
 /***/ 1751:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-  var oop = __webpack_require__(2011);
-  var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+  var oop = __webpack_require__(42011);
+  var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
   var AqlHighlightRules = function() {
 
@@ -2960,16 +2968,15 @@ exports.j = AppleScriptHighlightRules;
 
 /***/ }),
 
-/***/ 8521:
+/***/ 58521:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var AsciidocHighlightRules = (__webpack_require__(1715)/* .AsciidocHighlightRules */ .H);
-var AsciidocFoldMode = (__webpack_require__(1514)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var AsciidocHighlightRules = (__webpack_require__(21715)/* .AsciidocHighlightRules */ .H);
+var AsciidocFoldMode = (__webpack_require__(71514)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = AsciidocHighlightRules;
@@ -3000,14 +3007,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1715:
+/***/ 21715:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var AsciidocHighlightRules = function() {
     var identifierRe = "[a-zA-Z\u00a1-\uffff]+\\b";
@@ -3210,16 +3216,15 @@ exports.H = AsciidocHighlightRules;
 
 /***/ }),
 
-/***/ 3537:
+/***/ 23537:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ASLHighlightRules = (__webpack_require__(1816)/* .ASLHighlightRules */ .M);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ASLHighlightRules = (__webpack_require__(31816)/* .ASLHighlightRules */ .M);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
     this.HighlightRules = ASLHighlightRules;
@@ -3237,15 +3242,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1816:
+/***/ 31816:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var ASLHighlightRules = function() {
         var keywords = (
@@ -3447,16 +3451,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4541:
+/***/ 14541:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var AssemblyARM32HighlightRules = (__webpack_require__(4827)/* .AssemblyARM32HighlightRules */ .J);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var AssemblyARM32HighlightRules = (__webpack_require__(54827)/* .AssemblyARM32HighlightRules */ .J);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = AssemblyARM32HighlightRules;
@@ -3475,14 +3478,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4827:
+/***/ 54827:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var AssemblyARM32HighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -3574,20 +3576,19 @@ exports.J = AssemblyARM32HighlightRules;
 
 /***/ }),
 
-/***/ 9526:
+/***/ 29526:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var AssemblyX86HighlightRules = (__webpack_require__(2428)/* .AssemblyX86HighlightRules */ .E);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var AssemblyX86HighlightRules = (__webpack_require__(32428)/* .AssemblyX86HighlightRules */ .E);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = AssemblyX86HighlightRules;
@@ -3606,10 +3607,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2428:
+/***/ 32428:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from Assembly x86.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -3618,8 +3618,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var AssemblyX86HighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -3696,16 +3696,15 @@ exports.E = AssemblyX86HighlightRules;
 
 /***/ }),
 
-/***/ 8653:
+/***/ 28653:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var AstroHighlightRules = (__webpack_require__(8466)/* .AstroHighlightRules */ .S);
-var HtmlBehaviour = (__webpack_require__(1247)/* .HtmlBehaviour */ .k);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var AstroHighlightRules = (__webpack_require__(98466)/* .AstroHighlightRules */ .S);
+var HtmlBehaviour = (__webpack_require__(71247)/* .HtmlBehaviour */ .k);
 
 var Mode = function() {
   HtmlMode.call(this);
@@ -3723,16 +3722,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8466:
+/***/ 98466:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 var JavascriptHighlightRules =
-  (__webpack_require__(2046).JavaScriptHighlightRules);
+  (__webpack_require__(42046).JavaScriptHighlightRules);
 
 var AstroHighlightRules = function () {
   HtmlHighlightRules.call(this);
@@ -3855,17 +3853,16 @@ exports.S = AstroHighlightRules;
 /***/ 6811:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var AutoHotKeyHighlightRules = (__webpack_require__(5093)/* .AutoHotKeyHighlightRules */ .d);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var AutoHotKeyHighlightRules = (__webpack_require__(95093)/* .AutoHotKeyHighlightRules */ .d);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = AutoHotKeyHighlightRules;
@@ -3885,10 +3882,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5093:
+/***/ 95093:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from C:\Users\LED\Desktop\AutoHotKey.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -3897,8 +3893,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var AutoHotKeyHighlightRules = function() {
     var autoItKeywords = 'And|ByRef|Case|Const|ContinueCase|ContinueLoop|Default|Dim|Do|Else|ElseIf|EndFunc|EndIf|EndSelect|EndSwitch|EndWith|Enum|Exit|ExitLoop|False|For|Func|Global|If|In|Local|Next|Not|Or|ReDim|Return|Select|Step|Switch|Then|To|True|Until|WEnd|While|With|' +       
@@ -3970,20 +3966,19 @@ exports.d = AutoHotKeyHighlightRules;
 
 /***/ }),
 
-/***/ 6115:
+/***/ 16115:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var BatchFileHighlightRules = (__webpack_require__(8826)/* .BatchFileHighlightRules */ .t);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var BatchFileHighlightRules = (__webpack_require__(68826)/* .BatchFileHighlightRules */ .t);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = BatchFileHighlightRules;
@@ -4003,10 +3998,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8826:
+/***/ 68826:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from C:\Users\LED\AppData\Roaming\Sublime Text 2\Packages\Batch File\Batch File.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -4015,8 +4009,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var BatchFileHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -4076,16 +4070,11 @@ exports.t = BatchFileHighlightRules;
 
 /***/ }),
 
-/***/ 2463:
+/***/ 32463:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-/**
- * @typedef {Behaviour & {[key: string]: any}} IBehaviour
- */
 
-/**@type {any}*/
 var Behaviour;
 Behaviour = function() {
    this.$behaviours = {};
@@ -4139,7 +4128,7 @@ Behaviour = function() {
     };
 
     /**
-     * 
+     *
      * @param [filter]
      * @returns {{}|*}
      * @this {Behaviour & this}
@@ -4165,17 +4154,16 @@ exports.T = Behaviour;
 
 /***/ }),
 
-/***/ 6092:
+/***/ 76092:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-
-var oop = __webpack_require__(2011);
-var Behaviour = (__webpack_require__(2463)/* .Behaviour */ .T);
-var CstyleBehaviour = (__webpack_require__(5478)/* .CstyleBehaviour */ .B);
+var oop = __webpack_require__(42011);
+var Behaviour = (__webpack_require__(32463)/* .Behaviour */ .T);
+var CstyleBehaviour = (__webpack_require__(95478)/* .CstyleBehaviour */ .B);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 
+/**@type {(new() => Partial<import("../../../ace-internal").Ace.Behaviour>)}*/
 var CssBehaviour = function () {
 
     this.inherit(CstyleBehaviour);
@@ -4263,15 +4251,14 @@ exports.K = CssBehaviour;
 
 /***/ }),
 
-/***/ 5478:
+/***/ 95478:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-var oop = __webpack_require__(2011);
-var Behaviour = (__webpack_require__(2463)/* .Behaviour */ .T);
+var oop = __webpack_require__(42011);
+var Behaviour = (__webpack_require__(32463)/* .Behaviour */ .T);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
-var lang = __webpack_require__(732);
+var lang = __webpack_require__(10732);
 
 var SAFE_INSERT_IN_TOKENS =
     ["text", "paren.rparen", "rparen", "paren", "punctuation.operator"];
@@ -4316,7 +4303,6 @@ var getWrapped = function(selection, selected, opening, closing) {
 };
 /**
  * Creates a new Cstyle behaviour object with the specified options.
- * @constructor
  * @param {Object} [options] - The options for the Cstyle behaviour object.
  * @param {boolean} [options.braces] - Whether to force braces auto-pairing.
  * @param {boolean} [options.closeDocComment] - enables automatic insertion of closing tags for documentation comments.
@@ -4513,7 +4499,7 @@ CstyleBehaviour = function(options) {
     this.add("string_dquotes", "insertion", function(state, action, editor, session, text) {
         var quotes = session.$mode.$quotes || defaultQuotes;
         if (text.length == 1 && quotes[text]) {
-            if (this.lineCommentStart && this.lineCommentStart.indexOf(text) != -1) 
+            if (this.lineCommentStart && this.lineCommentStart.indexOf(text) != -1)
                 return;
             initContext(editor);
             var quote = text;
@@ -4526,16 +4512,16 @@ CstyleBehaviour = function(options) {
                 var line = session.doc.getLine(cursor.row);
                 var leftChar = line.substring(cursor.column-1, cursor.column);
                 var rightChar = line.substring(cursor.column, cursor.column + 1);
-                
+
                 var token = session.getTokenAt(cursor.row, cursor.column);
                 var rightToken = session.getTokenAt(cursor.row, cursor.column + 1);
                 // We're escaped.
                 if (leftChar == "\\" && token && /escape/.test(token.type))
                     return null;
-                
+
                 var stringBefore = token && /string|escape/.test(token.type);
                 var stringAfter = !rightToken || /string|escape/.test(rightToken.type);
-                
+
                 var pair;
                 if (rightChar == quote) {
                     pair = stringBefore !== stringAfter;
@@ -4554,7 +4540,7 @@ CstyleBehaviour = function(options) {
 
                     var pairQuotesAfter = session.$mode.$pairQuotesAfter;
                     var shouldPairQuotes = pairQuotesAfter && pairQuotesAfter[quote] && pairQuotesAfter[quote].test(leftChar);
-                    
+
                     if ((!shouldPairQuotes && isWordBefore) || isWordAfter)
                         return null; // before or after alphanumeric
                     if (rightChar && !/[\s;,.})\]\\]/.test(rightChar))
@@ -4586,19 +4572,55 @@ CstyleBehaviour = function(options) {
             }
         }
     });
-    
+
     if (options.closeDocComment !== false) {
         this.add("doc comment end", "insertion", function (state, action, editor, session, text) {
             if (state === "doc-start" && (text === "\n" || text === "\r\n") && editor.selection.isEmpty()) {
                 var cursor = editor.getCursorPosition();
+                if (cursor.column === 0) {
+                    return;
+                }
                 var line = session.doc.getLine(cursor.row);
                 var nextLine = session.doc.getLine(cursor.row + 1);
+                var tokens = session.getTokens(cursor.row);
+                var index = 0;
+                for (var i = 0; i < tokens.length; i++) {
+                    index += tokens[i].value.length;
+                    var currentToken = tokens[i];
+                    if (index >= cursor.column) {
+                        if (index === cursor.column) {
+                            if (!/\.doc/.test(currentToken.type)) {
+                                return;
+                            }
+                            if (/\*\//.test(currentToken.value)) {
+                                var nextToken = tokens[i + 1];
+                                if (!nextToken || !/\.doc/.test(nextToken.type)) {
+                                    return;
+                                }
+                            }
+                        }
+                        var cursorPosInToken = cursor.column - (index - currentToken.value.length);
+
+                        // Check for the pattern `*/` followed by `/**` within the token
+                        var closeDocPos = currentToken.value.indexOf("*/");
+                        var openDocPos = currentToken.value.indexOf("/**", closeDocPos > - 1 ? closeDocPos + 2 : 0);
+
+                        if (openDocPos !== -1 && cursorPosInToken > openDocPos && cursorPosInToken < openDocPos + 3) {
+                            return;
+                        }
+                        if (closeDocPos !== -1 && openDocPos !== -1 && cursorPosInToken >= closeDocPos
+                            && cursorPosInToken <= openDocPos || !/\.doc/.test(currentToken.type)) {
+                            return;
+                        }
+                        break;
+                    }
+                }
                 var indent = this.$getIndent(line);
                 if (/\s*\*/.test(nextLine)) {
                     if (/^\s*\*/.test(line)) {
                         return {
                             text: text + indent + "* ",
-                            selection: [1, 3 + indent.length, 1, 3 + indent.length]
+                            selection: [1, 2 + indent.length, 1, 2 + indent.length]
                         };
                     }
                     else {
@@ -4627,7 +4649,7 @@ CstyleBehaviour = function(options) {
 CstyleBehaviour.isSaneInsertion = function(editor, session) {
     var cursor = editor.getCursorPosition();
     var iterator = new TokenIterator(session, cursor.row, cursor.column);
-    
+
     // Don't insert in the middle of a keyword/identifier/lexical
     if (!this.$matchTokenType(iterator.getCurrentToken() || "text", SAFE_INSERT_IN_TOKENS)) {
         if (/[)}\]]/.test(editor.session.getLine(cursor.row)[cursor.column]))
@@ -4637,7 +4659,7 @@ CstyleBehaviour.isSaneInsertion = function(editor, session) {
         if (!this.$matchTokenType(iterator2.getCurrentToken() || "text", SAFE_INSERT_IN_TOKENS))
             return false;
     }
-    
+
     // Only insert in front of whitespace/comments
     iterator.stepForward();
     return iterator.getCurrentTokenRow() !== cursor.row ||
@@ -4704,15 +4726,15 @@ exports.B = CstyleBehaviour;
 
 /***/ }),
 
-/***/ 1247:
+/***/ 71247:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var XmlBehaviour = (__webpack_require__(5194).XmlBehaviour);
+var oop = __webpack_require__(42011);
+var XmlBehaviour = (__webpack_require__(45194).XmlBehaviour);
 
+/**@type {(new() => Partial<import("../../../ace-internal").Ace.Behaviour>)}*/
 var HtmlBehaviour = function () {
 
     XmlBehaviour.call(this);
@@ -4726,16 +4748,15 @@ exports.k = HtmlBehaviour;
 
 /***/ }),
 
-/***/ 3587:
+/***/ 83587:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 const {TokenIterator} = __webpack_require__(7726);
-var CstyleBehaviour = (__webpack_require__(5478)/* .CstyleBehaviour */ .B);
-var XmlBehaviour = (__webpack_require__(5194).XmlBehaviour);
+var CstyleBehaviour = (__webpack_require__(95478)/* .CstyleBehaviour */ .B);
+var XmlBehaviour = (__webpack_require__(45194).XmlBehaviour);
 var JavaScriptBehaviour = function () {
     var xmlBehaviours = new XmlBehaviour({closeCurlyBraces: true}).getBehaviours();
     this.addBehaviours(xmlBehaviours);
@@ -4764,20 +4785,20 @@ exports.N = JavaScriptBehaviour;
 
 /***/ }),
 
-/***/ 5194:
+/***/ 45194:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Behaviour = (__webpack_require__(2463)/* .Behaviour */ .T);
+var oop = __webpack_require__(42011);
+var Behaviour = (__webpack_require__(32463)/* .Behaviour */ .T);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 
 function is(token, type) {
     return token && token.type.lastIndexOf(type + ".xml") > -1;
 }
 
+/**@type {(new() => Partial<import("../../../ace-internal").Ace.Behaviour>)}*/
 var XmlBehaviour = function () {
 
     this.add("string_dquotes", "insertion", function (state, action, editor, session, text) {
@@ -4861,7 +4882,7 @@ var XmlBehaviour = function () {
                     iterator.stepBackward();
                 }
             }
-            
+
             if (/^\s*>/.test(session.getLine(position.row).slice(position.column)))
                 return;
 
@@ -4953,16 +4974,15 @@ exports.XmlBehaviour = XmlBehaviour;
 
 /***/ }),
 
-/***/ 6072:
+/***/ 96072:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var BibTeXHighlightRules = (__webpack_require__(7521)/* .BibTeXHighlightRules */ .u);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var BibTeXHighlightRules = (__webpack_require__(87521)/* .BibTeXHighlightRules */ .u);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = BibTeXHighlightRules;
@@ -4978,14 +4998,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7521:
+/***/ 87521:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var BibTeXHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -5169,17 +5188,16 @@ exports.u = BibTeXHighlightRules;
 
 /***/ }),
 
-/***/ 4566:
+/***/ 44566:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var C9SearchHighlightRules = (__webpack_require__(5330)/* .C9SearchHighlightRules */ .G);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var C9StyleFoldMode = (__webpack_require__(3123)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var C9SearchHighlightRules = (__webpack_require__(55330)/* .C9SearchHighlightRules */ .G);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var C9StyleFoldMode = (__webpack_require__(33123)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = C9SearchHighlightRules;
@@ -5211,15 +5229,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5330:
+/***/ 55330:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 function safeCreateRegexp(source, flag) {
     try {
@@ -5379,17 +5396,16 @@ exports.G = C9SearchHighlightRules;
 
 /***/ }),
 
-/***/ 9117:
+/***/ 99117:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var c_cppHighlightRules = (__webpack_require__(46)/* .c_cppHighlightRules */ .r);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var c_cppHighlightRules = (__webpack_require__(80046)/* .c_cppHighlightRules */ .r);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = c_cppHighlightRules;
@@ -5455,16 +5471,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 46:
+/***/ 80046:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 // used by objective-c
 var cFunctions = __webpack_unused_export__ = "hypot|hypotf|hypotl|sscanf|system|snprintf|scanf|scalbn|scalbnf|scalbnl|scalbln|scalblnf|scalblnl|sin|sinh|sinhf|sinhl|sinf|sinl|signal|signbit|strstr|strspn|strncpy|strncat|strncmp|strcspn|strchr|strcoll|strcpy|strcat|strcmp|strtoimax|strtod|strtoul|strtoull|strtoumax|strtok|strtof|strtol|strtold|strtoll|strerror|strpbrk|strftime|strlen|strrchr|strxfrm|sprintf|setjmp|setvbuf|setlocale|setbuf|sqrt|sqrtf|sqrtl|swscanf|swprintf|srand|nearbyint|nearbyintf|nearbyintl|nexttoward|nexttowardf|nexttowardl|nextafter|nextafterf|nextafterl|nan|nanf|nanl|csin|csinh|csinhf|csinhl|csinf|csinl|csqrt|csqrtf|csqrtl|ccos|ccosh|ccoshf|ccosf|ccosl|cimag|cimagf|cimagl|ctime|ctan|ctanh|ctanhf|ctanhl|ctanf|ctanl|cos|cosh|coshf|coshl|cosf|cosl|conj|conjf|conjl|copysign|copysignf|copysignl|cpow|cpowf|cpowl|cproj|cprojf|cprojl|ceil|ceilf|ceill|cexp|cexpf|cexpl|clock|clog|clogf|clogl|clearerr|casin|casinh|casinhf|casinhl|casinf|casinl|cacos|cacosh|cacoshf|cacoshl|cacosf|cacosl|catan|catanh|catanhf|catanhl|catanf|catanl|calloc|carg|cargf|cargl|cabs|cabsf|cabsl|creal|crealf|creall|cbrt|cbrtf|cbrtl|time|toupper|tolower|tan|tanh|tanhf|tanhl|tanf|tanl|trunc|truncf|truncl|tgamma|tgammaf|tgammal|tmpnam|tmpfile|isspace|isnormal|isnan|iscntrl|isinf|isdigit|isunordered|isupper|ispunct|isprint|isfinite|iswspace|iswcntrl|iswctype|iswdigit|iswupper|iswpunct|iswprint|iswlower|iswalnum|iswalpha|iswgraph|iswxdigit|iswblank|islower|isless|islessequal|islessgreater|isalnum|isalpha|isgreater|isgreaterequal|isgraph|isxdigit|isblank|ilogb|ilogbf|ilogbl|imaxdiv|imaxabs|div|difftime|_Exit|ungetc|ungetwc|pow|powf|powl|puts|putc|putchar|putwc|putwchar|perror|printf|erf|erfc|erfcf|erfcl|erff|erfl|exit|exp|exp2|exp2f|exp2l|expf|expl|expm1|expm1f|expm1l|vsscanf|vsnprintf|vscanf|vsprintf|vswscanf|vswprintf|vprintf|vfscanf|vfprintf|vfwscanf|vfwprintf|vwscanf|vwprintf|va_start|va_copy|va_end|va_arg|qsort|fscanf|fsetpos|fseek|fclose|ftell|fopen|fdim|fdimf|fdiml|fpclassify|fputs|fputc|fputws|fputwc|fprintf|feholdexcept|fesetenv|fesetexceptflag|fesetround|feclearexcept|fetestexcept|feof|feupdateenv|feraiseexcept|ferror|fegetenv|fegetexceptflag|fegetround|fflush|fwscanf|fwide|fwprintf|fwrite|floor|floorf|floorl|fabs|fabsf|fabsl|fgets|fgetc|fgetpos|fgetws|fgetwc|freopen|free|fread|frexp|frexpf|frexpl|fmin|fminf|fminl|fmod|fmodf|fmodl|fma|fmaf|fmal|fmax|fmaxf|fmaxl|ldiv|ldexp|ldexpf|ldexpl|longjmp|localtime|localeconv|log|log1p|log1pf|log1pl|log10|log10f|log10l|log2|log2f|log2l|logf|logl|logb|logbf|logbl|labs|lldiv|llabs|llrint|llrintf|llrintl|llround|llroundf|llroundl|lrint|lrintf|lrintl|lround|lroundf|lroundl|lgamma|lgammaf|lgammal|wscanf|wcsstr|wcsspn|wcsncpy|wcsncat|wcsncmp|wcscspn|wcschr|wcscoll|wcscpy|wcscat|wcscmp|wcstoimax|wcstod|wcstoul|wcstoull|wcstoumax|wcstok|wcstof|wcstol|wcstold|wcstoll|wcstombs|wcspbrk|wcsftime|wcslen|wcsrchr|wcsrtombs|wcsxfrm|wctob|wctomb|wcrtomb|wprintf|wmemset|wmemchr|wmemcpy|wmemcmp|wmemmove|assert|asctime|asin|asinh|asinhf|asinhl|asinf|asinl|acos|acosh|acoshf|acoshl|acosf|acosl|atoi|atof|atol|atoll|atexit|atan|atanh|atanhf|atanhl|atan2|atan2f|atan2l|atanf|atanl|abs|abort|gets|getc|getchar|getenv|getwc|getwchar|gmtime|rint|rintf|rintl|round|roundf|roundl|rename|realloc|rewind|remove|remquo|remquof|remquol|remainder|remainderf|remainderl|rand|raise|bsearch|btowc|modf|modff|modfl|memset|memchr|memcpy|memcmp|memmove|mktime|malloc|mbsinit|mbstowcs|mbsrtowcs|mbtowc|mblen|mbrtowc|mbrlen";
@@ -5659,16 +5674,15 @@ exports.r = c_cppHighlightRules;
 
 /***/ }),
 
-/***/ 3573:
+/***/ 53573:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CirruHighlightRules = (__webpack_require__(7119)/* .CirruHighlightRules */ .O);
-var CoffeeFoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CirruHighlightRules = (__webpack_require__(57119)/* .CirruHighlightRules */ .O);
+var CoffeeFoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = CirruHighlightRules;
@@ -5687,14 +5701,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7119:
+/***/ 57119:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 // see http://cirru.org for more about this language
 var CirruHighlightRules = function() {
@@ -5788,16 +5801,15 @@ exports.O = CirruHighlightRules;
 
 /***/ }),
 
-/***/ 7376:
+/***/ 77376:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ClojureHighlightRules = (__webpack_require__(1800)/* .ClojureHighlightRules */ .V);
-var MatchingParensOutdent = (__webpack_require__(9857)/* .MatchingParensOutdent */ .z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ClojureHighlightRules = (__webpack_require__(21800)/* .ClojureHighlightRules */ .V);
+var MatchingParensOutdent = (__webpack_require__(29857)/* .MatchingParensOutdent */ .z);
 
 var Mode = function() {
     this.HighlightRules = ClojureHighlightRules;
@@ -5894,14 +5906,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1800:
+/***/ 21800:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 
 
@@ -6110,15 +6121,14 @@ exports.V = ClojureHighlightRules;
 
 /***/ }),
 
-/***/ 617:
+/***/ 50617:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CobolHighlightRules = (__webpack_require__(3286)/* .CobolHighlightRules */ .z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CobolHighlightRules = (__webpack_require__(63286)/* .CobolHighlightRules */ .z);
 
 var Mode = function() {
     this.HighlightRules = CobolHighlightRules;
@@ -6138,14 +6148,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3286:
+/***/ 63286:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var CobolHighlightRules = function() {
 var keywords = "ACCEPT|MERGE|SUM|ADD||MESSAGE|TABLE|ADVANCING|MODE|TAPE|" +
@@ -6214,19 +6223,18 @@ exports.z = CobolHighlightRules;
 
 /***/ }),
 
-/***/ 5470:
+/***/ 25470:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var Rules = (__webpack_require__(2092).CoffeeHighlightRules);
-var Outdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
-var oop = __webpack_require__(2011);
+var Rules = (__webpack_require__(72092).CoffeeHighlightRules);
+var Outdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
+var oop = __webpack_require__(42011);
 
 function Mode() {
     this.HighlightRules = Rules;
@@ -6306,14 +6314,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2092:
+/***/ 72092:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     oop.inherits(CoffeeHighlightRules, TextHighlightRules);
 
@@ -6514,16 +6521,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7337:
+/***/ 17337:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var ColdfusionHighlightRules = (__webpack_require__(8245)/* .ColdfusionHighlightRules */ .e);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var ColdfusionHighlightRules = (__webpack_require__(98245)/* .ColdfusionHighlightRules */ .e);
 
 var voidElements = "cfabort|cfapplication|cfargument|cfassociate|cfbreak|cfcache|cfcollection|cfcookie|cfdbinfo|cfdirectory|cfdump|cfelse|cfelseif|cferror|cfexchangecalendar|cfexchangeconnection|cfexchangecontact|cfexchangefilter|cfexchangetask|cfexit|cffeed|cffile|cfflush|cfftp|cfheader|cfhtmlhead|cfhttpparam|cfimage|cfimport|cfinclude|cfindex|cfinsert|cfinvokeargument|cflocation|cflog|cfmailparam|cfNTauthenticate|cfobject|cfobjectcache|cfparam|cfpdfformparam|cfprint|cfprocparam|cfprocresult|cfproperty|cfqueryparam|cfregistry|cfreportparam|cfrethrow|cfreturn|cfschedule|cfsearch|cfset|cfsetting|cfthrow|cfzipparam)".split("|");
 
@@ -6551,15 +6557,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8245:
+/***/ 98245:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 var ColdfusionHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -6613,18 +6618,17 @@ exports.e = ColdfusionHighlightRules;
 
 /***/ }),
 
-/***/ 9838:
+/***/ 99838:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CrystalHighlightRules = (__webpack_require__(9463)/* .CrystalHighlightRules */ .A);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CrystalHighlightRules = (__webpack_require__(49463)/* .CrystalHighlightRules */ .A);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = CrystalHighlightRules;
@@ -6688,14 +6692,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9463:
+/***/ 49463:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var CrystalHighlightRules = function () {
 
@@ -7136,14 +7139,13 @@ exports.A = Mode;
 /***/ 5379:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CSharpHighlightRules = (__webpack_require__(292)/* .CSharpHighlightRules */ .f);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(198)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CSharpHighlightRules = (__webpack_require__(50292)/* .CSharpHighlightRules */ .f);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(60198)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = CSharpHighlightRules;
@@ -7199,15 +7201,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 292:
+/***/ 50292:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var CSharpHighlightRules = function() {
     var keywordMapper = this.createKeywordMapper({
@@ -7303,15 +7304,14 @@ exports.f = CSharpHighlightRules;
 
 /***/ }),
 
-/***/ 4223:
+/***/ 24223:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CsoundDocumentHighlightRules = (__webpack_require__(3471)/* .CsoundDocumentHighlightRules */ .o);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CsoundDocumentHighlightRules = (__webpack_require__(83471)/* .CsoundDocumentHighlightRules */ .o);
 
 var Mode = function() {
     this.HighlightRules = CsoundDocumentHighlightRules;
@@ -7328,18 +7328,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3471:
+/***/ 83471:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 
-var CsoundOrchestraHighlightRules = (__webpack_require__(4618)/* .CsoundOrchestraHighlightRules */ .e);
-var CsoundScoreHighlightRules = (__webpack_require__(5101)/* .CsoundScoreHighlightRules */ .U);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var CsoundOrchestraHighlightRules = (__webpack_require__(84618)/* .CsoundOrchestraHighlightRules */ .e);
+var CsoundScoreHighlightRules = (__webpack_require__(95101)/* .CsoundScoreHighlightRules */ .U);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var CsoundDocumentHighlightRules = function() {
 
@@ -7403,15 +7402,14 @@ exports.o = CsoundDocumentHighlightRules;
 
 /***/ }),
 
-/***/ 9970:
+/***/ 49970:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CsoundOrchestraHighlightRules = (__webpack_require__(4618)/* .CsoundOrchestraHighlightRules */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CsoundOrchestraHighlightRules = (__webpack_require__(84618)/* .CsoundOrchestraHighlightRules */ .e);
 
 var Mode = function() {
     this.HighlightRules = CsoundOrchestraHighlightRules;
@@ -7432,19 +7430,18 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4618:
+/***/ 84618:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var lang = __webpack_require__(732);
-var oop = __webpack_require__(2011);
+var lang = __webpack_require__(10732);
+var oop = __webpack_require__(42011);
 
-var CsoundPreprocessorHighlightRules = (__webpack_require__(5836)/* .CsoundPreprocessorHighlightRules */ .H);
-var CsoundScoreHighlightRules = (__webpack_require__(5101)/* .CsoundScoreHighlightRules */ .U);
-var LuaHighlightRules = (__webpack_require__(2930)/* .LuaHighlightRules */ .Q);
-var PythonHighlightRules = (__webpack_require__(9901)/* .PythonHighlightRules */ .H);
+var CsoundPreprocessorHighlightRules = (__webpack_require__(85836)/* .CsoundPreprocessorHighlightRules */ .H);
+var CsoundScoreHighlightRules = (__webpack_require__(95101)/* .CsoundScoreHighlightRules */ .U);
+var LuaHighlightRules = (__webpack_require__(12930)/* .LuaHighlightRules */ .Q);
+var PythonHighlightRules = (__webpack_require__(69901)/* .PythonHighlightRules */ .H);
 
 var CsoundOrchestraHighlightRules = function(embeddedRulePrefix) {
 
@@ -9482,15 +9479,14 @@ exports.e = CsoundOrchestraHighlightRules;
 
 /***/ }),
 
-/***/ 5836:
+/***/ 85836:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var CsoundPreprocessorHighlightRules = function(embeddedRulePrefix) {
 
@@ -9787,15 +9783,14 @@ exports.H = CsoundPreprocessorHighlightRules;
 
 /***/ }),
 
-/***/ 3581:
+/***/ 53581:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CsoundScoreHighlightRules = (__webpack_require__(5101)/* .CsoundScoreHighlightRules */ .U);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CsoundScoreHighlightRules = (__webpack_require__(95101)/* .CsoundScoreHighlightRules */ .U);
 
 var Mode = function() {
     this.HighlightRules = CsoundScoreHighlightRules;
@@ -9815,15 +9810,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5101:
+/***/ 95101:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 
-var CsoundPreprocessorHighlightRules = (__webpack_require__(5836)/* .CsoundPreprocessorHighlightRules */ .H);
+var CsoundPreprocessorHighlightRules = (__webpack_require__(85836)/* .CsoundPreprocessorHighlightRules */ .H);
 
 var CsoundScoreHighlightRules = function(embeddedRulePrefix) {
 
@@ -9977,19 +9971,18 @@ exports.U = CsoundScoreHighlightRules;
 
 /***/ }),
 
-/***/ 5676:
+/***/ 95676:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
     
 
-    var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-    var CspHighlightRules = (__webpack_require__(1093)/* .CspHighlightRules */ ._);
-    var oop = __webpack_require__(2011);
+    var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+    var CspHighlightRules = (__webpack_require__(51093)/* .CspHighlightRules */ ._);
+    var oop = __webpack_require__(42011);
 
     var Mode = function() {
         this.HighlightRules = CspHighlightRules;
@@ -10006,10 +9999,9 @@ exports.U = CsoundScoreHighlightRules;
 
 /***/ }),
 
-/***/ 1093:
+/***/ 51093:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
     EXPLANATION
 
@@ -10020,8 +10012,8 @@ exports.U = CsoundScoreHighlightRules;
 
     
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var CspHighlightRules = function() {
         var keywordMapper = this.createKeywordMapper({
@@ -10052,20 +10044,19 @@ exports.U = CsoundScoreHighlightRules;
 
 /***/ }),
 
-/***/ 3734:
+/***/ 93734:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CssHighlightRules = (__webpack_require__(4897).CssHighlightRules);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
-var CssCompletions = (__webpack_require__(2199)/* .CssCompletions */ .A);
-var CssBehaviour = (__webpack_require__(6092)/* .CssBehaviour */ .K);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CssHighlightRules = (__webpack_require__(64897).CssHighlightRules);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
+var CssCompletions = (__webpack_require__(22199)/* .CssCompletions */ .A);
+var CssBehaviour = (__webpack_require__(76092)/* .CssBehaviour */ .K);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = CssHighlightRules;
@@ -10134,10 +10125,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2199:
+/***/ 22199:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 var propertyMap = {
@@ -10324,15 +10314,14 @@ exports.A = CssCompletions;
 
 /***/ }),
 
-/***/ 4897:
+/***/ 64897:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 
 /* Exports are for Stylus and Less highlighters */
@@ -10464,6 +10453,9 @@ var CssHighlightRules = function() {
             token : keywordMapper,
             regex : "\\-?[a-zA-Z_][a-zA-Z0-9_\\-]*"
         }, {
+            token: "paren.lparen",
+            regex: "\\{"
+        }, {
             caseInsensitive: true
         }],
 
@@ -10529,20 +10521,19 @@ exports.CssHighlightRules = CssHighlightRules;
 
 /***/ }),
 
-/***/ 826:
+/***/ 70826:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 // defines the parent mode
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var HtmlFoldMode = (__webpack_require__(5540).FoldMode);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var HtmlFoldMode = (__webpack_require__(75540).FoldMode);
 
 // defines the language specific highlighters and folding rules
-var CurlyHighlightRules = (__webpack_require__(9821)/* .CurlyHighlightRules */ .b);
+var CurlyHighlightRules = (__webpack_require__(69821)/* .CurlyHighlightRules */ .b);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -10561,14 +10552,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9821:
+/***/ 69821:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 
 var CurlyHighlightRules = function() {
@@ -10596,15 +10586,14 @@ exports.b = CurlyHighlightRules;
 
 /***/ }),
 
-/***/ 959:
+/***/ 70959:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CuttlefishHighlightRules = (__webpack_require__(7022)/* .CuttlefishHighlightRules */ .p);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CuttlefishHighlightRules = (__webpack_require__(27022)/* .CuttlefishHighlightRules */ .p);
 
 var Mode = function() {
     this.HighlightRules = CuttlefishHighlightRules;
@@ -10624,14 +10613,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7022:
+/***/ 27022:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 
 var CuttlefishHighlightRules = function () {
@@ -10668,20 +10656,19 @@ exports.p = CuttlefishHighlightRules;
 
 /***/ }),
 
-/***/ 4444:
+/***/ 34444:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var DHighlightRules = (__webpack_require__(5524)/* .DHighlightRules */ .b);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var DHighlightRules = (__webpack_require__(85524)/* .DHighlightRules */ .b);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = DHighlightRules;
@@ -10701,15 +10688,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5524:
+/***/ 85524:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var DHighlightRules = function() {
 
@@ -11011,20 +10997,19 @@ exports.b = DHighlightRules;
 
 /***/ }),
 
-/***/ 4866:
+/***/ 94866:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var CMode = (__webpack_require__(9117)/* .Mode */ .A);
-var DartHighlightRules = (__webpack_require__(2127)/* .DartHighlightRules */ .N);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var CMode = (__webpack_require__(99117)/* .Mode */ .A);
+var DartHighlightRules = (__webpack_require__(22127)/* .DartHighlightRules */ .N);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     CMode.call(this);
@@ -11046,18 +11031,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2127:
+/***/ 22127:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode_highlight_rules.tmpl.js (UUID: 958518BC-799F-477A-99F9-5B28EBF230F6) */
 
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var DartHighlightRules = function() {
 
@@ -11245,16 +11229,15 @@ exports.N = DartHighlightRules;
 
 /***/ }),
 
-/***/ 4882:
+/***/ 74882:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(2257)/* .DiffHighlightRules */ .w);
-var FoldMode = (__webpack_require__(5471)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(72257)/* .DiffHighlightRules */ .w);
+var FoldMode = (__webpack_require__(25471)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HighlightRules;
@@ -11273,14 +11256,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2257:
+/***/ 72257:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var DiffHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -11357,13 +11339,13 @@ exports.w = DiffHighlightRules;
 
 /***/ }),
 
-/***/ 7656:
+/***/ 57656:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var DjangoHighlightRules = function(){
     this.$rules = {
@@ -11446,14 +11428,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9708:
+/***/ 69708:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var DocCommentHighlightRules = function () {
     this.$rules = {
@@ -11462,7 +11443,7 @@ var DocCommentHighlightRules = function () {
                 token: "comment.doc.tag",
                 regex: "@\\w+(?=\\s|$)"
             }, DocCommentHighlightRules.getTagRule(), {
-                defaultToken: "comment.doc",
+                defaultToken: "comment.doc.body",
                 caseInsensitive: true
             }
         ]
@@ -11481,7 +11462,7 @@ DocCommentHighlightRules.getTagRule = function(start) {
 DocCommentHighlightRules.getStartRule = function(start) {
     return {
         token : "comment.doc", // doc comment
-        regex : "\\/\\*(?=\\*)",
+        regex: /\/\*\*(?!\/)/,
         next  : start
     };
 };
@@ -11500,16 +11481,15 @@ exports.c = DocCommentHighlightRules;
 
 /***/ }),
 
-/***/ 9819:
+/***/ 99819:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var ShMode = (__webpack_require__(7618)/* .Mode */ .A);
-var DockerfileHighlightRules = (__webpack_require__(4741)/* .DockerfileHighlightRules */ .i);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var ShMode = (__webpack_require__(17618)/* .Mode */ .A);
+var DockerfileHighlightRules = (__webpack_require__(24741)/* .DockerfileHighlightRules */ .i);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     ShMode.call(this);
@@ -11528,14 +11508,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4741:
+/***/ 24741:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var ShHighlightRules = (__webpack_require__(9326).ShHighlightRules);
+var oop = __webpack_require__(42011);
+var ShHighlightRules = (__webpack_require__(59326).ShHighlightRules);
 
 var DockerfileHighlightRules = function() {
     ShHighlightRules.call(this);
@@ -11561,17 +11540,16 @@ exports.i = DockerfileHighlightRules;
 
 /***/ }),
 
-/***/ 7169:
+/***/ 37169:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var DotHighlightRules = (__webpack_require__(4347)/* .DotHighlightRules */ .O);
-var DotFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var DotHighlightRules = (__webpack_require__(24347)/* .DotHighlightRules */ .O);
+var DotFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = DotHighlightRules;
@@ -11623,16 +11601,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4347:
+/***/ 24347:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
 
 var DotHighlightRules = function() {
 
@@ -11751,16 +11728,15 @@ exports.O = DotHighlightRules;
 
 /***/ }),
 
-/***/ 894:
+/***/ 50894:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var DroolsHighlightRules = (__webpack_require__(9727)/* .DroolsHighlightRules */ .c);
-var DroolsFoldMode = (__webpack_require__(6728)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var DroolsHighlightRules = (__webpack_require__(99727)/* .DroolsHighlightRules */ .c);
+var DroolsFoldMode = (__webpack_require__(66728)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = DroolsHighlightRules;
@@ -11781,16 +11757,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9727:
+/***/ 99727:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var JavaHighlightRules = (__webpack_require__(7400)/* .JavaHighlightRules */ .x);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var JavaHighlightRules = (__webpack_require__(17400)/* .JavaHighlightRules */ .x);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
 
 var identifierRe = "[a-zA-Z\\$_\u00a1-\uffff][a-zA-Z\\d\\$_\u00a1-\uffff]*";
 var packageIdentifierRe = "[a-zA-Z\\$_\u00a1-\uffff][\\.a-zA-Z\\d\\$_\u00a1-\uffff]*";
@@ -12018,15 +11993,14 @@ exports.c = DroolsHighlightRules;
 
 /***/ }),
 
-/***/ 3484:
+/***/ 53484:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var EdifactHighlightRules = (__webpack_require__(7739)/* .EdifactHighlightRules */ .T);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var EdifactHighlightRules = (__webpack_require__(97739)/* .EdifactHighlightRules */ .T);
 
 var Mode = function() {
    
@@ -12045,15 +12019,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7739:
+/***/ 97739:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
     
-    var oop = __webpack_require__(2011);
-    var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
     
     var EdifactHighlightRules = function() {
     
@@ -12142,14 +12115,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3913:
+/***/ 83913:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var EiffelHighlightRules = (__webpack_require__(6276)/* .EiffelHighlightRules */ .m);
 
 var Mode = function() {
@@ -12171,11 +12143,10 @@ exports.A = Mode;
 /***/ 6276:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var EiffelHighlightRules = function() {
     var keywords = "across|agent|alias|all|attached|as|assign|attribute|check|" +
@@ -12280,16 +12251,15 @@ exports.m = EiffelHighlightRules;
 
 /***/ }),
 
-/***/ 2481:
+/***/ 22481:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
 
 var EjsHighlightRules = function(start, end) {
     HtmlHighlightRules.call(this);
@@ -12326,11 +12296,11 @@ oop.inherits(EjsHighlightRules, HtmlHighlightRules);
 __webpack_unused_export__ = EjsHighlightRules;
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var CssMode = (__webpack_require__(3734)/* .Mode */ .A);
-var RubyMode = (__webpack_require__(1148)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var CssMode = (__webpack_require__(93734)/* .Mode */ .A);
+var RubyMode = (__webpack_require__(78242)/* .Mode */ .A);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -12353,20 +12323,19 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4288:
+/***/ 74288:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ElixirHighlightRules = (__webpack_require__(8536)/* .ElixirHighlightRules */ .M);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ElixirHighlightRules = (__webpack_require__(98536)/* .ElixirHighlightRules */ .M);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ElixirHighlightRules;
@@ -12387,10 +12356,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8536:
+/***/ 98536:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.githubusercontent.com/elixir-lang/elixir-tmbundle/master/Syntaxes/Elixir.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -12399,8 +12367,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ElixirHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -12799,17 +12767,16 @@ exports.M = ElixirHighlightRules;
 /***/ 9251:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(5060)/* .ElmHighlightRules */ .R);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(75060)/* .ElmHighlightRules */ .R);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HighlightRules;
@@ -12830,16 +12797,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5060:
+/***/ 75060:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 // TODO check with https://github.com/deadfoxygrandpa/Elm.tmLanguage
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ElmHighlightRules = function() {
     var keywordMapper = this.createKeywordMapper({
@@ -12976,17 +12942,16 @@ exports.R = ElmHighlightRules;
 /***/ 8118:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ErlangHighlightRules = (__webpack_require__(5892)/* .ErlangHighlightRules */ .O);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ErlangHighlightRules = (__webpack_require__(45892)/* .ErlangHighlightRules */ .O);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ErlangHighlightRules;
@@ -13007,10 +12972,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5892:
+/***/ 45892:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from tm bundles\erlang.tmbundle\Syntaxes\Erlang.plist (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -13019,8 +12983,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ErlangHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -13802,23 +13766,23 @@ var ErlangHighlightRules = function() {
                 regex: '(\\\\)(?:([bdefnrstv\\\\\'"])|(\\^)([@-_])|([0-7]{1,3}))' },
               { token: 'invalid.illegal.string.erlang', regex: '\\\\\\^?.?' },
               { token: 
-                 [ 'punctuation.definition.placeholder.erlang',
-                   'punctuation.separator.placeholder-parts.erlang',
-                   'constant.other.placeholder.erlang',
-                   'punctuation.separator.placeholder-parts.erlang',
-                   'punctuation.separator.placeholder-parts.erlang',
-                   'constant.other.placeholder.erlang',
-                   'punctuation.separator.placeholder-parts.erlang',
-                   'punctuation.separator.placeholder-parts.erlang',
-                   'punctuation.separator.placeholder-parts.erlang',
-                   'constant.other.placeholder.erlang',
-                   'constant.other.placeholder.erlang' ],
+                 [ 'punctuation.definition.erlang',
+                   'punctuation.separator.erlang',
+                   'constant.other.erlang',
+                   'punctuation.separator.erlang',
+                   'punctuation.separator.erlang',
+                   'constant.other.erlang',
+                   'punctuation.separator.erlang',
+                   'punctuation.separator.erlang',
+                   'punctuation.separator.erlang',
+                   'constant.other.erlang',
+                   'constant.other.erlang' ],
                 regex: '(~)(?:((?:\\-)?)(\\d+)|(\\*))?(?:(\\.)(?:(\\d+)|(\\*)))?(?:(\\.)(?:(\\*)|(.)))?([~cfegswpWPBX#bx\\+ni])' },
               { token: 
-                 [ 'punctuation.definition.placeholder.erlang',
-                   'punctuation.separator.placeholder-parts.erlang',
-                   'constant.other.placeholder.erlang',
-                   'constant.other.placeholder.erlang' ],
+                 [ 'punctuation.definition.erlang',
+                   'punctuation.separator.erlang',
+                   'constant.other.erlang',
+                   'constant.other.erlang' ],
                 regex: '(~)((?:\\*)?)((?:\\d+)?)([~du\\-#fsacl])' },
               { token: 'invalid.illegal.string.erlang', regex: '~.?' },
               { defaultToken: 'string.quoted.double.erlang' } ] } ],
@@ -13859,15 +13823,14 @@ exports.O = ErlangHighlightRules;
 
 /***/ }),
 
-/***/ 3608:
+/***/ 43608:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var FlixHighlightRules = (__webpack_require__(7490)/* .FlixHighlightRules */ .R);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var FlixHighlightRules = (__webpack_require__(27490)/* .FlixHighlightRules */ .R);
 
 var Mode = function() {
     this.HighlightRules = FlixHighlightRules;
@@ -13882,14 +13845,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7490:
+/***/ 27490:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var FlixHighlightRules = function() {
     
@@ -14041,15 +14003,14 @@ exports.R = FlixHighlightRules;
 
 /***/ }),
 
-/***/ 1514:
+/***/ 71514:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function() {};
 oop.inherits(FoldMode, BaseFoldMode);
@@ -14158,14 +14119,13 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 3123:
+/***/ 33123:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
 
 var FoldMode = exports.Z = function() {};
@@ -14214,15 +14174,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 9188:
+/***/ 79188:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function() {};
 oop.inherits(FoldMode, BaseFoldMode);
@@ -14314,15 +14273,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 198:
+/***/ 60198:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var CFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var CFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var FoldMode = exports.Z = function(commentRegex) {
     if (commentRegex) {
@@ -14426,14 +14384,13 @@ oop.inherits(FoldMode, CFoldMode);
 
 /***/ }),
 
-/***/ 5622:
+/***/ 75622:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
 
 var FoldMode = exports.Z = function(commentRegex) {
@@ -14593,15 +14550,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 5471:
+/***/ 25471:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function(levels, flag) {
 	this.regExpList = levels;
@@ -14637,14 +14593,13 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 6728:
+/***/ 66728:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 
@@ -14694,10 +14649,9 @@ oop.inherits(FoldMode, BaseFoldMode);
 /***/ 9372:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.FoldMode = function() {};
 
@@ -14789,10 +14743,9 @@ var FoldMode = exports.FoldMode = function() {};
 
 /***/ }),
 
-/***/ 8657:
+/***/ 58657:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
 * Folding mode for Cabal files (Haskell): allow folding each seaction, including
 * the initial general section.
@@ -14800,9 +14753,9 @@ var FoldMode = exports.FoldMode = function() {};
 
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function() {};
 oop.inherits(FoldMode, BaseFoldMode);
@@ -14881,16 +14834,15 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 5540:
+/***/ 75540:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var MixedFoldMode = (__webpack_require__(6091)/* .FoldMode */ .Z);
-var XmlFoldMode = (__webpack_require__(8027)/* .FoldMode */ .Z);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var XmlFoldMode = (__webpack_require__(18027)/* .FoldMode */ .Z);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var FoldMode = exports.FoldMode = function(voidElements, optionalTags) {
     MixedFoldMode.call(this, new XmlFoldMode(voidElements, optionalTags), {
@@ -14904,14 +14856,13 @@ oop.inherits(FoldMode, MixedFoldMode);
 
 /***/ }),
 
-/***/ 1144:
+/***/ 41144:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
 
 var FoldMode = exports.Z = function() {
@@ -14959,15 +14910,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 7898:
+/***/ 97898:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function() {};
 oop.inherits(FoldMode, CStyleFoldMode);
@@ -15021,15 +14971,14 @@ oop.inherits(FoldMode, CStyleFoldMode);
 
 /***/ }),
 
-/***/ 4786:
+/***/ 14786:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var XmlFoldMode = (__webpack_require__(8027)/* .FoldMode */ .Z);
-var CFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var XmlFoldMode = (__webpack_require__(18027)/* .FoldMode */ .Z);
+var CFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var FoldMode = exports.Z = function (commentRegex) {
     if (commentRegex) {
@@ -15067,15 +15016,14 @@ oop.inherits(FoldMode, CFoldMode);
 
 /***/ }),
 
-/***/ 9302:
+/***/ 79302:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 var keywordLevels = {
     "\\subparagraph": 1,
@@ -15222,15 +15170,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 5792:
+/***/ 85792:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 
 
@@ -15366,15 +15313,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 7721:
+/***/ 97721:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function() {};
 oop.inherits(FoldMode, BaseFoldMode);
@@ -15469,10 +15415,9 @@ oop.inherits(FoldMode, BaseFoldMode);
 /***/ 6091:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
 
 var FoldMode = exports.Z = function(defaultMode, subModes) {
@@ -15524,31 +15469,26 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 7836:
+/***/ 37836:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var MixedFoldMode = (__webpack_require__(6091)/* .FoldMode */ .Z);
-var CstyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var CstyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 
 
 var FoldMode = exports.Z = function () {
-    this.cstyleFoldMode = new CstyleFoldMode();
-    MixedFoldMode.call(this, this, {
-        "js-": new CstyleFoldMode(),
-        "css-": new CstyleFoldMode(),
-        "php-": this
-    });
 };
 
-oop.inherits(FoldMode, MixedFoldMode);
+oop.inherits(FoldMode, CstyleFoldMode);
 
 (function () {
+    this.getFoldWidgetRangeBase = this.getFoldWidgetRange;
+    this.getFoldWidgetBase = this.getFoldWidget;
+    
     this.indentKeywords = {
         "if": 1,
         "while": 1,
@@ -15564,31 +15504,31 @@ oop.inherits(FoldMode, MixedFoldMode);
         "endswitch": -1
     };
 
-    this.foldingStartMarker = /(?:\s|^)(if|else|elseif|while|for|foreach|switch).*\:/i;
-    this.foldingStopMarker = /(?:\s|^)(endif|endwhile|endfor|endforeach|endswitch)\;/i;
+    this.foldingStartMarkerPhp = /(?:\s|^)(if|else|elseif|while|for|foreach|switch).*\:/i;
+    this.foldingStopMarkerPhp = /(?:\s|^)(endif|endwhile|endfor|endforeach|endswitch)\;/i;
 
     this.getFoldWidgetRange = function (session, foldStyle, row) {
         var line = session.doc.getLine(row);
-        var match = this.foldingStartMarker.exec(line);
+        var match = this.foldingStartMarkerPhp.exec(line);
         if (match) {
             return this.phpBlock(session, row, match.index + 2);
         }
 
-        var match = this.foldingStopMarker.exec(line);
+        var match = this.foldingStopMarkerPhp.exec(line);
         if (match) {
             return this.phpBlock(session, row, match.index + 2);
         }
-        return this.cstyleFoldMode.getFoldWidgetRange(session, foldStyle, row);
+        return this.getFoldWidgetRangeBase(session, foldStyle, row);
     };
 
 
     // must return "" if there's no fold, to enable caching
     this.getFoldWidget = function (session, foldStyle, row) {
         var line = session.getLine(row);
-        var isStart = this.foldingStartMarker.test(line);
-        var isEnd = this.foldingStopMarker.test(line);
+        var isStart = this.foldingStartMarkerPhp.test(line);
+        var isEnd = this.foldingStopMarkerPhp.test(line);
         if (isStart && !isEnd) {
-            var match = this.foldingStartMarker.exec(line);
+            var match = this.foldingStartMarkerPhp.exec(line);
             var keyword = match && match[1].toLowerCase();
             if (keyword) {
                 var type = session.getTokenAt(row, match.index + 2).type;
@@ -15598,7 +15538,7 @@ oop.inherits(FoldMode, MixedFoldMode);
             }
         }
         if (isEnd && foldStyle === "markbeginend") {
-            var match = this.foldingStopMarker.exec(line);
+            var match = this.foldingStopMarkerPhp.exec(line);
             var keyword = match && match[1].toLowerCase();
             if (keyword) {
                 var type = session.getTokenAt(row, match.index + 2).type;
@@ -15607,7 +15547,7 @@ oop.inherits(FoldMode, MixedFoldMode);
                 }
             }
         }
-        return this.cstyleFoldMode.getFoldWidget(session, foldStyle, row);
+        return this.getFoldWidgetBase(session, foldStyle, row);
     };
 
     this.phpBlock = function (session, row, column, tokenRange) {
@@ -15659,13 +15599,12 @@ oop.inherits(FoldMode, MixedFoldMode);
 
 /***/ }),
 
-/***/ 4703:
+/***/ 84703:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
 
 var FoldMode = exports.Z = function(markers) {
@@ -15695,12 +15634,11 @@ oop.inherits(FoldMode, BaseFoldMode);
 /***/ 8147:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 
 
@@ -15960,14 +15898,13 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 2719:
+/***/ 62719:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var BaseFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var BaseFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var FoldMode = exports.Z = function() {};
 
@@ -15987,15 +15924,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 2205:
+/***/ 42205:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var BaseFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var BaseFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var FoldMode = exports.Z = function() {};
 
@@ -16073,15 +16009,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 8997:
+/***/ 98997:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 
 
@@ -16387,15 +16322,14 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 9623:
+/***/ 69623:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function() {};
 oop.inherits(FoldMode, BaseFoldMode);
@@ -16482,14 +16416,13 @@ oop.inherits(FoldMode, BaseFoldMode);
 
 /***/ }),
 
-/***/ 8027:
+/***/ 18027:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var BaseFoldMode = (__webpack_require__(9372).FoldMode);
 
 var FoldMode = exports.Z = function(voidElements, optionalEndTags) {
@@ -16602,13 +16535,15 @@ function is(token, type) {
     };
 
     this.getFoldWidgetRange = function(session, foldStyle, row) {
+        var firstTag = this._getFirstTagInLine(session, row);
+        if (!firstTag) {
+            return this.getCommentFoldWidget(session, row) && session.getCommentFoldRange(
+                row, session.getLine(row).length);
+        }
         var tags = session.getMatchingTags({row: row, column: 0});
         if (tags) {
             return new Range(
                 tags.openTag.end.row, tags.openTag.end.column, tags.closeTag.start.row, tags.closeTag.start.column);
-        } else {
-            return this.getCommentFoldWidget(session, row)
-                && session.getCommentFoldRange(row, session.getLine(row).length);
         }
     };
 
@@ -16617,15 +16552,14 @@ function is(token, type) {
 
 /***/ }),
 
-/***/ 1009:
+/***/ 91009:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var CoffeeFoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var CoffeeFoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var FoldMode = exports.Z = function() {};
 oop.inherits(FoldMode, CoffeeFoldMode);
@@ -16736,17 +16670,16 @@ oop.inherits(FoldMode, CoffeeFoldMode);
 /***/ 6989:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ForthHighlightRules = (__webpack_require__(6654)/* .ForthHighlightRules */ .Z);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ForthHighlightRules = (__webpack_require__(76654)/* .ForthHighlightRules */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ForthHighlightRules;
@@ -16766,10 +16699,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6654:
+/***/ 76654:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.github.com/vze26m98/Forth.tmbundle/master/Syntaxes/Forth.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -16778,8 +16710,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ForthHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -16906,19 +16838,18 @@ exports.Z = ForthHighlightRules;
 
 /***/ }),
 
-/***/ 5442:
+/***/ 65442:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* Derived from Python rules */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var FortranHighlightRules = (__webpack_require__(1502)/* .FortranHighlightRules */ .d);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var FortranHighlightRules = (__webpack_require__(11502)/* .FortranHighlightRules */ .d);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = FortranHighlightRules;
@@ -16995,16 +16926,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1502:
+/***/ 11502:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* Derived from Python highlighing rules */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var FortranHighlightRules = function() {
 
@@ -17204,16 +17134,15 @@ exports.d = FortranHighlightRules;
 
 /***/ }),
 
-/***/ 7892:
+/***/ 37892:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-    var FSharpHighlightRules = (__webpack_require__(978)/* .FSharpHighlightRules */ .s);
-    var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+    var oop = __webpack_require__(42011);
+    var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+    var FSharpHighlightRules = (__webpack_require__(90978)/* .FSharpHighlightRules */ .s);
+    var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
     var Mode = function () {
         TextMode.call(this);
@@ -17237,14 +17166,13 @@ exports.d = FortranHighlightRules;
 
 /***/ }),
 
-/***/ 978:
+/***/ 90978:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 var FSharpHighlightRules = function () {
 
     var keywordMapper = this.createKeywordMapper({
@@ -17384,21 +17312,20 @@ exports.s = FSharpHighlightRules;
 
 /***/ }),
 
-/***/ 8090:
+/***/ 98090:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var FSLHighlightRules = (__webpack_require__(9491)/* .FSLHighlightRules */ .W);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = FSLHighlightRules;
@@ -17422,11 +17349,10 @@ exports.A = Mode;
 /***/ 9491:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var FSLHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -17515,15 +17441,14 @@ exports.W = FSLHighlightRules;
 
 /***/ }),
 
-/***/ 8284:
+/***/ 88284:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var FtlHighlightRules = (__webpack_require__(9164)/* .FtlHighlightRules */ .u);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var FtlHighlightRules = (__webpack_require__(19164)/* .FtlHighlightRules */ .u);
 
 var Mode = function() {
     this.HighlightRules = FtlHighlightRules;
@@ -17541,15 +17466,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9164:
+/***/ 19164:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var FtlLangHighlightRules = function () {
 
@@ -17710,16 +17634,15 @@ exports.u = FtlHighlightRules;
 
 /***/ }),
 
-/***/ 9603:
+/***/ 19603:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-    var GcodeHighlightRules = (__webpack_require__(6767)/* .GcodeHighlightRules */ .p);
-    var Range = (__webpack_require__(3069)/* .Range */ .e);
+    var oop = __webpack_require__(42011);
+    var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+    var GcodeHighlightRules = (__webpack_require__(76767)/* .GcodeHighlightRules */ .p);
+    var Range = (__webpack_require__(93069)/* .Range */ .e);
 
     var Mode = function() {
         this.HighlightRules = GcodeHighlightRules;
@@ -17736,14 +17659,13 @@ exports.u = FtlHighlightRules;
 
 /***/ }),
 
-/***/ 6767:
+/***/ 76767:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var GcodeHighlightRules = function() {
 
@@ -17806,12 +17728,12 @@ exports.u = FtlHighlightRules;
 
 /***/ }),
 
-/***/ 4691:
+/***/ 14691:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var GherkinHighlightRules = (__webpack_require__(2523)/* .GherkinHighlightRules */ .d);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var GherkinHighlightRules = (__webpack_require__(32523)/* .GherkinHighlightRules */ .d);
 
 var Mode = function() {
     this.HighlightRules = GherkinHighlightRules;
@@ -17859,11 +17781,11 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2523:
+/***/ 32523:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 var stringEscape =  "\\\\(x[0-9A-Fa-f]{2}|[0-7]{3}|[\\\\abfnrtv'\"]|U[0-9A-Fa-f]{8}|u[0-9A-Fa-f]{4})";
 
 var GherkinHighlightRules = function() {
@@ -17983,15 +17905,14 @@ exports.d = GherkinHighlightRules;
 
 /***/ }),
 
-/***/ 7932:
+/***/ 17932:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var GitignoreHighlightRules = (__webpack_require__(5371)/* .GitignoreHighlightRules */ .R);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var GitignoreHighlightRules = (__webpack_require__(45371)/* .GitignoreHighlightRules */ .R);
 
 var Mode = function() {
     this.HighlightRules = GitignoreHighlightRules;
@@ -18009,14 +17930,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5371:
+/***/ 45371:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var GitignoreHighlightRules = function() {
     this.$rules = {
@@ -18046,17 +17966,16 @@ exports.R = GitignoreHighlightRules;
 
 /***/ }),
 
-/***/ 1426:
+/***/ 51426:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var CMode = (__webpack_require__(9117)/* .Mode */ .A);
-var glslHighlightRules = (__webpack_require__(1731)/* .glslHighlightRules */ .K);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var CMode = (__webpack_require__(99117)/* .Mode */ .A);
+var glslHighlightRules = (__webpack_require__(11731)/* .glslHighlightRules */ .K);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = glslHighlightRules;
@@ -18076,14 +17995,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1731:
+/***/ 11731:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var c_cppHighlightRules = (__webpack_require__(46)/* .c_cppHighlightRules */ .r);
+var oop = __webpack_require__(42011);
+var c_cppHighlightRules = (__webpack_require__(80046)/* .c_cppHighlightRules */ .r);
 
 var glslHighlightRules = function() {
 
@@ -18136,12 +18054,11 @@ exports.K = glslHighlightRules;
 /***/ 8225:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var GobstonesHighlightRules = (__webpack_require__(8388)/* .GobstonesHighlightRules */ .u);
+var oop = __webpack_require__(42011);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var GobstonesHighlightRules = (__webpack_require__(68388)/* .GobstonesHighlightRules */ .u);
 
 var Mode = function() {
     JavaScriptMode.call(this);
@@ -18165,14 +18082,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8388:
+/***/ 68388:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var GobstonesHighlightRules = function() {
 
@@ -18443,14 +18359,14 @@ exports.u = GobstonesHighlightRules;
 
 /***/ }),
 
-/***/ 6316:
+/***/ 76316:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var GolangHighlightRules = (__webpack_require__(88)/* .GolangHighlightRules */ .L);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var GolangHighlightRules = (__webpack_require__(90088)/* .GolangHighlightRules */ .L);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = GolangHighlightRules;
@@ -18502,12 +18418,12 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 88:
+/***/ 90088:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-    var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+    var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var GolangHighlightRules = function() {
         var keywords = (
@@ -18626,16 +18542,15 @@ var oop = __webpack_require__(2011);
 
 /***/ }),
 
-/***/ 7866:
+/***/ 47866:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var GraphQLSchemaHighlightRules = (__webpack_require__(1991)/* .GraphQLSchemaHighlightRules */ .d);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = GraphQLSchemaHighlightRules;
@@ -18657,11 +18572,10 @@ exports.A = Mode;
 /***/ 1991:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var GraphQLSchemaHighlightRules = function() {
 
@@ -18704,15 +18618,14 @@ exports.d = GraphQLSchemaHighlightRules;
 
 /***/ }),
 
-/***/ 5656:
+/***/ 15656:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var GroovyHighlightRules = (__webpack_require__(2080)/* .GroovyHighlightRules */ .d);
+var oop = __webpack_require__(42011);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var GroovyHighlightRules = (__webpack_require__(32080)/* .GroovyHighlightRules */ .d);
 
 var Mode = function() {
     JavaScriptMode.call(this);
@@ -18735,15 +18648,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2080:
+/***/ 32080:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var GroovyHighlightRules = function() {
 
@@ -18913,20 +18825,19 @@ exports.d = GroovyHighlightRules;
 
 /***/ }),
 
-/***/ 2993:
+/***/ 72993:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HamlHighlightRules = (__webpack_require__(6669)/* .HamlHighlightRules */ .x);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HamlHighlightRules = (__webpack_require__(96669)/* .HamlHighlightRules */ .x);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HamlHighlightRules;
@@ -18947,15 +18858,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6669:
+/***/ 96669:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var RubyExports = __webpack_require__(8081);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var RubyExports = __webpack_require__(48081);
 var RubyHighlightRules = RubyExports.RubyHighlightRules;
 
 var HamlHighlightRules = function() {
@@ -19098,19 +19008,18 @@ exports.x = HamlHighlightRules;
 
 /***/ }),
 
-/***/ 1513:
+/***/ 71513:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* global define */
 
   
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var HandlebarsHighlightRules = (__webpack_require__(4571)/* .HandlebarsHighlightRules */ .V);
-var HtmlBehaviour = (__webpack_require__(1247)/* .HtmlBehaviour */ .k);
-var HtmlFoldMode = (__webpack_require__(5540).FoldMode);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var HandlebarsHighlightRules = (__webpack_require__(54571)/* .HandlebarsHighlightRules */ .V);
+var HtmlBehaviour = (__webpack_require__(71247)/* .HtmlBehaviour */ .k);
+var HtmlFoldMode = (__webpack_require__(75540).FoldMode);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -19130,16 +19039,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4571:
+/***/ 54571:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* global define */
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 function pop2(currentState, stack) {
     stack.splice(0, 3);
@@ -19208,21 +19116,20 @@ exports.V = HandlebarsHighlightRules;
 
 /***/ }),
 
-/***/ 9874:
+/***/ 49874:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HaskellHighlightRules = (__webpack_require__(1080)/* .HaskellHighlightRules */ .G);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HaskellHighlightRules = (__webpack_require__(21080)/* .HaskellHighlightRules */ .G);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HaskellHighlightRules;
@@ -19243,20 +19150,19 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4416:
+/***/ 94416:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /**
 * Haskell Cabal files mode (https://www.haskell.org/cabal/users-guide/developing-packages.html)
 **/
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CabalHighlightRules = (__webpack_require__(8729)/* .CabalHighlightRules */ .H);
-var FoldMode = (__webpack_require__(8657)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CabalHighlightRules = (__webpack_require__(58729)/* .CabalHighlightRules */ .H);
+var FoldMode = (__webpack_require__(58657)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = CabalHighlightRules;
@@ -19276,18 +19182,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8729:
+/***/ 58729:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /**
  * Haskell Cabal files highlighter (https://www.haskell.org/cabal/users-guide/developing-packages.html)
  **/
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var CabalHighlightRules = function() {
 
@@ -19322,10 +19227,9 @@ exports.H = CabalHighlightRules;
 
 /***/ }),
 
-/***/ 1080:
+/***/ 21080:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from tm bundles\haskell.tmbundle\Syntaxes\Haskell.plist (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -19334,8 +19238,8 @@ exports.H = CabalHighlightRules;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var HaskellHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -19547,14 +19451,13 @@ exports.G = HaskellHighlightRules;
 /***/ 2574:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var HaxeHighlightRules = (__webpack_require__(9318)/* .HaxeHighlightRules */ ._);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HaxeHighlightRules;
@@ -19608,13 +19511,12 @@ exports.A = Mode;
 /***/ 9318:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var HaxeHighlightRules = function() {
 
@@ -19708,16 +19610,15 @@ exports._ = HaxeHighlightRules;
 
 /***/ }),
 
-/***/ 6786:
+/***/ 66786:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HjsonHighlightRules = (__webpack_require__(8062)/* .HjsonHighlightRules */ .Z);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HjsonHighlightRules = (__webpack_require__(88062)/* .HjsonHighlightRules */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HjsonHighlightRules;
@@ -19736,10 +19637,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8062:
+/***/ 88062:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from Hjson.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -19748,8 +19648,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var HjsonHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -19933,22 +19833,21 @@ exports.Z = HjsonHighlightRules;
 
 /***/ }),
 
-/***/ 2954:
+/***/ 72954:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var CssMode = (__webpack_require__(3734)/* .Mode */ .A);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var XmlBehaviour = (__webpack_require__(5194).XmlBehaviour);
-var HtmlFoldMode = (__webpack_require__(5540).FoldMode);
-var HtmlCompletions = (__webpack_require__(39).HtmlCompletions);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var CssMode = (__webpack_require__(93734)/* .Mode */ .A);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var XmlBehaviour = (__webpack_require__(45194).XmlBehaviour);
+var HtmlFoldMode = (__webpack_require__(75540).FoldMode);
+var HtmlCompletions = (__webpack_require__(90039).HtmlCompletions);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
 
 // http://www.w3.org/TR/html5/syntax.html#void-elements
 var voidElements = ["area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "menuitem", "param", "source", "track", "wbr"];
@@ -20016,10 +19915,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 39:
+/***/ 90039:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
@@ -20351,18 +20249,17 @@ exports.HtmlCompletions = HtmlCompletions;
 
 /***/ }),
 
-/***/ 4009:
+/***/ 34009:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlElixirHighlightRules = (__webpack_require__(1603)/* .HtmlElixirHighlightRules */ .V);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var CssMode = (__webpack_require__(3734)/* .Mode */ .A);
-var ElixirMode = (__webpack_require__(4288)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var HtmlElixirHighlightRules = (__webpack_require__(91603)/* .HtmlElixirHighlightRules */ .V);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var CssMode = (__webpack_require__(93734)/* .Mode */ .A);
+var ElixirMode = (__webpack_require__(74288)/* .Mode */ .A);
 
 var Mode = function() {
     HtmlMode.call(this);   
@@ -20385,15 +20282,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1603:
+/***/ 91603:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-    var ElixirHighlightRules = (__webpack_require__(8536)/* .ElixirHighlightRules */ .M);
+    var oop = __webpack_require__(42011);
+    var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+    var ElixirHighlightRules = (__webpack_require__(98536)/* .ElixirHighlightRules */ .M);
 
     var HtmlElixirHighlightRules = function() {
         HtmlHighlightRules.call(this);
@@ -20445,17 +20341,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6142:
+/***/ 86142:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var CssHighlightRules = (__webpack_require__(4897).CssHighlightRules);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
-var XmlHighlightRules = (__webpack_require__(2392)/* .XmlHighlightRules */ .U);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var CssHighlightRules = (__webpack_require__(64897).CssHighlightRules);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
+var XmlHighlightRules = (__webpack_require__(72392)/* .XmlHighlightRules */ .U);
 
 var tagMap = lang.createMap({
     a           : 'anchor',
@@ -20532,18 +20427,17 @@ exports.HtmlHighlightRules = HtmlHighlightRules;
 
 /***/ }),
 
-/***/ 587:
+/***/ 90587:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlRubyHighlightRules = (__webpack_require__(350)/* .HtmlRubyHighlightRules */ .x);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var CssMode = (__webpack_require__(3734)/* .Mode */ .A);
-var RubyMode = (__webpack_require__(1148)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var HtmlRubyHighlightRules = (__webpack_require__(50350)/* .HtmlRubyHighlightRules */ .x);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var CssMode = (__webpack_require__(93734)/* .Mode */ .A);
+var RubyMode = (__webpack_require__(78242)/* .Mode */ .A);
 
 var Mode = function() {
     HtmlMode.call(this);   
@@ -20566,15 +20460,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 350:
+/***/ 50350:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-    var RubyHighlightRules = (__webpack_require__(8081).RubyHighlightRules);
+    var oop = __webpack_require__(42011);
+    var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+    var RubyHighlightRules = (__webpack_require__(48081).RubyHighlightRules);
 
     var HtmlRubyHighlightRules = function() {
         HtmlHighlightRules.call(this);
@@ -20626,17 +20519,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9986:
+/***/ 49986:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var IniHighlightRules = (__webpack_require__(897)/* .IniHighlightRules */ .U);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var IniHighlightRules = (__webpack_require__(10897)/* .IniHighlightRules */ .U);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(1144)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(41144)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = IniHighlightRules;
@@ -20656,16 +20548,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 897:
+/***/ 10897:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from tool\tm bundles\ini.tmbundle\Syntaxes\Ini.plist (uuid: ) */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var escapeRe = "\\\\(?:[\\\\0abtrn;#=:]|x[a-fA-F\\d]{4})";
 
@@ -20744,20 +20635,19 @@ exports.U = IniHighlightRules;
 
 /***/ }),
 
-/***/ 995:
+/***/ 30995:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var IoHighlightRules = (__webpack_require__(9292)/* .IoHighlightRules */ .w);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var IoHighlightRules = (__webpack_require__(69292)/* .IoHighlightRules */ .w);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = IoHighlightRules;
@@ -20779,10 +20669,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9292:
+/***/ 69292:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from tm bundles\io.tmbundle/Syntaxes/io.plist (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -20791,8 +20680,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var IoHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -20869,21 +20758,20 @@ exports.w = IoHighlightRules;
 
 /***/ }),
 
-/***/ 106:
+/***/ 10106:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS GENERATED BY 'ligand' USING 'mode.js'
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(5186)/* .IonHighlightRules */ .U);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(75186)/* .IonHighlightRules */ .U);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
     this.HighlightRules = HighlightRules;
@@ -20930,18 +20818,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5186:
+/***/ 75186:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS GENERATED BY 'ligand' USING 'mode_highlight_rules.js'
 */
 
     
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 
     var IonHighlightRules = function() {
@@ -21234,17 +21121,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9356:
+/***/ 99356:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(4116)/* .JackHighlightRules */ .D);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(84116)/* .JackHighlightRules */ .D);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HighlightRules;
@@ -21288,14 +21174,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4116:
+/***/ 84116:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var JackHighlightRules = function() {
 
@@ -21409,13 +21294,12 @@ exports.D = JackHighlightRules;
 /***/ 9029:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var JadeHighlightRules = (__webpack_require__(5352).JadeHighlightRules);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var JadeHighlightRules = (__webpack_require__(55352).JadeHighlightRules);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = JadeHighlightRules;
@@ -21434,23 +21318,22 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5352:
+/***/ 55352:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode_highlight_rules.tmpl.js (UUID: C5B73B98-5F2A-42E3-9F0E-028A74A9FE4B)
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var MarkdownHighlightRules = (__webpack_require__(8825)/* .MarkdownHighlightRules */ .B);
-var SassHighlightRules = (__webpack_require__(8670).ScssHighlightRules);
-var LessHighlightRules = (__webpack_require__(3011).LessHighlightRules);
-var CoffeeHighlightRules = (__webpack_require__(2092).CoffeeHighlightRules);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var MarkdownHighlightRules = (__webpack_require__(58825)/* .MarkdownHighlightRules */ .B);
+var SassHighlightRules = (__webpack_require__(78670).ScssHighlightRules);
+var LessHighlightRules = (__webpack_require__(83011).LessHighlightRules);
+var CoffeeHighlightRules = (__webpack_require__(72092).CoffeeHighlightRules);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
 
 function mixin_embed(tag, prefix) {
     return { 
@@ -21748,21 +21631,21 @@ exports.JadeHighlightRules = JadeHighlightRules;
 
 /***/ }),
 
-/***/ 4414:
+/***/ 64414:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var JavaHighlightRules = (__webpack_require__(7400)/* .JavaHighlightRules */ .x);
-var JavaFoldMode = (__webpack_require__(7898)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var JavaHighlightRules = (__webpack_require__(17400)/* .JavaHighlightRules */ .x);
+var JavaFoldMode = (__webpack_require__(97898)/* .FoldMode */ .Z);
 
 var Mode = function() {
     JavaScriptMode.call(this);
     this.HighlightRules = JavaHighlightRules;
     this.foldingRules = new JavaFoldMode();
+    this.$behaviour = this.$defaultBehaviour;
 };
 oop.inherits(Mode, JavaScriptMode);
 
@@ -21781,15 +21664,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7400:
+/***/ 17400:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var JavaHighlightRules = function() {
     var identifierRe = "[a-zA-Z_$][a-zA-Z0-9_$]*";
@@ -22065,19 +21947,18 @@ exports.x = JavaHighlightRules;
 
 /***/ }),
 
-/***/ 3480:
+/***/ 93480:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
-var JavaScriptBehaviour = (__webpack_require__(3587)/* .JavaScriptBehaviour */ .N);
-var JavaScriptFoldMode = (__webpack_require__(4786)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
+var JavaScriptBehaviour = (__webpack_require__(83587)/* .JavaScriptBehaviour */ .N);
+var JavaScriptFoldMode = (__webpack_require__(14786)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = JavaScriptHighlightRules;
@@ -22117,13 +21998,6 @@ oop.inherits(Mode, TextMode);
             if (endState == "start" || endState == "no_regex") {
                 return "";
             }
-            var match = line.match(/^\s*(\/?)\*/);
-            if (match) {
-                if (match[1]) {
-                    indent += " ";
-                }
-                indent += "* ";
-            }
         }
 
         return indent;
@@ -22161,22 +22035,22 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2046:
+/***/ 42046:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(6990)/* .JsDocCommentHighlightRules */ .p);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(56990)/* .JsDocCommentHighlightRules */ .p);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 // TODO: Unicode escape sequences
 var identifierRe = "[a-zA-Z\\$_\u00a1-\uffff][a-zA-Z\\d\\$_\u00a1-\uffff]*";
 
 var JavaScriptHighlightRules = function(options) {
     // see: https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects
-    var keywordMapper = this.createKeywordMapper({
+    
+    var keywords = {
         "variable.language":
             "Array|Boolean|Date|Function|Iterator|Number|Object|RegExp|String|Proxy|Symbol|"  + // Constructors
             "Namespace|QName|XML|XMLList|"                                             + // E4X
@@ -22190,7 +22064,7 @@ var JavaScriptHighlightRules = function(options) {
             "this|arguments|prototype|window|document"                                 , // Pseudo
         "keyword":
             "const|yield|import|get|set|async|await|" +
-            "break|case|catch|continue|default|delete|do|else|finally|for|function|" +
+            "break|case|catch|continue|default|delete|do|else|finally|for|" +
             "if|in|of|instanceof|new|return|switch|throw|try|typeof|let|var|while|with|debugger|" +
             // invalid or reserved
             "__parent__|__count__|escape|unescape|with|__proto__|" +
@@ -22202,7 +22076,9 @@ var JavaScriptHighlightRules = function(options) {
         "support.function":
             "alert",
         "constant.language.boolean": "true|false"
-    }, "identifier");
+    };
+    
+    var keywordMapper = this.createKeywordMapper(keywords, "identifier");
 
     // keywords which can be followed by regular expressions
     var kwBeforeRe = "case|do|else|finally|in|instanceof|return|throw|try|typeof|yield|void";
@@ -22216,11 +22092,19 @@ var JavaScriptHighlightRules = function(options) {
         ".)";
     // regexp must not have capturing parentheses. Use (?:) instead.
     // regexps are ordered -> the first match is used
+    
+    var anonymousFunctionRe = "(function)(\\s*)(\\*?)";
+
+    var functionCallStartRule = { //just simple function call
+        token: ["identifier", "text", "paren.lparen"],
+        regex: "(\\b(?!" + Object.values(keywords).join("|") + "\\b)" + identifierRe + ")(\\s*)(\\()"
+    };
 
     this.$rules = {
         "no_regex" : [
             DocCommentHighlightRules.getStartRule("doc-start"),
             comments("no_regex"),
+            functionCallStartRule,
             {
                 token : "string",
                 regex : "'(?=.)",
@@ -22236,59 +22120,34 @@ var JavaScriptHighlightRules = function(options) {
                 token : "constant.numeric", // decimal integers and floats
                 regex : /(?:\d\d*(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+\b)?/
             }, {
-                // Sound.prototype.play =
-                token : [
-                    "storage.type", "punctuation.operator", "support.function",
-                    "punctuation.operator", "entity.name.function", "text","keyword.operator"
-                ],
-                regex : "(" + identifierRe + ")(\\.)(prototype)(\\.)(" + identifierRe +")(\\s*)(=)",
-                next: "function_arguments"
-            }, {
-                // Sound.play = function() {  }
-                token : [
-                    "storage.type", "punctuation.operator", "entity.name.function", "text",
-                    "keyword.operator", "text", "storage.type", "text", "paren.lparen"
-                ],
-                regex : "(" + identifierRe + ")(\\.)(" + identifierRe +")(\\s*)(=)(\\s*)(function\\*?)(\\s*)(\\()",
-                next: "function_arguments"
-            }, {
                 // play = function() {  }
                 token : [
                     "entity.name.function", "text", "keyword.operator", "text", "storage.type",
-                    "text", "paren.lparen"
+                    "text", "storage.type", "text", "paren.lparen"
                 ],
-                regex : "(" + identifierRe +")(\\s*)(=)(\\s*)(function\\*?)(\\s*)(\\()",
-                next: "function_arguments"
-            }, {
-                // Sound.play = function play() {  }
-                token : [
-                    "storage.type", "punctuation.operator", "entity.name.function", "text",
-                    "keyword.operator", "text",
-                    "storage.type", "text", "entity.name.function", "text", "paren.lparen"
-                ],
-                regex : "(" + identifierRe + ")(\\.)(" + identifierRe +")(\\s*)(=)(\\s*)(function\\*?)(\\s+)(\\w+)(\\s*)(\\()",
+                regex : "(" + identifierRe +")(\\s*)(=)(\\s*)" + anonymousFunctionRe + "(\\s*)(\\()",
                 next: "function_arguments"
             }, {
                 // function myFunc(arg) { }
                 token : [
-                    "storage.type", "text", "entity.name.function", "text", "paren.lparen"
+                    "storage.type", "text", "storage.type", "text", "text", "entity.name.function", "text", "paren.lparen"
                 ],
-                regex : "(function\\*?)(\\s+)(" + identifierRe + ")(\\s*)(\\()",
+                regex : "(function)(?:(?:(\\s*)(\\*)(\\s*))|(\\s+))(" + identifierRe + ")(\\s*)(\\()",
                 next: "function_arguments"
             }, {
                 // foobar: function() { }
                 token : [
                     "entity.name.function", "text", "punctuation.operator",
-                    "text", "storage.type", "text", "paren.lparen"
+                    "text", "storage.type", "text", "storage.type", "text", "paren.lparen"
                 ],
-                regex : "(" + identifierRe + ")(\\s*)(:)(\\s*)(function\\*?)(\\s*)(\\()",
+                regex : "(" + identifierRe + ")(\\s*)(:)(\\s*)" + anonymousFunctionRe + "(\\s*)(\\()",
                 next: "function_arguments"
             }, {
                 // : function() { } (this is for issues with 'foo': function() { })
                 token : [
-                    "text", "text", "storage.type", "text", "paren.lparen"
+                    "text", "text", "storage.type", "text", "storage.type", "text",  "paren.lparen"
                 ],
-                regex : "(:)(\\s*)(function\\*?)(\\s*)(\\()",
+                regex : "(:)(\\s*)" + anonymousFunctionRe + "(\\s*)(\\()",
                 next: "function_arguments"
             }, {
                 // from "module-path" (this is the only case where 'from' should be a keyword)
@@ -22339,17 +22198,28 @@ var JavaScriptHighlightRules = function(options) {
                 token : "text",
                 regex : "\\s+"
             }, {
-                // Sound.play = function play() {  }
+            token: "keyword.operator",
+            regex: /=/
+            }, {
+                // Sound.play = function() {  }
                 token : [
-                    "storage.type", "punctuation.operator", "entity.name.function", "text",
-                    "keyword.operator", "text",
-                    "storage.type", "text", "entity.name.function", "text", "paren.lparen"
+                    "storage.type", "text", "storage.type", "text", "paren.lparen"
                 ],
-                regex : "(" + identifierRe + ")(\\.)(" + identifierRe +")(\\s*)(=)(\\s*)(function\\*?)(?:(\\s+)(\\w+))?(\\s*)(\\()",
+                regex : anonymousFunctionRe + "(\\s*)(\\()",
+                next: "function_arguments"
+            }, {
+                // Sound.play = function play() {  }
+                token: [
+                    "storage.type", "text", "storage.type", "text", "text", "entity.name.function", "text", "paren.lparen"
+                ],
+                regex: "(function)(?:(?:(\\s*)(\\*)(\\s*))|(\\s+))(\\w+)(\\s*)(\\()",
                 next: "function_arguments"
             }, {
                 token : "punctuation.operator",
                 regex : /[.](?![.])/
+            }, {
+                token : "support.function",
+                regex: "prototype"
             }, {
                 token : "support.function",
                 regex : /(s(?:h(?:ift|ow(?:Mod(?:elessDialog|alDialog)|Help))|croll(?:X|By(?:Pages|Lines)?|Y|To)?|t(?:op|rike)|i(?:n|zeToContent|debar|gnText)|ort|u(?:p|b(?:str(?:ing)?)?)|pli(?:ce|t)|e(?:nd|t(?:Re(?:sizable|questHeader)|M(?:i(?:nutes|lliseconds)|onth)|Seconds|Ho(?:tKeys|urs)|Year|Cursor|Time(?:out)?|Interval|ZOptions|Date|UTC(?:M(?:i(?:nutes|lliseconds)|onth)|Seconds|Hours|Date|FullYear)|FullYear|Active)|arch)|qrt|lice|avePreferences|mall)|h(?:ome|andleEvent)|navigate|c(?:har(?:CodeAt|At)|o(?:s|n(?:cat|textual|firm)|mpile)|eil|lear(?:Timeout|Interval)?|a(?:ptureEvents|ll)|reate(?:StyleSheet|Popup|EventObject))|t(?:o(?:GMTString|S(?:tring|ource)|U(?:TCString|pperCase)|Lo(?:caleString|werCase))|est|a(?:n|int(?:Enabled)?))|i(?:s(?:NaN|Finite)|ndexOf|talics)|d(?:isableExternalCapture|ump|etachEvent)|u(?:n(?:shift|taint|escape|watch)|pdateCommands)|j(?:oin|avaEnabled)|p(?:o(?:p|w)|ush|lugins.refresh|a(?:ddings|rse(?:Int|Float)?)|r(?:int|ompt|eference))|e(?:scape|nableExternalCapture|val|lementFromPoint|x(?:p|ec(?:Script|Command)?))|valueOf|UTC|queryCommand(?:State|Indeterm|Enabled|Value)|f(?:i(?:nd|lter|le(?:ModifiedDate|Size|CreatedDate|UpdatedDate)|xed)|o(?:nt(?:size|color)|rward|rEach)|loor|romCharCode)|watch|l(?:ink|o(?:ad|g)|astIndexOf)|a(?:sin|nchor|cos|t(?:tachEvent|ob|an(?:2)?)|pply|lert|b(?:s|ort))|r(?:ou(?:nd|teEvents)|e(?:size(?:By|To)|calc|turnValue|place|verse|l(?:oad|ease(?:Capture|Events)))|andom)|g(?:o|et(?:ResponseHeader|M(?:i(?:nutes|lliseconds)|onth)|Se(?:conds|lection)|Hours|Year|Time(?:zoneOffset)?|Da(?:y|te)|UTC(?:M(?:i(?:nutes|lliseconds)|onth)|Seconds|Hours|Da(?:y|te)|FullYear)|FullYear|A(?:ttention|llResponseHeaders)))|m(?:in|ove(?:B(?:y|elow)|To(?:Absolute)?|Above)|ergeAttributes|a(?:tch|rgins|x))|b(?:toa|ig|o(?:ld|rderWidths)|link|ack))\b(?=\()/
@@ -22584,7 +22454,7 @@ var JavaScriptHighlightRules = function(options) {
             regex: "(" + identifierRe + ")(\\s*)(?=\\=>)"
         }, {
             token: "paren.lparen",
-            regex: "(\\()(?=.+\\s*=>)",
+            regex: "(\\()(?=[^\\(]+\\s*=>)",
             next: "function_arguments"
         }, {
             token: "variable.language",
@@ -22746,16 +22616,15 @@ exports.JavaScriptHighlightRules = JavaScriptHighlightRules;
 
 /***/ }),
 
-/***/ 6829:
+/***/ 56829:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JexlHighlightRules = (__webpack_require__(6559)/* .JexlHighlightRules */ .I);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var JexlHighlightRules = (__webpack_require__(56559)/* .JexlHighlightRules */ .I);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
     this.HighlightRules = JexlHighlightRules;
@@ -22776,14 +22645,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6559:
+/***/ 56559:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var JexlHighlightRules = function () {
 
@@ -22922,14 +22790,13 @@ exports.I = JexlHighlightRules;
 
 /***/ }),
 
-/***/ 6990:
+/***/ 56990:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var JsDocCommentHighlightRules = function() {
     this.$rules = {
@@ -22952,7 +22819,7 @@ var JsDocCommentHighlightRules = function() {
                         ]
                     }, {
                         token: ["rparen.doc", "text.doc", "variable.parameter.doc", "lparen.doc", "variable.parameter.doc", "rparen.doc"],
-                        regex: /(})(\s*)(?:([\w=:\/\.]+)|(?:(\[)([\w=:\/\.]+)(\])))/,
+                        regex: /(})(\s*)(?:([\w=:\/\.]+)|(?:(\[)([\w=:\/\.\-\'\" ]+)(\])))/,
                         next: "pop"
                     }, {
                         token: "rparen.doc",
@@ -23012,7 +22879,7 @@ var JsDocCommentHighlightRules = function() {
             },
             JsDocCommentHighlightRules.getTagRule(),
         {
-            defaultToken : "comment.doc",
+            defaultToken: "comment.doc.body",
             caseInsensitive: true
         }],
         "doc-syntax": [{
@@ -23038,7 +22905,7 @@ JsDocCommentHighlightRules.getTagRule = function(start) {
 JsDocCommentHighlightRules.getStartRule = function(start) {
     return {
         token : "comment.doc", // doc comment
-        regex : "\\/\\*(?=\\*)",
+        regex: /\/\*\*(?!\/)/,
         next  : start
     };
 };
@@ -23060,15 +22927,14 @@ exports.p = JsDocCommentHighlightRules;
 /***/ 2145:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(6780)/* .JsonHighlightRules */ .h);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(26780)/* .JsonHighlightRules */ .h);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
 
 var Mode = function() {
     this.HighlightRules = HighlightRules;
@@ -23128,17 +22994,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 734:
+/***/ 90734:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(2060)/* .Json5HighlightRules */ .k);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(92060)/* .Json5HighlightRules */ .k);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HighlightRules;
@@ -23168,14 +23033,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2060:
+/***/ 92060:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JsonHighlightRules = (__webpack_require__(6780)/* .JsonHighlightRules */ .h);
+var oop = __webpack_require__(42011);
+var JsonHighlightRules = (__webpack_require__(26780)/* .JsonHighlightRules */ .h);
 
 var Json5HighlightRules = function() {
     JsonHighlightRules.call(this);
@@ -23235,14 +23099,13 @@ exports.k = Json5HighlightRules;
 
 /***/ }),
 
-/***/ 6780:
+/***/ 26780:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var JsonHighlightRules = function() {
 
@@ -23325,14 +23188,13 @@ exports.h = JsonHighlightRules;
 /***/ 5544:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var JspHighlightRules = (__webpack_require__(173)/* .JspHighlightRules */ .w);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var JspHighlightRules = (__webpack_require__(20173)/* .JspHighlightRules */ .w);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = JspHighlightRules;
@@ -23353,15 +23215,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 173:
+/***/ 20173:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var JavaHighlightRules = (__webpack_require__(7400)/* .JavaHighlightRules */ .x);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var JavaHighlightRules = (__webpack_require__(17400)/* .JavaHighlightRules */ .x);
 
 var JspHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -23420,21 +23281,20 @@ exports.w = JspHighlightRules;
 
 /***/ }),
 
-/***/ 4859:
+/***/ 14859:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var JSSMHighlightRules = (__webpack_require__(3674)/* .JSSMHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var JSSMHighlightRules = (__webpack_require__(83674)/* .JSSMHighlightRules */ .K);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = JSSMHighlightRules;
@@ -23454,10 +23314,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3674:
+/***/ 83674:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from ./jssm.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -23466,8 +23325,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var JSSMHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -23623,14 +23482,13 @@ exports.K = JSSMHighlightRules;
 
 /***/ }),
 
-/***/ 6608:
+/***/ 86608:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var jsMode = (__webpack_require__(3480)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var jsMode = (__webpack_require__(93480)/* .Mode */ .A);
 
 function Mode() {
     jsMode.call(this);
@@ -23651,21 +23509,20 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5572:
+/***/ 85572:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var JuliaHighlightRules = (__webpack_require__(3810)/* .JuliaHighlightRules */ .o);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var JuliaHighlightRules = (__webpack_require__(93810)/* .JuliaHighlightRules */ .o);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = JuliaHighlightRules;
@@ -23685,10 +23542,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3810:
+/***/ 93810:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.github.com/JuliaLang/julia/master/contrib/Julia.tmbundle/Syntaxes/Julia.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -23697,8 +23553,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var JuliaHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -23831,20 +23687,19 @@ exports.o = JuliaHighlightRules;
 
 /***/ }),
 
-/***/ 6320:
+/***/ 86320:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var KotlinHighlightRules = (__webpack_require__(6409)/* .KotlinHighlightRules */ .v);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var KotlinHighlightRules = (__webpack_require__(46409)/* .KotlinHighlightRules */ .v);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = KotlinHighlightRules;
@@ -23865,14 +23720,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6409:
+/***/ 46409:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var KotlinHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -24181,17 +24035,16 @@ exports.v = KotlinHighlightRules;
 
 /***/ }),
 
-/***/ 4941:
+/***/ 14941:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var LatexHighlightRules = (__webpack_require__(7369).LatexHighlightRules);
-var CstyleBehaviour = (__webpack_require__(5478)/* .CstyleBehaviour */ .B);
-var LatexFoldMode = (__webpack_require__(9302)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var LatexHighlightRules = (__webpack_require__(77369).LatexHighlightRules);
+var CstyleBehaviour = (__webpack_require__(95478)/* .CstyleBehaviour */ .B);
+var LatexFoldMode = (__webpack_require__(79302)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = LatexHighlightRules;
@@ -24229,14 +24082,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7369:
+/***/ 77369:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var LatexHighlightRules = function() {  
 
@@ -24339,16 +24191,15 @@ exports.LatexHighlightRules = LatexHighlightRules;
 
 /***/ }),
 
-/***/ 7990:
+/***/ 27990:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var LatteHighlightRules = (__webpack_require__(8177)/* .LatteHighlightRules */ .I);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var LatteHighlightRules = (__webpack_require__(18177)/* .LatteHighlightRules */ .I);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -24388,15 +24239,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8177:
+/***/ 18177:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var LatteHighlightRules = function() {
     // inherit from html
@@ -24556,20 +24406,19 @@ exports.I = LatteHighlightRules;
 
 /***/ }),
 
-/***/ 3650:
+/***/ 73650:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var LessHighlightRules = (__webpack_require__(3011).LessHighlightRules);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CssBehaviour = (__webpack_require__(6092)/* .CssBehaviour */ .K);
-var CssCompletions = (__webpack_require__(2199)/* .CssCompletions */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var LessHighlightRules = (__webpack_require__(83011).LessHighlightRules);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CssBehaviour = (__webpack_require__(76092)/* .CssBehaviour */ .K);
+var CssCompletions = (__webpack_require__(22199)/* .CssCompletions */ .A);
 
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = LessHighlightRules;
@@ -24623,15 +24472,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3011:
+/***/ 83011:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var CssHighlightRules = __webpack_require__(4897);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var CssHighlightRules = __webpack_require__(64897);
 
 var LessHighlightRules = function() {
 
@@ -24771,20 +24619,20 @@ exports.LessHighlightRules = LessHighlightRules;
 /***/ 2173:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var JavascriptMode = (__webpack_require__(3480)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var JavascriptMode = (__webpack_require__(93480)/* .Mode */ .A);
 var JsonMode = (__webpack_require__(2145)/* .Mode */ .A);
-var CssMode = (__webpack_require__(3734)/* .Mode */ .A);
-var LiquidHighlightRules = (__webpack_require__(805)/* .LiquidHighlightRules */ .x);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var CssMode = (__webpack_require__(93734)/* .Mode */ .A);
+var LiquidHighlightRules = (__webpack_require__(20805)/* .LiquidHighlightRules */ .x);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 /* -------------------------------------------- */
 /* FOLDS                                        */
 /* -------------------------------------------- */
 
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 /* -------------------------------------------- */
 /* MODE                                         */
@@ -24847,19 +24695,18 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 805:
+/***/ 20805:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var CssHighlightRules = (__webpack_require__(4897).CssHighlightRules);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var JsonHighlightRules = (__webpack_require__(6780)/* .JsonHighlightRules */ .h);
-var JavaScriptHighlightRules =  (__webpack_require__(2046).JavaScriptHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var CssHighlightRules = (__webpack_require__(64897).CssHighlightRules);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var JsonHighlightRules = (__webpack_require__(26780)/* .JsonHighlightRules */ .h);
+var JavaScriptHighlightRules =  (__webpack_require__(42046).JavaScriptHighlightRules);
 
 var LiquidHighlightRules = function () {
 
@@ -25129,19 +24976,18 @@ exports.x = LiquidHighlightRules;
 
 /***/ }),
 
-/***/ 1281:
+/***/ 71281:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var LispHighlightRules = (__webpack_require__(8323)/* .LispHighlightRules */ .x);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var LispHighlightRules = (__webpack_require__(68323)/* .LispHighlightRules */ .x);
 
 var Mode = function() {
     this.HighlightRules = LispHighlightRules;
@@ -25161,17 +25007,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8323:
+/***/ 68323:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY Lisp.tmlanguage (UUID: 00D451C9-6B1D-11D9-8DFA-000D93589AF6) */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var LispHighlightRules = function() {
     var keywordControl = "case|do|let|loop|if|else|when";
@@ -25255,7 +25100,7 @@ exports.x = LispHighlightRules;
 
 /***/ }),
 
-/***/ 9012:
+/***/ 89012:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 var identifier, LiveScriptMode, keywordend, stringfill;
@@ -25264,12 +25109,12 @@ var identifier, LiveScriptMode, keywordend, stringfill;
     var indenter, prototype = extend$((import$(LiveScriptMode, superclass).displayName = 'LiveScriptMode', LiveScriptMode), superclass).prototype, constructor = LiveScriptMode;
     function LiveScriptMode(){
       var that;
-      this.$tokenizer = new (__webpack_require__(9754).Tokenizer)(LiveScriptMode.Rules);
-      if (that = __webpack_require__(3234)) {
+      this.$tokenizer = new (__webpack_require__(39754).Tokenizer)(LiveScriptMode.Rules);
+      if (that = __webpack_require__(23234)) {
         this.$outdent = new that.MatchingBraceOutdent;
       }
       this.$id = "ace/mode/livescript";
-      this.$behaviour = new ((__webpack_require__(5478)/* .CstyleBehaviour */ .B))();
+      this.$behaviour = new ((__webpack_require__(95478)/* .CstyleBehaviour */ .B))();
     }
     indenter = RegExp('(?:[({[=:]|[-~]>|\\b(?:e(?:lse|xport)|d(?:o|efault)|t(?:ry|hen)|finally|import(?:\\s*all)?|const|var|let|new|catch(?:\\s*' + identifier + ')?))\\s*$');
     prototype.getNextLineIndent = function(state, line, tab){
@@ -25294,7 +25139,7 @@ var identifier, LiveScriptMode, keywordend, stringfill;
       return (ref$ = this.$outdent) != null ? ref$.autoOutdent(doc, row) : void 8;
     };
     return LiveScriptMode;
-  }((__webpack_require__(2113)/* .Mode */ .A)));
+  }((__webpack_require__(72113)/* .Mode */ .A)));
   keywordend = '(?![$\\w]|-[A-Za-z]|\\s*:(?![:=]))';
   stringfill = {
     defaultToken: 'string'
@@ -25492,19 +25337,18 @@ function import$(obj, src){
 
 /***/ }),
 
-/***/ 218:
+/***/ 70350:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var LogiQLHighlightRules = (__webpack_require__(3646)/* .LogiQLHighlightRules */ .j);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var LogiQLHighlightRules = (__webpack_require__(43646)/* .LogiQLHighlightRules */ .j);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function() {
     this.HighlightRules = LogiQLHighlightRules;
@@ -25606,16 +25450,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3646:
+/***/ 43646:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* THIS FILE WAS AUTOGENERATED FROM tool\LogicBlox.tmbundle\Syntaxes\LogicBlox.tmLanguage (UUID: 59bf5022-e261-453f-b1cb-9f9fa0712413) */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var LogiQLHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -25701,18 +25544,17 @@ exports.j = LogiQLHighlightRules;
 
 /***/ }),
 
-/***/ 150:
+/***/ 90150:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var Tokenizer = (__webpack_require__(9754).Tokenizer);
-var LogtalkHighlightRules = (__webpack_require__(3287)/* .LogtalkHighlightRules */ .B);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var Tokenizer = (__webpack_require__(39754).Tokenizer);
+var LogtalkHighlightRules = (__webpack_require__(13287)/* .LogtalkHighlightRules */ .B);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = LogtalkHighlightRules;
@@ -25732,14 +25574,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3287:
+/***/ 13287:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var LogtalkHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -25921,17 +25762,16 @@ exports.B = LogtalkHighlightRules;
 
 /***/ }),
 
-/***/ 6446:
+/***/ 56446:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var Rules = (__webpack_require__(3211)/* .LSLHighlightRules */ .M);
-var Outdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var oop = __webpack_require__(2011);
+var Rules = (__webpack_require__(23211)/* .LSLHighlightRules */ .M);
+var Outdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
 
 var Mode = function() {
     this.HighlightRules = Rules;
@@ -25988,14 +25828,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3211:
+/***/ 23211:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 oop.inherits(LSLHighlightRules, TextHighlightRules);
 
@@ -26086,18 +25925,17 @@ exports.M = LSLHighlightRules;
 
 /***/ }),
 
-/***/ 4750:
+/***/ 84750:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var LuaHighlightRules = (__webpack_require__(2930)/* .LuaHighlightRules */ .Q);
-var LuaFoldMode = (__webpack_require__(5792)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var LuaHighlightRules = (__webpack_require__(12930)/* .LuaHighlightRules */ .Q);
+var LuaFoldMode = (__webpack_require__(85792)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
 
 var Mode = function() {
     this.HighlightRules = LuaHighlightRules;
@@ -26243,14 +26081,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2930:
+/***/ 12930:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var LuaHighlightRules = function() {
 
@@ -26333,7 +26170,7 @@ var LuaHighlightRules = function() {
                     regex : /\]=*\]/,
                     next  : "start"
                 }, {
-                    defaultToken : "comment"
+                    defaultToken: "comment.body"
                 }
             ]
         },
@@ -26409,16 +26246,15 @@ exports.Q = LuaHighlightRules;
 
 /***/ }),
 
-/***/ 3483:
+/***/ 53483:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var LuaMode = (__webpack_require__(4750)/* .Mode */ .A);
-var LuaPageHighlightRules = (__webpack_require__(8208)/* .LuaPageHighlightRules */ .g);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var LuaMode = (__webpack_require__(84750)/* .Mode */ .A);
+var LuaPageHighlightRules = (__webpack_require__(68208)/* .LuaPageHighlightRules */ .g);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -26439,18 +26275,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8208:
+/***/ 68208:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 // LuaPage implements the LuaPage markup as described by the Kepler Project's CGILua
 // documentation: http://keplerproject.github.com/cgilua/manual.html#templates
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var LuaHighlightRules = (__webpack_require__(2930)/* .LuaHighlightRules */ .Q);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var LuaHighlightRules = (__webpack_require__(12930)/* .LuaHighlightRules */ .Q);
 
 var LuaPageHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -26494,15 +26329,14 @@ exports.g = LuaPageHighlightRules;
 
 /***/ }),
 
-/***/ 7079:
+/***/ 87079:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var LuceneHighlightRules = (__webpack_require__(5562)/* .LuceneHighlightRules */ .F);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var LuceneHighlightRules = (__webpack_require__(65562)/* .LuceneHighlightRules */ .F);
 
 var Mode = function() {
     this.HighlightRules = LuceneHighlightRules;
@@ -26520,14 +26354,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5562:
+/***/ 65562:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var LuceneHighlightRules = function() {
     this.$rules = {
@@ -26656,20 +26489,19 @@ exports.F = LuceneHighlightRules;
 
 /***/ }),
 
-/***/ 75:
+/***/ 30075:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MakefileHighlightRules = (__webpack_require__(1914)/* .MakefileHighlightRules */ .V);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MakefileHighlightRules = (__webpack_require__(11914)/* .MakefileHighlightRules */ .V);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = MakefileHighlightRules;
@@ -26692,16 +26524,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1914:
+/***/ 11914:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
-var ShHighlightFile = __webpack_require__(9326);
+var ShHighlightFile = __webpack_require__(59326);
 
 var MakefileHighlightRules = function() {
 
@@ -26773,28 +26604,27 @@ exports.V = MakefileHighlightRules;
 
 /***/ }),
 
-/***/ 4358:
+/***/ 84358:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var CstyleBehaviour = (__webpack_require__(5478)/* .CstyleBehaviour */ .B);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MarkdownHighlightRules = (__webpack_require__(8825)/* .MarkdownHighlightRules */ .B);
-var MarkdownFoldMode = (__webpack_require__(7721)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var CstyleBehaviour = (__webpack_require__(95478)/* .CstyleBehaviour */ .B);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MarkdownHighlightRules = (__webpack_require__(58825)/* .MarkdownHighlightRules */ .B);
+var MarkdownFoldMode = (__webpack_require__(97721)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = MarkdownHighlightRules;
 
     this.createModeDelegates({
-        javascript: (__webpack_require__(3480)/* .Mode */ .A),
-        html: (__webpack_require__(2954)/* .Mode */ .A),
-        bash: (__webpack_require__(7618)/* .Mode */ .A),
-        sh: (__webpack_require__(7618)/* .Mode */ .A),
-        xml: (__webpack_require__(3776)/* .Mode */ .A),
-        css: (__webpack_require__(3734)/* .Mode */ .A)
+        javascript: (__webpack_require__(93480)/* .Mode */ .A),
+        html: (__webpack_require__(72954)/* .Mode */ .A),
+        bash: (__webpack_require__(17618)/* .Mode */ .A),
+        sh: (__webpack_require__(17618)/* .Mode */ .A),
+        xml: (__webpack_require__(13776)/* .Mode */ .A),
+        css: (__webpack_require__(93734)/* .Mode */ .A)
     });
 
     this.foldingRules = new MarkdownFoldMode();
@@ -26829,18 +26659,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8825:
+/***/ 58825:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var modes = (__webpack_require__(3294).$modes);
+var modes = (__webpack_require__(33294).$modes);
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 var escaped = function(ch) {
     return "(?:[^" + lang.escapeRegExp(ch) + "\\\\]|\\\\.)*";
@@ -27029,15 +26858,14 @@ exports.B = MarkdownHighlightRules;
 /***/ 148:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MaskHighlightRules = (__webpack_require__(7781)/* .MaskHighlightRules */ .r);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CssBehaviour = (__webpack_require__(6092)/* .CssBehaviour */ .K);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MaskHighlightRules = (__webpack_require__(37781)/* .MaskHighlightRules */ .r);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CssBehaviour = (__webpack_require__(76092)/* .CssBehaviour */ .K);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = MaskHighlightRules;
@@ -27085,21 +26913,20 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7781:
+/***/ 37781:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 exports.r = MaskHighlightRules;
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextRules   = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var JSRules     = (__webpack_require__(2046).JavaScriptHighlightRules);
-var CssRules    = (__webpack_require__(4897).CssHighlightRules);
-var MDRules     = (__webpack_require__(8825)/* .MarkdownHighlightRules */ .B);
-var HTMLRules   = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextRules   = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var JSRules     = (__webpack_require__(42046).JavaScriptHighlightRules);
+var CssRules    = (__webpack_require__(64897).CssHighlightRules);
+var MDRules     = (__webpack_require__(58825)/* .MarkdownHighlightRules */ .B);
+var HTMLRules   = (__webpack_require__(86142).HtmlHighlightRules);
 
 var token_TAG       = "keyword.support.constant.language",
     token_COMPO     = "support.function.markup.bold",
@@ -27369,13 +27196,12 @@ function Token(token, rgx, mix) {
 
 /***/ }),
 
-/***/ 3234:
+/***/ 23234:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var MatchingBraceOutdent = function() {};
 
@@ -27414,13 +27240,12 @@ exports.MatchingBraceOutdent = MatchingBraceOutdent;
 
 /***/ }),
 
-/***/ 9857:
+/***/ 29857:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var MatchingParensOutdent = function() {};
 
@@ -27464,14 +27289,13 @@ exports.z = MatchingParensOutdent;
 
 /***/ }),
 
-/***/ 7549:
+/***/ 87549:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var MatlabHighlightRules = (__webpack_require__(8260)/* .MatlabHighlightRules */ .v);
 
 var Mode = function() {
@@ -27496,11 +27320,10 @@ exports.A = Mode;
 /***/ 8260:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MatlabHighlightRules = function() {
 
@@ -27731,16 +27554,15 @@ exports.v = MatlabHighlightRules;
 
 /***/ }),
 
-/***/ 482:
+/***/ 70482:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MazeHighlightRules = (__webpack_require__(6383)/* .MazeHighlightRules */ .L);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MazeHighlightRules = (__webpack_require__(26383)/* .MazeHighlightRules */ .L);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = MazeHighlightRules;
@@ -27760,14 +27582,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6383:
+/***/ 26383:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MazeHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -27889,15 +27710,14 @@ exports.L = MazeHighlightRules;
 
 /***/ }),
 
-/***/ 838:
+/***/ 60838:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MediaWikiHighlightRules = (__webpack_require__(7209)/* .MediaWikiHighlightRules */ .y);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MediaWikiHighlightRules = (__webpack_require__(17209)/* .MediaWikiHighlightRules */ .y);
 
 var Mode = function() {
     this.HighlightRules = MediaWikiHighlightRules;
@@ -27915,14 +27735,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7209:
+/***/ 17209:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MediaWikiHighlightRules = function() {
     this.$rules = {
@@ -28485,16 +28304,15 @@ exports.y = MediaWikiHighlightRules;
 
 /***/ }),
 
-/***/ 7569:
+/***/ 17569:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MELHighlightRules = (__webpack_require__(4477)/* .MELHighlightRules */ .b);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MELHighlightRules = (__webpack_require__(64477)/* .MELHighlightRules */ .b);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = MELHighlightRules;
@@ -28515,10 +28333,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4477:
+/***/ 64477:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* THIS FILE WAS AUTOGENERATED FROM MEL.tmLanguage (UUID: 69554E52-391D-42BC-9F65-7A77444BA1CF) */
 /****************************************************************
  * IT MIGHT NOT BE PERFECT, PARTICULARLY:                       *
@@ -28533,8 +28350,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MELHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -28624,21 +28441,20 @@ exports.b = MELHighlightRules;
 
 /***/ }),
 
-/***/ 8711:
+/***/ 68711:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MIPSHighlightRules = (__webpack_require__(8779)/* .MIPSHighlightRules */ .b);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MIPSHighlightRules = (__webpack_require__(48779)/* .MIPSHighlightRules */ .b);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = MIPSHighlightRules;
@@ -28656,10 +28472,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8779:
+/***/ 48779:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from mips.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -28668,8 +28483,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MIPSHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -28765,15 +28580,14 @@ exports.b = MIPSHighlightRules;
 
 /***/ }),
 
-/***/ 2899:
+/***/ 22899:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MixalHighlightRules = (__webpack_require__(5856)/* .MixalHighlightRules */ .x);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MixalHighlightRules = (__webpack_require__(95856)/* .MixalHighlightRules */ .x);
 
 var Mode = function() {
     this.HighlightRules = MixalHighlightRules;
@@ -28790,14 +28604,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5856:
+/***/ 95856:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MixalHighlightRules = function() {
     var isValidSymbol = function(string) {
@@ -28890,17 +28703,16 @@ exports.x = MixalHighlightRules;
 
 /***/ }),
 
-/***/ 8609:
+/***/ 38609:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MushCodeRules = (__webpack_require__(9210)/* .MushCodeRules */ .A);
-var PythonFoldMode = (__webpack_require__(4703)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MushCodeRules = (__webpack_require__(89210)/* .MushCodeRules */ .A);
+var PythonFoldMode = (__webpack_require__(84703)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = MushCodeRules;
@@ -28979,18 +28791,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9210:
+/***/ 89210:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * MUSHCodeMode
  */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MushCodeRules = function() {
 
@@ -29557,9 +29368,9 @@ exports.A = MushCodeRules;
 /***/ 551:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var MysqlHighlightRules = (__webpack_require__(6899)/* .MysqlHighlightRules */ .g);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var MysqlHighlightRules = (__webpack_require__(36899)/* .MysqlHighlightRules */ .g);
 
 var Mode = function() {
     this.HighlightRules = MysqlHighlightRules;
@@ -29579,13 +29390,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6899:
+/***/ 36899:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var MysqlHighlightRules = function() {
     var mySqlKeywords = /*sql*/ "alter|and|as|asc|between|count|create|delete|desc|distinct|drop|from|lateral|having|in|insert|into|is|join|like|not|on|or|order|select|set|table|union|intersect|except|update|values|where"
@@ -29681,10 +29492,9 @@ exports.g = MysqlHighlightRules;
 
 /***/ }),
 
-/***/ 7436:
+/***/ 27436:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
  *
@@ -29721,11 +29531,11 @@ exports.g = MysqlHighlightRules;
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var NasalHighlightRules = (__webpack_require__(5153)/* .NasalHighlightRules */ .t);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var NasalHighlightRules = (__webpack_require__(35153)/* .NasalHighlightRules */ .t);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = NasalHighlightRules;
@@ -29744,10 +29554,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5153:
+/***/ 35153:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
  *
@@ -29786,8 +29595,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var NasalHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -30110,16 +29919,15 @@ exports.t = NasalHighlightRules;
 
 /***/ }),
 
-/***/ 5068:
+/***/ 25068:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var NginxHighlightRules = (__webpack_require__(3336)/* .NginxHighlightRules */ .a);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var NginxHighlightRules = (__webpack_require__(23336)/* .NginxHighlightRules */ .a);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
     TextMode.call(this);
@@ -30142,14 +29950,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3336:
+/***/ 23336:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 var NginxHighlightRules = function () {
     var keywords = "include|index|absolute_redirect|aio|output_buffers|directio|sendfile|aio_write|alias|root|chunked_transfer_encoding|client_body_buffer_size|client_body_in_file_only|client_body_in_single_buffer|client_body_temp_path|client_body_timeout|client_header_buffer_size|client_header_timeout|client_max_body_size|connection_pool_size|default_type|disable_symlinks|directio_alignment|error_page|etag|if_modified_since|ignore_invalid_headers|internal|keepalive_requests|keepalive_disable|keepalive_timeout|limit_except|large_client_header_buffers|limit_rate|limit_rate_after|lingering_close|lingering_time|lingering_timeout|listen|log_not_found|log_subrequest|max_ranges|merge_slashes|msie_padding|msie_refresh|open_file_cache|open_file_cache_errors|open_file_cache_min_uses|open_file_cache_valid|output_buffers|port_in_redirect|postpone_output|read_ahead|recursive_error_pages|request_pool_size|reset_timedout_connection|resolver|resolver_timeout|satisfy|send_lowat|send_timeout|sendfile|sendfile_max_chunk|server_name|server_name_in_redirect|server_names_hash_bucket_size|server_names_hash_max_size|server_tokens|subrequest_output_buffer_size|tcp_nodelay|tcp_nopush|try_files|types|types_hash_bucket_size|types_hash_max_size|underscores_in_headers|variables_hash_bucket_size|variables_hash_max_size|accept_mutex|accept_mutex_delay|debug_connection|error_log|daemon|debug_points|env|load_module|lock_file|master_process|multi_accept|pcre_jit|pid|ssl_engine|thread_pool|timer_resolution|use|user|worker_aio_requests|worker_connections|worker_cpu_affinity|worker_priority|worker_processes|worker_rlimit_core|worker_rlimit_nofile|worker_shutdown_timeout|working_directory|allow|deny|add_before_body|add_after_body|addition_types|api|status_zone|auth_basic|auth_basic_user_file|auth_jwt|auth_jwt|auth_jwt_claim_set|auth_jwt_header_set|auth_jwt_key_file|auth_jwt_key_request|auth_jwt_leeway|auth_request|auth_request_set|autoindex|autoindex_exact_size|autoindex_format|autoindex_localtime|ancient_browser|ancient_browser_value|modern_browser|modern_browser_value|charset|charset_map|charset_types|override_charset|source_charset|create_full_put_path|dav_access|dav_methods|min_delete_depth|empty_gif|f4f|f4f_buffer_size|fastcgi_bind|fastcgi_buffer_size|fastcgi_buffering|fastcgi_buffers|fastcgi_busy_buffers_size|fastcgi_cache|fastcgi_cache_background_update|fastcgi_cache_bypass|fastcgi_cache_key|fastcgi_cache_lock|fastcgi_cache_lock_age|fastcgi_cache_lock_timeout|fastcgi_cache_max_range_offset|fastcgi_cache_methods|fastcgi_cache_min_uses|fastcgi_cache_min_uses|fastcgi_cache_path|fastcgi_cache_purge|fastcgi_cache_revalidate|fastcgi_cache_use_stale|fastcgi_cache_valid|fastcgi_catch_stderr|fastcgi_connect_timeout|fastcgi_force_ranges|fastcgi_hide_header|fastcgi_ignore_client_abort|fastcgi_ignore_headers|fastcgi_index|fastcgi_intercept_errors|fastcgi_keep_conn|fastcgi_limit_rate|fastcgi_max_temp_file_size|fastcgi_next_upstream|fastcgi_next_upstream_timeout|fastcgi_next_upstream_tries|fastcgi_no_cache|fastcgi_param|fastcgi_pass|fastcgi_pass_header|fastcgi_pass_request_body|fastcgi_pass_request_headers|fastcgi_read_timeout|fastcgi_request_buffering|fastcgi_send_lowat|fastcgi_send_timeout|fastcgi_socket_keepalive|fastcgi_split_path_info|fastcgi_store|fastcgi_store_access|fastcgi_temp_file_write_size|fastcgi_temp_path|flv|geoip_country|geoip_city|geoip_org|geoip_proxy|geoip_proxy_recursive|grpc_bind|grpc_buffer_size|grpc_connect_timeout|grpc_hide_header|grpc_ignore_headers|grpc_intercept_errors|grpc_next_upstream|grpc_next_upstream_timeout|grpc_next_upstream_tries|grpc_pass|grpc_pass_header|grpc_read_timeout|grpc_send_timeout|grpc_set_header|grpc_socket_keepalive|grpc_ssl_certificate|grpc_ssl_certificate_key|grpc_ssl_ciphers|grpc_ssl_crl|grpc_ssl_name|grpc_ssl_password_file|grpc_ssl_protocols|grpc_ssl_server_name|grpc_ssl_session_reuse|grpc_ssl_trusted_certificate|grpc_ssl_verify|grpc_ssl_verify_depth|gunzip|gunzip_buffers|gzip|gzip_buffers|gzip_comp_level|gzip_disable|gzip_http_version|gzip_min_length|gzip_proxied|gzip_types|gzip_vary|gzip_static|add_header|add_trailer|expires|hlshls_buffers|hls_forward_args|hls_fragment|hls_mp4_buffer_size|hls_mp4_max_buffer_size|image_filter|image_filter_buffer|image_filter_interlace|image_filter_jpeg_quality|image_filter_sharpen|image_filter_transparency|image_filter_webp_quality|js_content|js_include|js_set|keyval|keyval_zone|limit_conn|limit_conn_log_level|limit_conn_status|limit_conn_zone|limit_zone|limit_req|limit_req_log_level|limit_req_status|limit_req_zone|access_log|log_format|open_log_file_cache|map_hash_bucket_size|map_hash_max_size|memcached_bind|memcached_buffer_size|memcached_connect_timeout|memcached_force_ranges|memcached_gzip_flag|memcached_next_upstream|memcached_next_upstream_timeout|memcached_next_upstream_tries|memcached_pass|memcached_read_timeout|memcached_send_timeout|memcached_socket_keepalive|mirror|mirror_request_body|mp4|mp4_buffer_size|mp4_max_buffer_size|mp4_limit_rate|mp4_limit_rate_after|perl_modules|perl_require|perl_set|proxy_bind|proxy_buffer_size|proxy_buffering|proxy_buffers|proxy_busy_buffers_size|proxy_cache|proxy_cache_background_update|proxy_cache_bypass|proxy_cache_convert_head|proxy_cache_key|proxy_cache_lock|proxy_cache_lock_age|proxy_cache_lock_timeout|proxy_cache_max_range_offset|proxy_cache_methods|proxy_cache_min_uses|proxy_cache_path|proxy_cache_purge|proxy_cache_revalidate|proxy_cache_use_stale|proxy_cache_valid|proxy_connect_timeout|proxy_cookie_domain|proxy_cookie_path|proxy_force_ranges|proxy_headers_hash_bucket_size|proxy_headers_hash_max_size|proxy_hide_header|proxy_http_version|proxy_ignore_client_abort|proxy_ignore_headers|proxy_intercept_errors|proxy_limit_rate|proxy_max_temp_file_size|proxy_method|proxy_next_upstream|proxy_next_upstream_timeout|proxy_next_upstream_tries|proxy_no_cache|proxy_pass|proxy_pass_header|proxy_pass_request_body|proxy_pass_request_headers|proxy_read_timeout|proxy_redirect|proxy_send_lowat|proxy_send_timeout|proxy_set_body|proxy_set_header|proxy_socket_keepalive|proxy_ssl_certificate|proxy_ssl_certificate_key|proxy_ssl_ciphers|proxy_ssl_crl|proxy_ssl_name|proxy_ssl_password_file|proxy_ssl_protocols|proxy_ssl_server_name|proxy_ssl_session_reuse|proxy_ssl_trusted_certificate|proxy_ssl_verify|proxy_ssl_verify_depth|proxy_store|proxy_store_access|proxy_temp_file_write_size|proxy_temp_path|random_index|set_real_ip_from|real_ip_header|real_ip_recursive|referer_hash_bucket_size|referer_hash_max_size|valid_referers|break|return|rewrite_log|set|uninitialized_variable_warn|scgi_bind|scgi_buffer_size|scgi_buffering|scgi_buffers|scgi_busy_buffers_size|scgi_cache|scgi_cache_background_update|scgi_cache_key|scgi_cache_lock|scgi_cache_lock_age|scgi_cache_lock_timeout|scgi_cache_max_range_offset|scgi_cache_methods|scgi_cache_min_uses|scgi_cache_path|scgi_cache_purge|scgi_cache_revalidate|scgi_cache_use_stale|scgi_cache_valid|scgi_connect_timeout|scgi_force_ranges|scgi_hide_header|scgi_ignore_client_abort|scgi_ignore_headers|scgi_intercept_errors|scgi_limit_rate|scgi_max_temp_file_size|scgi_next_upstream|scgi_next_upstream_timeout|scgi_next_upstream_tries|scgi_no_cache|scgi_param|scgi_pass|scgi_pass_header|scgi_pass_request_body|scgi_pass_request_headers|scgi_read_timeout|scgi_request_buffering|scgi_send_timeout|scgi_socket_keepalive|scgi_store|scgi_store_access|scgi_temp_file_write_size|scgi_temp_path|secure_link|secure_link_md5|secure_link_secret|session_log|session_log_format|session_log_zone|slice|spdy_chunk_size|spdy_headers_comp|ssi|ssi_last_modified|ssi_min_file_chunk|ssi_silent_errors|ssi_types|ssi_value_length|ssl|ssl_buffer_size|ssl_certificate|ssl_certificate_key|ssl_ciphers|ssl_client_certificate|ssl_crl|ssl_dhparam|ssl_early_data|ssl_ecdh_curve|ssl_password_file|ssl_prefer_server_ciphers|ssl_protocols|ssl_session_cache|ssl_session_ticket_key|ssl_session_tickets|ssl_session_timeout|ssl_stapling|ssl_stapling_file|ssl_stapling_responder|ssl_stapling_verify|ssl_trusted_certificate|ssl_verify_client|ssl_verify_depth|status|status_format|status_zone|stub_status|sub_filter|sub_filter_last_modified|sub_filter_once|sub_filter_types|server|zone|state|hash|ip_hash|keepalive|keepalive_requests|keepalive_timeout|ntlm|least_conn|least_time|queue|random|sticky|sticky_cookie_insert|upstream_conf|health_check|userid|userid_domain|userid_expires|userid_mark|userid_name|userid_p3p|userid_path|userid_service|uwsgi_bind|uwsgi_buffer_size|uwsgi_buffering|uwsgi_buffers|uwsgi_busy_buffers_size|uwsgi_cache|uwsgi_cache_background_update|uwsgi_cache_bypass|uwsgi_cache_key|uwsgi_cache_lock|uwsgi_cache_lock_age|uwsgi_cache_lock_timeout|uwsgi_cache_max_range_offset|uwsgi_cache_methods|uwsgi_cache_min_uses|uwsgi_cache_path|uwsgi_cache_purge|uwsgi_cache_revalidate|uwsgi_cache_use_stale|uwsgi_cache_valid|uwsgi_connect_timeout|uwsgi_force_ranges|uwsgi_hide_header|uwsgi_ignore_client_abort|uwsgi_ignore_headers|uwsgi_intercept_errors|uwsgi_limit_rate|uwsgi_max_temp_file_size|uwsgi_modifier1|uwsgi_modifier2|uwsgi_next_upstream|uwsgi_next_upstream_timeout|uwsgi_next_upstream_tries|uwsgi_no_cache|uwsgi_param|uwsgi_pass|uwsgi_pass_header|uwsgi_pass_request_body|uwsgi_pass_request_headers|uwsgi_read_timeout|uwsgi_request_buffering|uwsgi_send_timeout|uwsgi_socket_keepalive|uwsgi_ssl_certificate|uwsgi_ssl_certificate_key|uwsgi_ssl_ciphers|uwsgi_ssl_crl|uwsgi_ssl_name|uwsgi_ssl_password_file|uwsgi_ssl_protocols|uwsgi_ssl_server_name|uwsgi_ssl_session_reuse|uwsgi_ssl_trusted_certificate|uwsgi_ssl_verify|uwsgi_ssl_verify_depth|uwsgi_store|uwsgi_store_access|uwsgi_temp_file_write_size|uwsgi_temp_path|http2_body_preread_size|http2_chunk_size|http2_idle_timeout|http2_max_concurrent_pushes|http2_max_concurrent_streams|http2_max_field_size|http2_max_header_size|http2_max_requests|http2_push|http2_push_preload|http2_recv_buffer_size|http2_recv_timeout|xml_entities|xslt_last_modified|xslt_param|xslt_string_param|xslt_stylesheet|xslt_types|listen|protocol|resolver|resolver_timeout|timeout|auth_http|auth_http_header|auth_http_pass_client_cert|auth_http_timeout|proxy_buffer|proxy_pass_error_message|proxy_timeout|xclient|starttls|imap_auth|imap_capabilities|imap_client_buffer|pop3_auth|pop3_capabilities|smtp_auth|smtp_capabilities|smtp_client_buffer|smtp_greeting_delay|preread_buffer_size|preread_timeout|proxy_protocol_timeout|js_access|js_filter|js_preread|proxy_download_rate|proxy_requests|proxy_responses|proxy_upload_rate|ssl_handshake_timeout|ssl_preread|health_check_timeout|zone_sync|zone_sync_buffers|zone_sync_connect_retry_interval|zone_sync_connect_timeout|zone_sync_interval|zone_sync_recv_buffer_size|zone_sync_server|zone_sync_ssl|zone_sync_ssl_certificate|zone_sync_ssl_certificate_key|zone_sync_ssl_ciphers|zone_sync_ssl_crl|zone_sync_ssl_name|zone_sync_ssl_password_file|zone_sync_ssl_protocols|zone_sync_ssl_server_name|zone_sync_ssl_trusted_certificate|zone_sync_ssl_verify_depth|zone_sync_timeout|google_perftools_profiles|proxy|perl";
 
@@ -30272,16 +30079,15 @@ exports.a = NginxHighlightRules;
 
 /***/ }),
 
-/***/ 6138:
+/***/ 86138:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var NimHighlightRules = (__webpack_require__(4559)/* .NimHighlightRules */ .N);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var NimHighlightRules = (__webpack_require__(64559)/* .NimHighlightRules */ .N);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
     TextMode.call(this);
@@ -30306,14 +30112,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4559:
+/***/ 64559:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 var NimHighlightRules = function () {
 
     var keywordMapper = this.createKeywordMapper({
@@ -30499,20 +30304,19 @@ exports.N = NimHighlightRules;
 
 /***/ }),
 
-/***/ 4468:
+/***/ 74468:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var CMode = (__webpack_require__(9117)/* .Mode */ .A);
-var NixHighlightRules = (__webpack_require__(8885)/* .NixHighlightRules */ .d);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var CMode = (__webpack_require__(99117)/* .Mode */ .A);
+var NixHighlightRules = (__webpack_require__(41603)/* .NixHighlightRules */ .d);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     CMode.call(this);
@@ -30533,14 +30337,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8885:
+/***/ 41603:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var NixHighlightRules = function() {
 
@@ -30657,20 +30460,19 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9619:
+/***/ 19619:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var NSISHighlightRules = (__webpack_require__(7607)/* .NSISHighlightRules */ .F);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var NSISHighlightRules = (__webpack_require__(97607)/* .NSISHighlightRules */ .F);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = NSISHighlightRules;
@@ -30690,14 +30492,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7607:
+/***/ 97607:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var NSISHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -30839,14 +30640,13 @@ exports.F = NSISHighlightRules;
 
 /***/ }),
 
-/***/ 1526:
+/***/ 21526:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
 var NunjucksHighlightRules = (__webpack_require__(2965)/* .NunjucksHighlightRules */ .q);
 
 var Mode = function() {
@@ -30867,12 +30667,11 @@ exports.A = Mode;
 /***/ 2965:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 var NunjucksHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -31038,20 +30837,19 @@ exports.q = NunjucksHighlightRules;
 
 /***/ }),
 
-/***/ 6576:
+/***/ 16576:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ObjectiveCHighlightRules = (__webpack_require__(5313)/* .ObjectiveCHighlightRules */ .C);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ObjectiveCHighlightRules = (__webpack_require__(35313)/* .ObjectiveCHighlightRules */ .C);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ObjectiveCHighlightRules;
@@ -31071,15 +30869,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5313:
+/***/ 35313:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var CHighlightRules = (__webpack_require__(46)/* .c_cppHighlightRules */ .r);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var CHighlightRules = (__webpack_require__(80046)/* .c_cppHighlightRules */ .r);
 
 var ObjectiveCHighlightRules = function() {
     var NSKeywords = {
@@ -31368,14 +31165,13 @@ exports.C = ObjectiveCHighlightRules;
 /***/ 2811:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var OcamlHighlightRules = (__webpack_require__(5927)/* .OcamlHighlightRules */ .Q);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var OcamlHighlightRules = (__webpack_require__(95927)/* .OcamlHighlightRules */ .Q);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = OcamlHighlightRules;
@@ -31438,14 +31234,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5927:
+/***/ 95927:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var OcamlHighlightRules = function() {
 
@@ -31753,13 +31548,13 @@ exports.Q = OcamlHighlightRules;
 /***/ 3757:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var OdinHighlightRules =
   (__webpack_require__(7064)/* .OdinHighlightRules */ .U);
 var MatchingBraceOutdent =
-  (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+  (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
   this.HighlightRules = OdinHighlightRules;
@@ -31812,10 +31607,10 @@ exports.A = Mode;
 /***/ 7064:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 var DocCommentHighlightRules =
-  (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+  (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var OdinHighlightRules = function () {
   var keywords =
@@ -32023,21 +31818,20 @@ exports.U = OdinHighlightRules;
 
 /***/ }),
 
-/***/ 8749:
+/***/ 68749:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS GENERATED BY 'ligand' USING 'mode.js'
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(2327)/* .PartiqlHighlightRules */ .O);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(62327)/* .PartiqlHighlightRules */ .O);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
     this.HighlightRules = HighlightRules;
@@ -32085,20 +31879,19 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2327:
+/***/ 62327:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS GENERATED BY 'ligand' USING 'mode_highlight_rules.js'
 */
 
     
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
-    var IonHighlightRules = (__webpack_require__(5186)/* .IonHighlightRules */ .U);
+    var IonHighlightRules = (__webpack_require__(75186)/* .IonHighlightRules */ .U);
 
     var PartiqlHighlightRules = function() {
         // constant.language.partiql
@@ -32391,21 +32184,20 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2522:
+/***/ 62522:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var PascalHighlightRules = (__webpack_require__(5850)/* .PascalHighlightRules */ .z);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PascalHighlightRules;
@@ -32433,11 +32225,10 @@ exports.A = Mode;
 /***/ 5850:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PascalHighlightRules = function() {
     var keywordMapper = this.createKeywordMapper({
@@ -32537,17 +32328,16 @@ exports.z = PascalHighlightRules;
 
 /***/ }),
 
-/***/ 9897:
+/***/ 29897:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PerlHighlightRules = (__webpack_require__(8798)/* .PerlHighlightRules */ .x);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PerlHighlightRules = (__webpack_require__(88798)/* .PerlHighlightRules */ .x);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PerlHighlightRules;
@@ -32604,14 +32394,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8798:
+/***/ 88798:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PerlHighlightRules = function() {
 
@@ -32745,12 +32534,12 @@ exports.x = PerlHighlightRules;
 
 /***/ }),
 
-/***/ 8350:
+/***/ 98350:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PgsqlHighlightRules = (__webpack_require__(982)/* .PgsqlHighlightRules */ .g);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PgsqlHighlightRules = (__webpack_require__(90982)/* .PgsqlHighlightRules */ .g);
 
 var Mode = function() {
     this.HighlightRules = PgsqlHighlightRules;
@@ -32778,18 +32567,18 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 982:
+/***/ 90982:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 // Syntax highlighting for pl/languages and json.
-var PerlHighlightRules = (__webpack_require__(8798)/* .PerlHighlightRules */ .x);
-var PythonHighlightRules = (__webpack_require__(9901)/* .PythonHighlightRules */ .H);
-var JsonHighlightRules = (__webpack_require__(6780)/* .JsonHighlightRules */ .h);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
+var PerlHighlightRules = (__webpack_require__(88798)/* .PerlHighlightRules */ .x);
+var PythonHighlightRules = (__webpack_require__(69901)/* .PythonHighlightRules */ .H);
+var JsonHighlightRules = (__webpack_require__(26780)/* .JsonHighlightRules */ .h);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
 
 var PgsqlHighlightRules = function() {
 
@@ -33367,31 +33156,37 @@ exports.g = PgsqlHighlightRules;
 
 /***/ }),
 
-/***/ 5432:
+/***/ 35432:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PhpHighlightRules = (__webpack_require__(4614)/* .PhpHighlightRules */ .l);
-var PhpLangHighlightRules = (__webpack_require__(4614)/* .PhpLangHighlightRules */ .g);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
-var PhpCompletions = (__webpack_require__(6418)/* .PhpCompletions */ .K);
-var PhpFoldMode = (__webpack_require__(7836)/* .FoldMode */ .Z);
-var unicode = __webpack_require__(7913);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var CssMode = (__webpack_require__(3734)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PhpHighlightRules = (__webpack_require__(74614)/* .PhpHighlightRules */ .l);
+var PhpLangHighlightRules = (__webpack_require__(74614)/* .PhpLangHighlightRules */ .g);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
+var PhpCompletions = (__webpack_require__(76418)/* .PhpCompletions */ .K);
+var PhpFoldMode = (__webpack_require__(37836)/* .FoldMode */ .Z);
+var unicode = __webpack_require__(17913);
+var MixedFoldMode = (__webpack_require__(6091)/* .FoldMode */ .Z);
+var HtmlFoldMode = (__webpack_require__(75540).FoldMode);
+var CstyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var CssMode = (__webpack_require__(93734)/* .Mode */ .A);
 
 var PhpMode = function(opts) {
     this.HighlightRules = PhpLangHighlightRules;
     this.$outdent = new MatchingBraceOutdent();
     this.$behaviour = this.$defaultBehaviour;
     this.$completer = new PhpCompletions();
-    this.foldingRules = new PhpFoldMode();
+    this.foldingRules = new MixedFoldMode(new HtmlFoldMode(), {
+        "js-": new CstyleFoldMode(),
+        "css-": new CstyleFoldMode(),
+        "php-": new PhpFoldMode()
+    });
 };
 oop.inherits(PhpMode, TextMode);
 
@@ -33464,7 +33259,11 @@ var Mode = function(opts) {
         "css-": CssMode,
         "php-": PhpMode
     });
-    this.foldingRules = new PhpFoldMode();
+    this.foldingRules = new MixedFoldMode(new HtmlFoldMode(), {
+        "js-": new CstyleFoldMode(),
+        "css-": new CstyleFoldMode(),
+        "php-": new PhpFoldMode()
+    });
 };
 oop.inherits(Mode, HtmlMode);
 
@@ -33497,10 +33296,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6418:
+/***/ 76418:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 /**
  * ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
@@ -43963,17 +43761,16 @@ exports.K = PhpCompletions;
 
 /***/ }),
 
-/***/ 4614:
+/***/ 74614:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 var PhpLangHighlightRules = function() {
     var docComment = DocCommentHighlightRules;
@@ -45048,15 +44845,14 @@ exports.g = PhpLangHighlightRules;
 /***/ 9757:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var PHPLaravelBladeHighlightRules = (__webpack_require__(2507)/* .PHPLaravelBladeHighlightRules */ ._);
-    var PHPMode = (__webpack_require__(5432)/* .Mode */ .A);
-    var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-    var CssMode = (__webpack_require__(3734)/* .Mode */ .A);
-    var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
+    var oop = __webpack_require__(42011);
+    var PHPLaravelBladeHighlightRules = (__webpack_require__(72507)/* .PHPLaravelBladeHighlightRules */ ._);
+    var PHPMode = (__webpack_require__(35432)/* .Mode */ .A);
+    var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+    var CssMode = (__webpack_require__(93734)/* .Mode */ .A);
+    var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
 
     var Mode = function() {
         PHPMode.call(this);
@@ -45080,14 +44876,13 @@ exports.g = PhpLangHighlightRules;
 
 /***/ }),
 
-/***/ 2507:
+/***/ 72507:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var PhpHighlightRules = (__webpack_require__(4614)/* .PhpHighlightRules */ .l);
+var oop = __webpack_require__(42011);
+var PhpHighlightRules = (__webpack_require__(74614)/* .PhpHighlightRules */ .l);
 
 var PHPLaravelBladeHighlightRules = function() {
     PhpHighlightRules.call(this);
@@ -45262,21 +45057,20 @@ exports._ = PHPLaravelBladeHighlightRules;
 
 /***/ }),
 
-/***/ 70:
+/***/ 40070:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PigHighlightRules = (__webpack_require__(731)/* .PigHighlightRules */ .S);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PigHighlightRules = (__webpack_require__(90731)/* .PigHighlightRules */ .S);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PigHighlightRules;
@@ -45296,10 +45090,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 731:
+/***/ 90731:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from Pig.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -45308,8 +45101,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PigHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -45450,16 +45243,15 @@ exports.S = PigHighlightRules;
 
 /***/ }),
 
-/***/ 7124:
+/***/ 57124:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var Behaviour = (__webpack_require__(2463)/* .Behaviour */ .T);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var Behaviour = (__webpack_require__(32463)/* .Behaviour */ .T);
 
 var Mode = function() {
     this.HighlightRules = TextHighlightRules;
@@ -45484,7 +45276,6 @@ exports.A = Mode;
 /***/ 7176:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
  *
@@ -45521,10 +45312,10 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PLSqlHighlightRules = (__webpack_require__(1271)/* .plsqlHighlightRules */ .e);
-var FoldMode = (__webpack_require__(2719)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PLSqlHighlightRules = (__webpack_require__(21271)/* .plsqlHighlightRules */ .e);
+var FoldMode = (__webpack_require__(62719)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PLSqlHighlightRules;
@@ -45543,10 +45334,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 1271:
+/***/ 21271:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
  *
@@ -45585,8 +45375,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var plsqlHighlightRules = function() {
     var keywords = (
@@ -45660,17 +45450,16 @@ exports.e = plsqlHighlightRules;
 
 /***/ }),
 
-/***/ 556:
+/***/ 50556:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PowershellHighlightRules = (__webpack_require__(2160)/* .PowershellHighlightRules */ .S);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PowershellHighlightRules = (__webpack_require__(72160)/* .PowershellHighlightRules */ .S);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PowershellHighlightRules;
@@ -45726,14 +45515,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2160:
+/***/ 72160:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PowershellHighlightRules = function() {
     var identifierRe = "[a-zA-Z\\?_\u00a1-\uffff][a-zA-Z\\d\\?_\u00a1-\uffff]*";
@@ -46275,14 +46063,13 @@ exports.S = PowershellHighlightRules;
 /***/ 9162:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PraatHighlightRules = (__webpack_require__(4726)/* .PraatHighlightRules */ .P);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PraatHighlightRules = (__webpack_require__(94726)/* .PraatHighlightRules */ .P);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PraatHighlightRules;
@@ -46332,14 +46119,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4726:
+/***/ 94726:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PraatHighlightRules = function() {
 
@@ -46611,21 +46397,20 @@ exports.P = PraatHighlightRules;
 
 /***/ }),
 
-/***/ 7558:
+/***/ 67558:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PrismaHighlightRules = (__webpack_require__(4443)/* .PrismaHighlightRules */ .v);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PrismaHighlightRules = (__webpack_require__(44443)/* .PrismaHighlightRules */ .v);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PrismaHighlightRules;
@@ -46645,10 +46430,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4443:
+/***/ 44443:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from ../convert.json (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -46657,8 +46441,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PrismaHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -46979,20 +46763,19 @@ exports.v = PrismaHighlightRules;
 
 /***/ }),
 
-/***/ 5668:
+/***/ 85668:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PrologHighlightRules = (__webpack_require__(6381)/* .PrologHighlightRules */ .S);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PrologHighlightRules = (__webpack_require__(56381)/* .PrologHighlightRules */ .S);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = PrologHighlightRules;
@@ -47012,10 +46795,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6381:
+/***/ 56381:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.github.com/stephenroller/prolog-tmbundle/master/Syntaxes/Prolog.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -47024,8 +46806,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PrologHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -47226,15 +47008,14 @@ exports.S = PrologHighlightRules;
 
 /***/ }),
 
-/***/ 4520:
+/***/ 34520:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PropertiesHighlightRules = (__webpack_require__(7309)/* .PropertiesHighlightRules */ .m);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PropertiesHighlightRules = (__webpack_require__(87309)/* .PropertiesHighlightRules */ .m);
 
 var Mode = function() {
     this.HighlightRules = PropertiesHighlightRules;
@@ -47251,14 +47032,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7309:
+/***/ 87309:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PropertiesHighlightRules = function() {
 
@@ -47312,20 +47092,19 @@ exports.m = PropertiesHighlightRules;
 
 /***/ }),
 
-/***/ 3029:
+/***/ 83029:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var CMode = (__webpack_require__(9117)/* .Mode */ .A);
-var ProtobufHighlightRules = (__webpack_require__(9829)/* .ProtobufHighlightRules */ .K);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var CMode = (__webpack_require__(99117)/* .Mode */ .A);
+var ProtobufHighlightRules = (__webpack_require__(39829)/* .ProtobufHighlightRules */ .K);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     CMode.call(this);
@@ -47346,14 +47125,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9829:
+/***/ 39829:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var ProtobufHighlightRules = function() {
 
@@ -47417,16 +47195,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5595:
+/***/ 95595:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var HighlightRules = (__webpack_require__(4399)/* .PrqlHighlightRules */ .r);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HighlightRules;
@@ -47449,14 +47226,13 @@ exports.A = Mode;
 /***/ 4399:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 // https://prql-lang.org/
 // https://github.com/PRQL/prql
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PrqlHighlightRules = function() {
     var builtinFunctions = "min|max|sum|average|stddev|every|any|concat_array|count|" +
@@ -47642,17 +47418,16 @@ exports.r = PrqlHighlightRules;
 
 /***/ }),
 
-/***/ 2426:
+/***/ 22426:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PuppetHighlightRules = (__webpack_require__(4524)/* .PuppetHighlightRules */ .A);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PuppetHighlightRules = (__webpack_require__(84524)/* .PuppetHighlightRules */ .A);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function () {
     TextMode.call(this);
@@ -47677,14 +47452,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4524:
+/***/ 84524:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 var PuppetHighlightRules = function () {
     this.$rules = {
         "start": [
@@ -47833,17 +47607,16 @@ exports.A = PuppetHighlightRules;
 
 /***/ }),
 
-/***/ 8200:
+/***/ 48200:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var PythonHighlightRules = (__webpack_require__(9901)/* .PythonHighlightRules */ .H);
-var PythonFoldMode = (__webpack_require__(4703)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var PythonHighlightRules = (__webpack_require__(69901)/* .PythonHighlightRules */ .H);
+var PythonFoldMode = (__webpack_require__(84703)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = PythonHighlightRules;
@@ -47928,18 +47701,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9901:
+/***/ 69901:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * TODO: python delimiters
  */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var PythonHighlightRules = function() {
 
@@ -48333,20 +48105,19 @@ exports.H = PythonHighlightRules;
 
 /***/ }),
 
-/***/ 93:
+/***/ 60093:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
     
 
-    var oop = __webpack_require__(2011);
-    var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-    var QmlHighlightRules = (__webpack_require__(9943)/* .QmlHighlightRules */ .H);
-    var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+    var oop = __webpack_require__(42011);
+    var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+    var QmlHighlightRules = (__webpack_require__(79943)/* .QmlHighlightRules */ .H);
+    var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
     var Mode = function() {
         this.HighlightRules = QmlHighlightRules;
@@ -48367,14 +48138,13 @@ exports.H = PythonHighlightRules;
 
 /***/ }),
 
-/***/ 9943:
+/***/ 79943:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-    var oop = __webpack_require__(2011);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var QmlHighlightRules = function() {
         // see: https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects
@@ -48588,10 +48358,9 @@ exports.H = PythonHighlightRules;
 
 /***/ }),
 
-/***/ 5475:
+/***/ 85475:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * r.js
  *
@@ -48632,13 +48401,13 @@ exports.H = PythonHighlightRules;
 
    
 
-   var unicode = __webpack_require__(7913);
-   var Range = (__webpack_require__(3069)/* .Range */ .e);
-   var oop = __webpack_require__(2011);
-   var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-   var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-   var RHighlightRules = (__webpack_require__(1987)/* .RHighlightRules */ .c);
-   var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+   var unicode = __webpack_require__(17913);
+   var Range = (__webpack_require__(93069)/* .Range */ .e);
+   var oop = __webpack_require__(42011);
+   var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+   var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+   var RHighlightRules = (__webpack_require__(31987)/* .RHighlightRules */ .c);
+   var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
    var Mode = function(){
       this.HighlightRules = RHighlightRules;
@@ -48739,7 +48508,7 @@ exports.H = PythonHighlightRules;
 
 /***/ }),
 
-/***/ 1987:
+/***/ 31987:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 /*
@@ -48781,10 +48550,10 @@ exports.H = PythonHighlightRules;
  */
 
 
-   var oop = __webpack_require__(2011);
-   var lang = __webpack_require__(732);
-   var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-   var TexHighlightRules = (__webpack_require__(3134)/* .TexHighlightRules */ .j);
+   var oop = __webpack_require__(42011);
+   var lang = __webpack_require__(10732);
+   var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+   var TexHighlightRules = (__webpack_require__(53134)/* .TexHighlightRules */ .j);
 
    var RHighlightRules = function()
    {
@@ -48952,17 +48721,16 @@ exports.H = PythonHighlightRules;
 
 /***/ }),
 
-/***/ 3217:
+/***/ 33217:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var RakuHighlightRules = (__webpack_require__(4539)/* .RakuHighlightRules */ .h);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var RakuHighlightRules = (__webpack_require__(74539)/* .RakuHighlightRules */ .h);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = RakuHighlightRules;
@@ -49018,14 +48786,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4539:
+/***/ 74539:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var RakuHighlightRules = function() {
 
@@ -49379,17 +49146,16 @@ exports.h = RakuHighlightRules;
 
 /***/ }),
 
-/***/ 6032:
+/***/ 46032:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var RazorHighlightRules = (__webpack_require__(2577)/* .RazorHighlightRules */ .h);
-var RazorCompletions = (__webpack_require__(2128)/* .RazorCompletions */ .Z);
-var HtmlCompletions = (__webpack_require__(39).HtmlCompletions);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var RazorHighlightRules = (__webpack_require__(92577)/* .RazorHighlightRules */ .h);
+var RazorCompletions = (__webpack_require__(32128)/* .RazorCompletions */ .Z);
+var HtmlCompletions = (__webpack_require__(90039).HtmlCompletions);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -49419,10 +49185,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2128:
+/***/ 32128:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
@@ -49506,18 +49271,17 @@ exports.Z = RazorCompletions;
 
 /***/ }),
 
-/***/ 2577:
+/***/ 92577:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var CSharpHighlightRules = (__webpack_require__(292)/* .CSharpHighlightRules */ .f);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var CSharpHighlightRules = (__webpack_require__(50292)/* .CSharpHighlightRules */ .f);
 
 var blockPrefix = 'razor-block-';
 var RazorLangHighlightRules = function() {
@@ -49673,10 +49437,9 @@ __webpack_unused_export__ = RazorLangHighlightRules;
 
 /***/ }),
 
-/***/ 1113:
+/***/ 21113:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * rdoc.js
  *
@@ -49717,10 +49480,10 @@ __webpack_unused_export__ = RazorLangHighlightRules;
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var RDocHighlightRules = (__webpack_require__(9206)/* .RDocHighlightRules */ .D);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var RDocHighlightRules = (__webpack_require__(49206)/* .RDocHighlightRules */ .D);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function(suppressHighlighting) {
 	this.HighlightRules = RDocHighlightRules;
@@ -49741,10 +49504,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9206:
+/***/ 49206:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * rdoc_highlight_rules.js
  *
@@ -49780,10 +49542,10 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var LaTeXHighlightRules = __webpack_require__(7369);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var LaTeXHighlightRules = __webpack_require__(77369);
 
 var RDocHighlightRules = function() {
 
@@ -49870,15 +49632,14 @@ exports.D = RDocHighlightRules;
 /***/ 4439:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var RedHighlightRules = (__webpack_require__(8368)/* .RedHighlightRules */ ._);
-var RedFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var RedHighlightRules = (__webpack_require__(78368)/* .RedHighlightRules */ ._);
+var RedFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = RedHighlightRules;
@@ -49941,14 +49702,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8368:
+/***/ 78368:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var RedHighlightRules = function() {
 
@@ -50150,12 +49910,12 @@ exports._ = RedHighlightRules;
 
 /***/ }),
 
-/***/ 8812:
+/***/ 30692:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var RedshiftHighlightRules = (__webpack_require__(9374)/* .RedshiftHighlightRules */ .F);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var RedshiftHighlightRules = (__webpack_require__(69374)/* .RedshiftHighlightRules */ .F);
 
 var Mode = function() {
     this.HighlightRules = RedshiftHighlightRules;
@@ -50183,15 +49943,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9374:
+/***/ 69374:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 // Syntax highlighting for json.
-var JsonHighlightRules = (__webpack_require__(6780)/* .JsonHighlightRules */ .h);
+var JsonHighlightRules = (__webpack_require__(26780)/* .JsonHighlightRules */ .h);
 
 var RedshiftHighlightRules = function() {
 
@@ -50387,10 +50147,9 @@ exports.F = RedshiftHighlightRules;
 
 /***/ }),
 
-/***/ 9086:
+/***/ 29086:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * rhtml.js
  *
@@ -50430,10 +50189,10 @@ exports.F = RedshiftHighlightRules;
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
 
-var RHtmlHighlightRules = (__webpack_require__(6895)/* .RHtmlHighlightRules */ .N);
+var RHtmlHighlightRules = (__webpack_require__(86895)/* .RHtmlHighlightRules */ .N);
 /* Make life easier, don't do these right now 
 var SweaveBackgroundHighlighter = require("mode/sweave_background_highlighter").SweaveBackgroundHighlighter;
 var RCodeModel = require("mode/r_code_model").RCodeModel;
@@ -50480,10 +50239,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6895:
+/***/ 86895:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * rhtml_highlight_rules.js
  *
@@ -50524,10 +50282,10 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var RHighlightRules = (__webpack_require__(1987)/* .RHighlightRules */ .c);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var RHighlightRules = (__webpack_require__(31987)/* .RHighlightRules */ .c);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var RHtmlHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -50553,16 +50311,15 @@ exports.N = RHtmlHighlightRules;
 
 /***/ }),
 
-/***/ 7576:
+/***/ 17576:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
   
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var RobotHighlightRules = (__webpack_require__(6109)/* .RobotHighlightRules */ .B);
-var FoldMode = (__webpack_require__(4703)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(84703)/* .FoldMode */ .Z);
 
 var Mode = function() {
   this.HighlightRules = RobotHighlightRules;
@@ -50585,11 +50342,10 @@ exports.A = Mode;
 /***/ 6109:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var RobotHighlightRules = function() {
     var builtinConstantsRegex = new RegExp(
@@ -50714,15 +50470,14 @@ exports.B = RobotHighlightRules;
 
 /***/ }),
 
-/***/ 1616:
+/***/ 81616:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var RSTHighlightRules = (__webpack_require__(4043)/* .RSTHighlightRules */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var RSTHighlightRules = (__webpack_require__(54043)/* .RSTHighlightRules */ .A);
 
 var Mode = function() {
     this.HighlightRules = RSTHighlightRules;
@@ -50741,15 +50496,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4043:
+/***/ 54043:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var RSTHighlightRules = function() {
 
@@ -51013,17 +50767,16 @@ exports.A = RSTHighlightRules;
 
 /***/ }),
 
-/***/ 1148:
+/***/ 78242:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var RubyHighlightRules = (__webpack_require__(8081).RubyHighlightRules);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var RubyHighlightRules = (__webpack_require__(48081).RubyHighlightRules);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 var FoldMode = (__webpack_require__(8147)/* .FoldMode */ .Z);
 
 var Mode = function() {
@@ -51102,14 +50855,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8081:
+/***/ 48081:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 // exports is for Haml
 var constantOtherSymbol = exports.constantOtherSymbol = {
@@ -51723,17 +51475,16 @@ exports.RubyHighlightRules = RubyHighlightRules;
 /***/ 2554:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var RustHighlightRules = (__webpack_require__(7930)/* .RustHighlightRules */ .q);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var RustHighlightRules = (__webpack_require__(87930)/* .RustHighlightRules */ .q);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = RustHighlightRules;
@@ -51754,17 +51505,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7930:
+/***/ 87930:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.github.com/dbp/sublime-rust/master/Rust.tmLanguage (uuid: ) */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
 
 var stringEscape = /\\(?:[nrt0'"\\]|x[\da-fA-F]{2}|u\{[\da-fA-F]{6}\})/.source;
 var wordPattern = /[a-zA-Z_\xa1-\uffff][a-zA-Z0-9_\xa1-\uffff]*/.source;
@@ -51845,14 +51595,14 @@ var RustHighlightRules = function() {
                 ]
             }, {
                 token: ['keyword.source.rust', 'text', 'entity.name.function.source.rust', 'punctuation'],
-                regex: '\\b(fn)(\\s+)((?:r#)?' + wordPattern + ')(<)',
+                regex: '\\b(fn)(\\s+)((?:r#)?' + wordPattern + ')(<)(?!<)',
                 push: "generics"
             }, {
                 token: ['keyword.source.rust', 'text', 'entity.name.function.source.rust'],
                 regex: '\\b(fn)(\\s+)((?:r#)?' + wordPattern + ')'
             }, {
                 token: ['support.constant', "punctuation"],
-                regex: "(" + wordPattern + '::)(<)',
+                regex: "(" + wordPattern + '::)(<)(?!<)',
                 push: "generics"
             }, {
                 token: 'support.constant',
@@ -51886,12 +51636,15 @@ var RustHighlightRules = function() {
                 ]
             }, {
                 token: ["keyword.source.rust", "identifier", "punctuaction"],
-                regex: "(?:(impl)|(" + wordPattern + "))(<)",
+                regex: "(?:(impl)|(" + wordPattern + "))(<)(?!<)",
                 stateName: 'generics',
                 push: [
                     {
+                        token: 'keyword.operator',
+                        regex: /<<|=/
+                    }, {
                         token: "punctuaction",
-                        regex: "<",
+                        regex: "<(?!<)",
                         push: "generics"
                     }, {
                         token: 'variable.other.source.rust', // `(?![\\\'])` to keep a lifetime name highlighting from continuing one character
@@ -51902,50 +51655,54 @@ var RustHighlightRules = function() {
                         token: "storage.type.source.rust",
                         regex: "\\b(u8|u16|u32|u64|u128|usize|i8|i16|i32|i64|i128|isize|char|bool)\\b"
                     }, {
-                        token: "punctuation.operator",
-                        regex: "[,:]"
-                    }, {
                         token: "keyword",
                         regex: "\\b(?:const|dyn)\\b"
                     }, {
                         token: "punctuation",
                         regex: ">",
                         next: "pop"
-                    }, {
-                        token: "paren.lparen",
-                        regex: "[(]"
-                    }, {
-                        token: "paren.rparen",
-                        regex: "[)]"
-                    }, {
+                    }, 
+                    {include: "punctuation"},
+                    {include: "operators"},
+                    {include: "constants"},
+                    {
                         token: "identifier",
                         regex: "\\b"+wordPattern+"\\b"
-                    }, {
-                        token: 'keyword.operator',
-                        regex: "="
                     }
                 ]
             }, {
                 token: keywordMapper,
                 regex: wordPattern
             }, {
-                token: 'keyword.operator', // `[*/](?![*/])=?` is separated because `//` and `/* */` become comments and must be
-                // guarded against. This states either `*` or `/` may be matched as long as the match
-                // it isn't followed by either of the two. An `=` may be on the end.
-                regex: /\$|[-=]>|[-+%^=!&|<>]=?|[*/](?![*/])=?/
-            }, {
-                token: "punctuation.operator",
-                regex: /[?:,;.]/
-            }, {
+                token: 'meta.preprocessor.source.rust',
+                regex: '\\b\\w\\(\\w\\)*!|#\\[[\\w=\\(\\)_]+\\]\\b'
+            }, 
+            {include: "punctuation"},
+            {include: "operators"},
+            {include: "constants"}
+        ],
+        punctuation: [
+            {
                 token: "paren.lparen",
                 regex: /[\[({]/
             }, {
                 token: "paren.rparen",
                 regex: /[\])}]/
             }, {
-                token: 'meta.preprocessor.source.rust',
-                regex: '\\b\\w\\(\\w\\)*!|#\\[[\\w=\\(\\)_]+\\]\\b'
-            }, {
+                token: "punctuation.operator",
+                regex: /[?:,;.]/
+            }
+        ],
+        operators: [
+            {
+                token: 'keyword.operator', // `[*/](?![*/])=?` is separated because `//` and `/* */` become comments and must be
+                // guarded against. This states either `*` or `/` may be matched as long as the match
+                // it isn't followed by either of the two. An `=` may be on the end.
+                regex: /\$|[-=]>|[-+%^=!&|<>]=?|[*/](?![*/])=?/
+            }
+        ],
+        constants: [
+            {
                 token: 'constant.numeric.source.rust',
                 regex: /\b(?:0x[a-fA-F0-9_]+|0o[0-7_]+|0b[01_]+|[0-9][0-9_]*(?!\.))(?:[iu](?:size|8|16|32|64|128))?\b/
             }, {
@@ -51974,16 +51731,15 @@ exports.q = RustHighlightRules;
 
 /***/ }),
 
-/***/ 3078:
+/***/ 93078:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SaCHighlightRules = (__webpack_require__(431)/* .sacHighlightRules */ .t);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SaCHighlightRules = (__webpack_require__(60431)/* .sacHighlightRules */ .t);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
   this.HighlightRules = SaCHighlightRules;
@@ -52003,15 +51759,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 431:
+/***/ 60431:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var sacHighlightRules = function() {
 
@@ -52202,16 +51957,15 @@ exports.t = sacHighlightRules;
 
 /***/ }),
 
-/***/ 3301:
+/***/ 73301:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SassHighlightRules = (__webpack_require__(6119).SassHighlightRules);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SassHighlightRules = (__webpack_require__(86119).SassHighlightRules);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = SassHighlightRules;
@@ -52230,15 +51984,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6119:
+/***/ 86119:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var ScssHighlightRules = (__webpack_require__(8670).ScssHighlightRules);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var ScssHighlightRules = (__webpack_require__(78670).ScssHighlightRules);
 
 var SassHighlightRules = function() {
     ScssHighlightRules.call(this);
@@ -52284,17 +52037,16 @@ exports.SassHighlightRules = SassHighlightRules;
 
 /***/ }),
 
-/***/ 8858:
+/***/ 98858:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var scadHighlightRules = (__webpack_require__(9944)/* .scadHighlightRules */ .S);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var scadHighlightRules = (__webpack_require__(29944)/* .scadHighlightRules */ .S);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = scadHighlightRules;
@@ -52357,16 +52109,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9944:
+/***/ 29944:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var scadHighlightRules = function() {
     var keywordMapper = this.createKeywordMapper({
@@ -52474,19 +52225,19 @@ exports.S = scadHighlightRules;
 
 /***/ }),
 
-/***/ 4668:
+/***/ 45856:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var ScalaHighlightRules = (__webpack_require__(192)/* .ScalaHighlightRules */ .o);
+var oop = __webpack_require__(42011);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var ScalaHighlightRules = (__webpack_require__(30192)/* .ScalaHighlightRules */ .o);
 
 var Mode = function() {
     JavaScriptMode.call(this);
     this.HighlightRules = ScalaHighlightRules;
+    this.$behaviour = this.$defaultBehaviour;
 };
 oop.inherits(Mode, JavaScriptMode);
 
@@ -52504,15 +52255,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 192:
+/***/ 30192:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ScalaHighlightRules = function() {
 
@@ -52675,16 +52425,15 @@ exports.o = ScalaHighlightRules;
 
 /***/ }),
 
-/***/ 3091:
+/***/ 63091:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SchemeHighlightRules = (__webpack_require__(6695)/* .SchemeHighlightRules */ .k);
-var MatchingParensOutdent = (__webpack_require__(9857)/* .MatchingParensOutdent */ .z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SchemeHighlightRules = (__webpack_require__(16695)/* .SchemeHighlightRules */ .k);
+var MatchingParensOutdent = (__webpack_require__(29857)/* .MatchingParensOutdent */ .z);
 
 var Mode = function() {
     this.HighlightRules = SchemeHighlightRules;
@@ -52780,14 +52529,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6695:
+/***/ 16695:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SchemeHighlightRules = function() {
     var keywordControl = "case|do|let|loop|if|else|when";
@@ -52874,20 +52622,19 @@ exports.k = SchemeHighlightRules;
 
 /***/ }),
 
-/***/ 7384:
+/***/ 67384:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var scryptHighlightRules = (__webpack_require__(2436)/* .scryptHighlightRules */ .o);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var scryptHighlightRules = (__webpack_require__(12436)/* .scryptHighlightRules */ .o);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function () {
     this.HighlightRules = scryptHighlightRules;
@@ -52921,10 +52668,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2436:
+/***/ 12436:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from ./tmthemes/tmscrypt.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -52933,9 +52679,9 @@ exports.A = Mode;
 
     
 
-    var oop = __webpack_require__(2011);
-    var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-    var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+    var oop = __webpack_require__(42011);
+    var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+    var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
     var scryptHighlightRules = function () {
 
@@ -53075,16 +52821,15 @@ exports.A = Mode;
 /***/ 1401:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ScssHighlightRules = (__webpack_require__(8670).ScssHighlightRules);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CssBehaviour = (__webpack_require__(6092)/* .CssBehaviour */ .K);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var CssCompletions = (__webpack_require__(2199)/* .CssCompletions */ .A);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ScssHighlightRules = (__webpack_require__(78670).ScssHighlightRules);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CssBehaviour = (__webpack_require__(76092)/* .CssBehaviour */ .K);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var CssCompletions = (__webpack_require__(22199)/* .CssCompletions */ .A);
 
 
 var Mode = function() {
@@ -53139,16 +52884,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8670:
+/***/ 78670:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var CssHighlightRules = __webpack_require__(4897);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var CssHighlightRules = __webpack_require__(64897);
 
 var ScssHighlightRules = function() {
     
@@ -53317,17 +53061,16 @@ exports.ScssHighlightRules = ScssHighlightRules;
 
 /***/ }),
 
-/***/ 7618:
+/***/ 17618:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ShHighlightRules = (__webpack_require__(9326).ShHighlightRules);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ShHighlightRules = (__webpack_require__(59326).ShHighlightRules);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ShHighlightRules;
@@ -53409,14 +53152,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9326:
+/***/ 59326:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var reservedKeywords = exports.reservedKeywords = (
         '!|{|}|case|do|done|elif|else|'+
@@ -53634,16 +53376,15 @@ exports.ShHighlightRules = ShHighlightRules;
 
 /***/ }),
 
-/***/ 8297:
+/***/ 98297:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-var oop = __webpack_require__(2011);
-var JSMode = (__webpack_require__(3480)/* .Mode */ .A);
-var SJSHighlightRules = (__webpack_require__(953)/* .SJSHighlightRules */ .n);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var JSMode = (__webpack_require__(93480)/* .Mode */ .A);
+var SJSHighlightRules = (__webpack_require__(30953)/* .SJSHighlightRules */ .n);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = SJSHighlightRules;
@@ -53665,15 +53406,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 953:
+/***/ 30953:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SJSHighlightRules = function() {
     var parent = new JavaScriptHighlightRules({noES6: true});
@@ -53874,28 +53614,27 @@ exports.n = SJSHighlightRules;
 
 /***/ }),
 
-/***/ 3226:
+/***/ 92037:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SlimHighlightRules = (__webpack_require__(3438).SlimHighlightRules);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SlimHighlightRules = (__webpack_require__(53438).SlimHighlightRules);
 
 var Mode = function() {
     TextMode.call(this);
     this.HighlightRules = SlimHighlightRules;
     this.createModeDelegates({
-        javascript: (__webpack_require__(3480)/* .Mode */ .A),
-        markdown: (__webpack_require__(4358)/* .Mode */ .A),
-        coffee: (__webpack_require__(5470)/* .Mode */ .A),
+        javascript: (__webpack_require__(93480)/* .Mode */ .A),
+        markdown: (__webpack_require__(84358)/* .Mode */ .A),
+        coffee: (__webpack_require__(25470)/* .Mode */ .A),
         scss: (__webpack_require__(1401)/* .Mode */ .A),
-        sass: (__webpack_require__(3301)/* .Mode */ .A),
-        less: (__webpack_require__(3650)/* .Mode */ .A),
-        ruby: (__webpack_require__(1148)/* .Mode */ .A),
-        css: (__webpack_require__(3734)/* .Mode */ .A)
+        sass: (__webpack_require__(73301)/* .Mode */ .A),
+        less: (__webpack_require__(73650)/* .Mode */ .A),
+        ruby: (__webpack_require__(78242)/* .Mode */ .A),
+        css: (__webpack_require__(93734)/* .Mode */ .A)
     });
 };
 
@@ -53911,16 +53650,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3438:
+/***/ 53438:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var modes = (__webpack_require__(3294).$modes);
+var modes = (__webpack_require__(33294).$modes);
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 var SlimHighlightRules = function() {
 
     this.$rules = {
@@ -54122,15 +53860,14 @@ exports.SlimHighlightRules = SlimHighlightRules;
 
 /***/ }),
 
-/***/ 5168:
+/***/ 45168:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var SmartyHighlightRules = (__webpack_require__(8600)/* .SmartyHighlightRules */ .r);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var SmartyHighlightRules = (__webpack_require__(48600)/* .SmartyHighlightRules */ .r);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -54149,10 +53886,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8600:
+/***/ 48600:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.github.com/amitsnyderman/sublime-smarty/master/Syntaxes/Smarty.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -54161,8 +53897,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 var SmartyHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -54264,17 +54000,16 @@ exports.r = SmartyHighlightRules;
 
 /***/ }),
 
-/***/ 4139:
+/***/ 94139:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SmithyHighlightRules = (__webpack_require__(7326)/* .SmithyHighlightRules */ .a);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SmithyHighlightRules = (__webpack_require__(57326)/* .SmithyHighlightRules */ .a);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = SmithyHighlightRules;
@@ -54305,10 +54040,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7326:
+/***/ 57326:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.githubusercontent.com/awslabs/smithy-vscode/master/syntaxes/smithy.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -54317,8 +54051,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SmithyHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -54602,16 +54336,15 @@ exports.a = SmithyHighlightRules;
 
 /***/ }),
 
-/***/ 5627:
+/***/ 75627:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SnippetHighlightRules = function() {
 
@@ -54702,7 +54435,7 @@ oop.inherits(SnippetGroupHighlightRules, TextHighlightRules);
 
 __webpack_unused_export__ = SnippetGroupHighlightRules;
 
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = SnippetGroupHighlightRules;
@@ -54725,12 +54458,11 @@ exports.AR = Mode;
 /***/ 5686:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var SoyTemplateHighlightRules = (__webpack_require__(825)/* .SoyTemplateHighlightRules */ .d);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var SoyTemplateHighlightRules = (__webpack_require__(60825)/* .SoyTemplateHighlightRules */ .d);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -54749,10 +54481,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 825:
+/***/ 60825:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from tm bundles\SoyTemplate\Syntaxes\SoyTemplate.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -54761,8 +54492,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 var SoyTemplateHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -55083,14 +54814,13 @@ exports.d = SoyTemplateHighlightRules;
 /***/ 1250:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-var oop = __webpack_require__(2011);
+var oop = __webpack_require__(42011);
 // defines the parent mode
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 // defines the language specific highlighters and folding rules
-var SpaceHighlightRules = (__webpack_require__(645)/* .SpaceHighlightRules */ .f);
+var SpaceHighlightRules = (__webpack_require__(40645)/* .SpaceHighlightRules */ .f);
 var Mode = function() {
     // set everything up
     this.HighlightRules = SpaceHighlightRules;
@@ -55107,14 +54837,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 645:
+/***/ 40645:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SpaceHighlightRules = function() {
 
@@ -55169,21 +54898,20 @@ exports.f = SpaceHighlightRules;
 
 /***/ }),
 
-/***/ 8686:
+/***/ 98686:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SPARQLHighlightRules = (__webpack_require__(2503)/* .SPARQLHighlightRules */ .M);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SPARQLHighlightRules = (__webpack_require__(92503)/* .SPARQLHighlightRules */ .M);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = SPARQLHighlightRules;
@@ -55202,10 +54930,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2503:
+/***/ 92503:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from sparql.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -55214,8 +54941,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SPARQLHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -55368,16 +55095,15 @@ exports.M = SPARQLHighlightRules;
 
 /***/ }),
 
-/***/ 4716:
+/***/ 34716:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SqlHighlightRules = (__webpack_require__(9230)/* .SqlHighlightRules */ .Q);
-var SqlFoldMode = (__webpack_require__(2719)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SqlHighlightRules = (__webpack_require__(49230)/* .SqlHighlightRules */ .Q);
+var SqlFoldMode = (__webpack_require__(62719)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = SqlHighlightRules;
@@ -55400,14 +55126,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9230:
+/***/ 49230:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SqlHighlightRules = function() {
 
@@ -55491,16 +55216,15 @@ exports.Q = SqlHighlightRules;
 
 /***/ }),
 
-/***/ 1301:
+/***/ 91301:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var SqlServerHighlightRules = (__webpack_require__(2441)/* .SqlHighlightRules */ .Q);
-var SqlServerFoldMode = (__webpack_require__(2205)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var SqlServerHighlightRules = (__webpack_require__(72441)/* .SqlHighlightRules */ .Q);
+var SqlServerFoldMode = (__webpack_require__(42205)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = SqlServerHighlightRules;
@@ -55529,15 +55253,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2441:
+/***/ 72441:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SqlServerHighlightRules = function() {
     /**
@@ -55745,20 +55468,19 @@ exports.Q = SqlServerHighlightRules;
 
 /***/ }),
 
-/***/ 7884:
+/***/ 37884:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var StylusHighlightRules = (__webpack_require__(2251).StylusHighlightRules);
-var FoldMode = (__webpack_require__(9188)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var StylusHighlightRules = (__webpack_require__(42251).StylusHighlightRules);
+var FoldMode = (__webpack_require__(79188)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = StylusHighlightRules;
@@ -55779,18 +55501,17 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2251:
+/***/ 42251:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY Stylus.tmlanguage (UUID: 60519324-6A3A-4382-9E0B-546993A3869A) */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var CssHighlightRules = __webpack_require__(4897);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var CssHighlightRules = __webpack_require__(64897);
 
 var StylusHighlightRules = function() {
 
@@ -55949,19 +55670,18 @@ exports.StylusHighlightRules = StylusHighlightRules;
 
 /***/ }),
 
-/***/ 3335:
+/***/ 93335:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var XmlMode = (__webpack_require__(3776)/* .Mode */ .A);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var SvgHighlightRules = (__webpack_require__(3337)/* .SvgHighlightRules */ .Y);
+var oop = __webpack_require__(42011);
+var XmlMode = (__webpack_require__(13776)/* .Mode */ .A);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var SvgHighlightRules = (__webpack_require__(43337)/* .SvgHighlightRules */ .Y);
 var MixedFoldMode = (__webpack_require__(6091)/* .FoldMode */ .Z);
-var XmlFoldMode = (__webpack_require__(8027)/* .FoldMode */ .Z);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var XmlFoldMode = (__webpack_require__(18027)/* .FoldMode */ .Z);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     XmlMode.call(this);
@@ -55994,15 +55714,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3337:
+/***/ 43337:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
-var XmlHighlightRules = (__webpack_require__(2392)/* .XmlHighlightRules */ .U);
+var oop = __webpack_require__(42011);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
+var XmlHighlightRules = (__webpack_require__(72392)/* .XmlHighlightRules */ .U);
 
 var SvgHighlightRules = function() {
     XmlHighlightRules.call(this);
@@ -56019,21 +55738,20 @@ exports.Y = SvgHighlightRules;
 
 /***/ }),
 
-/***/ 7483:
+/***/ 47483:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var HighlightRules = (__webpack_require__(3535)/* .HighlightRules */ .R);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var HighlightRules = (__webpack_require__(63535)/* .HighlightRules */ .R);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = HighlightRules;
@@ -56054,17 +55772,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3535:
+/***/ 63535:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var SwiftHighlightRules = function() {
    var keywordMapper = this.createKeywordMapper({
@@ -56233,18 +55950,17 @@ __webpack_unused_export__ = SwiftHighlightRules;
 
 /***/ }),
 
-/***/ 3175:
+/***/ 23175:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var TclHighlightRules = (__webpack_require__(2283)/* .TclHighlightRules */ .a);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var TclHighlightRules = (__webpack_require__(12283)/* .TclHighlightRules */ .a);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = TclHighlightRules;
@@ -56295,14 +56011,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2283:
+/***/ 12283:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var TclHighlightRules = function() {
 
@@ -56446,17 +56161,16 @@ exports.a = TclHighlightRules;
 
 /***/ }),
 
-/***/ 412:
+/***/ 20412:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var TerraformHighlightRules = (__webpack_require__(779)/* .TerraformHighlightRules */ .p);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var TerraformHighlightRules = (__webpack_require__(90779)/* .TerraformHighlightRules */ .p);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function () {
     TextMode.call(this);
@@ -56481,14 +56195,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 779:
+/***/ 90779:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 var TerraformHighlightRules = function () {
 
 
@@ -56669,10 +56382,9 @@ exports.p = TerraformHighlightRules;
 
 /***/ }),
 
-/***/ 7492:
+/***/ 37492:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * tex.js
  *
@@ -56713,11 +56425,11 @@ exports.p = TerraformHighlightRules;
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var TexHighlightRules = (__webpack_require__(3134)/* .TexHighlightRules */ .j);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var TexHighlightRules = (__webpack_require__(53134)/* .TexHighlightRules */ .j);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function(suppressHighlighting) {
     if (suppressHighlighting)
@@ -56747,10 +56459,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 3134:
+/***/ 53134:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * tex_highlight_rules.js
  *
@@ -56791,9 +56502,9 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var TexHighlightRules = function(textClass) {
 
@@ -56881,23 +56592,26 @@ exports.j = TexHighlightRules;
 
 /***/ }),
 
-/***/ 2113:
+/***/ 72113:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-var config = __webpack_require__(3294);
+/**
+ * @typedef {import("../../ace-internal").Ace.SyntaxMode} SyntaxMode
+ */
 
-var Tokenizer = (__webpack_require__(9754).Tokenizer);
+var config = __webpack_require__(33294);
 
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var CstyleBehaviour = (__webpack_require__(5478)/* .CstyleBehaviour */ .B);
-var unicode = __webpack_require__(7913);
-var lang = __webpack_require__(732);
+var Tokenizer = (__webpack_require__(39754).Tokenizer);
+
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var CstyleBehaviour = (__webpack_require__(95478)/* .CstyleBehaviour */ .B);
+var unicode = __webpack_require__(17913);
+var lang = __webpack_require__(10732);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
-var Mode; 
+var Mode;
 Mode = function() {
     this.HighlightRules = TextHighlightRules;
 };
@@ -56910,7 +56624,7 @@ Mode = function() {
     this.nonTokenRe = new RegExp("^(?:[^" + unicode.wordChars + "\\$_]|\\s])+", "g");
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.getTokenizer = function() {
         if (!this.$tokenizer) {
@@ -56924,7 +56638,7 @@ Mode = function() {
     this.blockComment = "";
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.toggleCommentLines = function(state, session, startRow, endRow) {
         var doc = session.doc;
@@ -56984,7 +56698,7 @@ Mode = function() {
                 var lineCommentStart = this.lineCommentStart;
             }
             regexpStart = new RegExp("^(\\s*)(?:" + regexpStart + ") ?");
-            
+
             insertAtTabStop = session.getUseSoftTabs();
 
             var uncomment = function(line, i) {
@@ -57008,7 +56722,7 @@ Mode = function() {
             var testRemove = function(line, i) {
                 return regexpStart.test(line);
             };
-            
+
             var shouldInsertSpace = function(line, before, after) {
                 var spaces = 0;
                 while (before-- && line.charAt(before) == " ")
@@ -57057,7 +56771,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.toggleBlockComment = function(state, session, range, cursor) {
         var comment = this.blockComment;
@@ -57155,14 +56869,14 @@ Mode = function() {
             }
         }
 
-        var delegations = ["toggleBlockComment", "toggleCommentLines", "getNextLineIndent", 
+        var delegations = ["toggleBlockComment", "toggleCommentLines", "getNextLineIndent",
             "checkOutdent", "autoOutdent", "transformAction", "getCompletions"];
 
         for (let i = 0; i < delegations.length; i++) {
             (function(scope) {
               var functionName = delegations[i];
               var defaultHandler = scope[functionName];
-              scope[delegations[i]] = 
+              scope[delegations[i]] =
                   /** @this {import("../../ace-internal").Ace.SyntaxMode} */
                   function () {
                       return this.$delegator(functionName, arguments, defaultHandler);
@@ -57172,7 +56886,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.$delegator = function(method, args, defaultHandler) {
         var state = args[0] || "start";
@@ -57185,7 +56899,7 @@ Mode = function() {
             }
             state = state[0] || "start";
         }
-            
+
         for (var i = 0; i < this.$embeds.length; i++) {
             if (!this.$modes[this.$embeds[i]]) continue;
 
@@ -57201,7 +56915,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.transformAction = function(state, action, editor, session, param) {
         if (this.$behaviour) {
@@ -57218,7 +56932,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.getKeywords = function(append) {
         // this is for autocompletion to pick up regexp'ed keywords
@@ -57233,7 +56947,7 @@ Mode = function() {
                             completionKeywords.push(ruleItr[r].regex);
                     }
                     else if (typeof ruleItr[r].token === "object") {
-                        for (var a = 0, aLength = ruleItr[r].token.length; a < aLength; a++) {    
+                        for (var a = 0, aLength = ruleItr[r].token.length; a < aLength; a++) {
                             if (/keyword|support|storage/.test(ruleItr[r].token[a])) {
                                 // drop surrounding parens
                                 var rule = ruleItr[r].regex.match(/\(.+?\)/g)[a];
@@ -57252,7 +56966,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.$createKeywordList = function() {
         if (!this.$highlightRules)
@@ -57261,7 +56975,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.getCompletions = function(state, session, pos, prefix) {
         var keywords = this.$keywordList || this.$createKeywordList();
@@ -57283,13 +56997,12 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 9697:
+/***/ 99697:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-const deepCopy = (__webpack_require__(692).deepCopy);
+const deepCopy = (__webpack_require__(90692).deepCopy);
 
 /**@type {(new() => Partial<import("../../ace-internal").Ace.HighlightRules>) & {prototype: import("../../ace-internal").Ace.HighlightRules}}*/
 var TextHighlightRules;
@@ -57531,16 +57244,15 @@ exports.K = TextHighlightRules;
 
 /***/ }),
 
-/***/ 1785:
+/***/ 31785:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var TextileHighlightRules = (__webpack_require__(358)/* .TextileHighlightRules */ .S);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var TextileHighlightRules = (__webpack_require__(20358)/* .TextileHighlightRules */ .S);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function() {
     this.HighlightRules = TextileHighlightRules;
@@ -57575,14 +57287,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 358:
+/***/ 20358:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var TextileHighlightRules = function() {
     this.$rules = {
@@ -57643,16 +57354,15 @@ exports.S = TextileHighlightRules;
 
 /***/ }),
 
-/***/ 6754:
+/***/ 56754:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var TomlHighlightRules = (__webpack_require__(2835)/* .TomlHighlightRules */ .P);
-var FoldMode = (__webpack_require__(1144)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var TomlHighlightRules = (__webpack_require__(52835)/* .TomlHighlightRules */ .P);
+var FoldMode = (__webpack_require__(41144)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = TomlHighlightRules;
@@ -57671,14 +57381,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2835:
+/***/ 52835:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var TomlHighlightRules = function() {
     var keywordMapper = this.createKeywordMapper({
@@ -57749,20 +57458,19 @@ exports.P = TomlHighlightRules;
 
 /***/ }),
 
-/***/ 2422:
+/***/ 42422:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-const JavaScriptBehaviour = (__webpack_require__(3587)/* .JavaScriptBehaviour */ .N);
-const JavaScriptFoldMode = (__webpack_require__(4786)/* .FoldMode */ .Z);
-var tsMode = (__webpack_require__(1879)/* .Mode */ .A);
+var oop = __webpack_require__(42011);
+const JavaScriptBehaviour = (__webpack_require__(83587)/* .JavaScriptBehaviour */ .N);
+const JavaScriptFoldMode = (__webpack_require__(14786)/* .FoldMode */ .Z);
+var tsMode = (__webpack_require__(81879)/* .Mode */ .A);
 
 var Mode = function() {
     tsMode.call(this);
@@ -57781,21 +57489,20 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5233:
+/***/ 55233:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var TurtleHighlightRules = (__webpack_require__(5884)/* .TurtleHighlightRules */ .q);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var TurtleHighlightRules = (__webpack_require__(85884)/* .TurtleHighlightRules */ .q);
 // TODO: pick appropriate fold mode
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = TurtleHighlightRules;
@@ -57814,10 +57521,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5884:
+/***/ 85884:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from turtle.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -57826,8 +57532,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var TurtleHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -57956,16 +57662,15 @@ exports.q = TurtleHighlightRules;
 
 /***/ }),
 
-/***/ 2685:
+/***/ 42685:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var TwigHighlightRules = (__webpack_require__(4769)/* .TwigHighlightRules */ .D);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var TwigHighlightRules = (__webpack_require__(34769)/* .TwigHighlightRules */ .D);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -58013,16 +57718,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 4769:
+/***/ 34769:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var TwigHighlightRules = function() {
     // inherit from html
@@ -58155,21 +57859,20 @@ exports.D = TwigHighlightRules;
 
 /***/ }),
 
-/***/ 1879:
+/***/ 81879:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var jsMode = (__webpack_require__(3480)/* .Mode */ .A);
-var TypeScriptHighlightRules = (__webpack_require__(125).TypeScriptHighlightRules);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var jsMode = (__webpack_require__(93480)/* .Mode */ .A);
+var TypeScriptHighlightRules = (__webpack_require__(26754).TypeScriptHighlightRules);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function() {
     this.HighlightRules = TypeScriptHighlightRules;
@@ -58192,17 +57895,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 125:
+/***/ 26754:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode_highlight_rules.tmpl.js (UUID: 21e323af-f665-4161-96e7-5087d262557e) */
 
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptHighlightRules = (__webpack_require__(2046).JavaScriptHighlightRules);
+var oop = __webpack_require__(42011);
+var JavaScriptHighlightRules = (__webpack_require__(42046).JavaScriptHighlightRules);
 
 var TypeScriptHighlightRules = function (options) {
 
@@ -58243,21 +57945,20 @@ exports.TypeScriptHighlightRules = TypeScriptHighlightRules;
 
 /***/ }),
 
-/***/ 6217:
+/***/ 76217:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ValaHighlightRules = (__webpack_require__(55)/* .ValaHighlightRules */ .I);
-var CStyleFoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ValaHighlightRules = (__webpack_require__(30055)/* .ValaHighlightRules */ .I);
+var CStyleFoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
 
 var Mode = function() {
     this.HighlightRules = ValaHighlightRules;
@@ -58322,10 +58023,9 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 55:
+/***/ 30055:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* This file was autogenerated from https://raw.githubusercontent.com/technosophos/Vala-TMBundle/master/Syntaxes/Vala.tmLanguage (uuid: ) */
 /****************************************************************************************
  * IT MIGHT NOT BE PERFECT ...But it's a good start from an existing *.tmlanguage file. *
@@ -58334,8 +58034,8 @@ exports.A = Mode;
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ValaHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -58755,21 +58455,20 @@ exports.I = ValaHighlightRules;
 
 /***/ }),
 
-/***/ 6923:
+/***/ 26923:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var VBScriptHighlightRules = (__webpack_require__(8452)/* .VBScriptHighlightRules */ .U);
-var FoldMode = (__webpack_require__(8997)/* .FoldMode */ .Z);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var VBScriptHighlightRules = (__webpack_require__(68452)/* .VBScriptHighlightRules */ .U);
+var FoldMode = (__webpack_require__(98997)/* .FoldMode */ .Z);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = VBScriptHighlightRules;
@@ -58908,17 +58607,16 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8452:
+/***/ 68452:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode_highlight_rules.tmpl.js (UUID: 7F9C9343-D48E-4E7D-BFE8-F680714DCD3E) */
 
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var VBScriptHighlightRules = function() {
 
@@ -59111,20 +58809,19 @@ exports.U = VBScriptHighlightRules;
 
 /***/ }),
 
-/***/ 7069:
+/***/ 97069:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var VelocityHighlightRules = (__webpack_require__(7455)/* .VelocityHighlightRules */ .z);
-var FoldMode = (__webpack_require__(9623)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var VelocityHighlightRules = (__webpack_require__(17455)/* .VelocityHighlightRules */ .z);
+var FoldMode = (__webpack_require__(69623)/* .FoldMode */ .Z);
 
 var Mode = function() {
     HtmlMode.call(this);
@@ -59145,16 +58842,15 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 7455:
+/***/ 17455:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 var VelocityHighlightRules = function() {
     HtmlHighlightRules.call(this);
@@ -59328,16 +59024,15 @@ exports.z = VelocityHighlightRules;
 
 /***/ }),
 
-/***/ 2850:
+/***/ 22850:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var VerilogHighlightRules = (__webpack_require__(6017)/* .VerilogHighlightRules */ .Q);
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var VerilogHighlightRules = (__webpack_require__(16017)/* .VerilogHighlightRules */ .Q);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 var Mode = function() {
     this.HighlightRules = VerilogHighlightRules;
@@ -59360,14 +59055,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6017:
+/***/ 16017:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var VerilogHighlightRules = function() {
 var keywords = "always|and|assign|automatic|begin|buf|bufif0|bufif1|case|casex|casez|cell|cmos|config|" +
@@ -59449,15 +59143,14 @@ exports.Q = VerilogHighlightRules;
 
 /***/ }),
 
-/***/ 9809:
+/***/ 39809:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var VHDLHighlightRules = (__webpack_require__(8989)/* .VHDLHighlightRules */ ._);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var VHDLHighlightRules = (__webpack_require__(28989)/* .VHDLHighlightRules */ ._);
 
 var Mode = function() {
     this.HighlightRules = VHDLHighlightRules;
@@ -59477,14 +59170,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 8989:
+/***/ 28989:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var VHDLHighlightRules = function() {
 
@@ -59574,16 +59266,15 @@ exports._ = VHDLHighlightRules;
 /***/ 5886:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* caption: Visualforce; extensions: component,page,vfp */
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlMode = (__webpack_require__(2954)/* .Mode */ .A);
-var VisualforceHighlightRules = (__webpack_require__(90)/* .VisualforceHighlightRules */ .l);
-var XmlBehaviour = (__webpack_require__(5194).XmlBehaviour);
-var HtmlFoldMode = (__webpack_require__(5540).FoldMode);
+var oop = __webpack_require__(42011);
+var HtmlMode = (__webpack_require__(72954)/* .Mode */ .A);
+var VisualforceHighlightRules = (__webpack_require__(40090)/* .VisualforceHighlightRules */ .l);
+var XmlBehaviour = (__webpack_require__(45194).XmlBehaviour);
+var HtmlFoldMode = (__webpack_require__(75540).FoldMode);
 
 function VisualforceMode() {
     HtmlMode.call(this);
@@ -59604,16 +59295,15 @@ exports.A = VisualforceMode;
 
 /***/ }),
 
-/***/ 90:
+/***/ 40090:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /* global define */
 
 
 
-var oop = __webpack_require__(2011);
-var HtmlHighlightRules = (__webpack_require__(6142).HtmlHighlightRules);
+var oop = __webpack_require__(42011);
+var HtmlHighlightRules = (__webpack_require__(86142).HtmlHighlightRules);
 
 function string(options) {
     return {
@@ -59715,19 +59405,18 @@ exports.l = VisualforceHighlightRules;
 
 /***/ }),
 
-/***/ 7976:
+/***/ 17976:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-const {FoldMode: HtmlFoldMode} = __webpack_require__(5540);
-const lang = __webpack_require__(732);
-const {XmlBehaviour} = __webpack_require__(5194);
-const {HtmlCompletions} = __webpack_require__(39);
-var HTMLMode = (__webpack_require__(2954)/* .Mode */ .A);
-var VueHighlightRules = (__webpack_require__(236)/* .VueHighlightRules */ .m);
+var oop = __webpack_require__(42011);
+const {FoldMode: HtmlFoldMode} = __webpack_require__(75540);
+const lang = __webpack_require__(10732);
+const {XmlBehaviour} = __webpack_require__(45194);
+const {HtmlCompletions} = __webpack_require__(90039);
+var HTMLMode = (__webpack_require__(72954)/* .Mode */ .A);
+var VueHighlightRules = (__webpack_require__(30236)/* .VueHighlightRules */ .m);
 
 var voidElements = [
     "area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "menuitem", "param", "source",
@@ -59761,27 +59450,26 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 236:
+/***/ 30236:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var {CssHighlightRules} = __webpack_require__(4897);
-var {TypeScriptHighlightRules} = __webpack_require__(125);
-var {CoffeeHighlightRules} = __webpack_require__(2092);
-var {HtmlHighlightRules} = __webpack_require__(6142);
-var {JavaScriptHighlightRules} = __webpack_require__(2046);
-var {StylusHighlightRules} = __webpack_require__(2251);
-var {SassHighlightRules} = __webpack_require__(6119);
-var {ScssHighlightRules} = __webpack_require__(8670);
-var {LessHighlightRules} = __webpack_require__(3011);
-var {Tokenizer} = __webpack_require__(9754);
-var {SlimHighlightRules} = __webpack_require__(3438);
-var {JadeHighlightRules} = __webpack_require__(5352);
+var oop = __webpack_require__(42011);
+var {CssHighlightRules} = __webpack_require__(64897);
+var {TypeScriptHighlightRules} = __webpack_require__(26754);
+var {CoffeeHighlightRules} = __webpack_require__(72092);
+var {HtmlHighlightRules} = __webpack_require__(86142);
+var {JavaScriptHighlightRules} = __webpack_require__(42046);
+var {StylusHighlightRules} = __webpack_require__(42251);
+var {SassHighlightRules} = __webpack_require__(86119);
+var {ScssHighlightRules} = __webpack_require__(78670);
+var {LessHighlightRules} = __webpack_require__(83011);
+var {Tokenizer} = __webpack_require__(39754);
+var {SlimHighlightRules} = __webpack_require__(53438);
+var {JadeHighlightRules} = __webpack_require__(55352);
 
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
 
 var VueHighlightRules = function (options) {
 
@@ -59851,7 +59539,7 @@ var VueHighlightRules = function (options) {
     var self = this;
     VueRules.tag_stuff.unshift({//vue-directives 
         token: "string",
-        regex: /(?:\b(v-)|(:|@))([a-zA-Z\-.]+)(?:\:([a-zA-Z\-]+))?(?:\.([a-zA-Z\-]+))*(\s*)(=)(\s*)(["'])/,
+        regex: /(?:\b(v-)|(:|@))(\[?[a-zA-Z\-.]+\]?)(?:(\:\[?[a-zA-Z\-]+\]?))?((?:\.[a-zA-Z\-]+)*)(\s*)(=)(\s*)(["'])/,
         onMatch: function (value, currentState, stack) {
             var quote = value[value.length - 1];
             stack.unshift(quote, currentState);
@@ -59969,19 +59657,19 @@ exports.m = VueHighlightRules;
 
 /***/ }),
 
-/***/ 4538:
+/***/ 54538:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var JavaScriptMode = (__webpack_require__(3480)/* .Mode */ .A);
-var WollokHighlightRules = (__webpack_require__(5877)/* .WollokHighlightRules */ .c);
+var oop = __webpack_require__(42011);
+var JavaScriptMode = (__webpack_require__(93480)/* .Mode */ .A);
+var WollokHighlightRules = (__webpack_require__(65877)/* .WollokHighlightRules */ .c);
 
 var Mode = function() {
     JavaScriptMode.call(this);
     this.HighlightRules = WollokHighlightRules;
+    this.$behaviour = this.$defaultBehaviour;
 };
 oop.inherits(Mode, JavaScriptMode);
 
@@ -60000,15 +59688,14 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5877:
+/***/ 65877:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var DocCommentHighlightRules = (__webpack_require__(9708)/* .DocCommentHighlightRules */ .c);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var DocCommentHighlightRules = (__webpack_require__(69708)/* .DocCommentHighlightRules */ .c);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var WollokHighlightRules = function() {
 
@@ -60102,19 +59789,18 @@ exports.c = WollokHighlightRules;
 
 /***/ }),
 
-/***/ 3776:
+/***/ 13776:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var lang = __webpack_require__(732);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var XmlHighlightRules = (__webpack_require__(2392)/* .XmlHighlightRules */ .U);
-var XmlBehaviour = (__webpack_require__(5194).XmlBehaviour);
-var XmlFoldMode = (__webpack_require__(8027)/* .FoldMode */ .Z);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
+var oop = __webpack_require__(42011);
+var lang = __webpack_require__(10732);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var XmlHighlightRules = (__webpack_require__(72392)/* .XmlHighlightRules */ .U);
+var XmlBehaviour = (__webpack_require__(45194).XmlBehaviour);
+var XmlFoldMode = (__webpack_require__(18027)/* .FoldMode */ .Z);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
 
 var Mode = function() {
    this.HighlightRules = XmlHighlightRules;
@@ -60153,14 +59839,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 2392:
+/***/ 72392:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var XmlHighlightRules = function(normalize) {
     // http://www.w3.org/TR/REC-xml/#NT-NameChar
@@ -60367,18 +60052,17 @@ exports.U = XmlHighlightRules;
 
 /***/ }),
 
-/***/ 5051:
+/***/ 35051:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var YamlHighlightRules = (__webpack_require__(6705)/* .YamlHighlightRules */ .A);
-var MatchingBraceOutdent = (__webpack_require__(3234).MatchingBraceOutdent);
-var FoldMode = (__webpack_require__(1009)/* .FoldMode */ .Z);
-var WorkerClient = (__webpack_require__(1583).WorkerClient);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var YamlHighlightRules = (__webpack_require__(76705)/* .YamlHighlightRules */ .A);
+var MatchingBraceOutdent = (__webpack_require__(23234).MatchingBraceOutdent);
+var FoldMode = (__webpack_require__(91009)/* .FoldMode */ .Z);
+var WorkerClient = (__webpack_require__(51583).WorkerClient);
 
 var Mode = function() {
     this.HighlightRules = YamlHighlightRules;
@@ -60437,14 +60121,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6705:
+/***/ 76705:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var YamlHighlightRules = function() {
 
@@ -60592,20 +60275,19 @@ exports.A = YamlHighlightRules;
 
 /***/ }),
 
-/***/ 3405:
+/***/ 33405:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
   THIS FILE WAS AUTOGENERATED BY mode.tmpl.js
 */
 
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ZeekHighlightRules = (__webpack_require__(6770)/* .ZeekHighlightRules */ .K);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ZeekHighlightRules = (__webpack_require__(96770)/* .ZeekHighlightRules */ .K);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ZeekHighlightRules;
@@ -60624,14 +60306,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 6770:
+/***/ 96770:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ZeekHighlightRules = function() {
     // regexp must not have capturing parentheses. Use (?:) instead.
@@ -61007,16 +60688,15 @@ exports.K = ZeekHighlightRules;
 
 /***/ }),
 
-/***/ 849:
+/***/ 80849:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextMode = (__webpack_require__(2113)/* .Mode */ .A);
-var ZigHighlightRules = (__webpack_require__(5445)/* .ZigHighlightRules */ .K);
-var FoldMode = (__webpack_require__(5622)/* .FoldMode */ .Z);
+var oop = __webpack_require__(42011);
+var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
+var ZigHighlightRules = (__webpack_require__(5892)/* .ZigHighlightRules */ .K);
+var FoldMode = (__webpack_require__(75622)/* .FoldMode */ .Z);
 
 var Mode = function() {
     this.HighlightRules = ZigHighlightRules;
@@ -61035,14 +60715,13 @@ exports.A = Mode;
 
 /***/ }),
 
-/***/ 5445:
+/***/ 5892:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
-var oop = __webpack_require__(2011);
-var TextHighlightRules = (__webpack_require__(9697)/* .TextHighlightRules */ .K);
+var oop = __webpack_require__(42011);
+var TextHighlightRules = (__webpack_require__(99697)/* .TextHighlightRules */ .K);
 
 var ZigHighlightRules = function() {
     this.$rules = {
@@ -61491,10 +61170,9 @@ exports.K = ZigHighlightRules;
 
 /***/ }),
 
-/***/ 3069:
+/***/ 93069:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 /**
@@ -61964,7 +61642,7 @@ exports.e = Range;
 
 /***/ }),
 
-/***/ 6126:
+/***/ 46126:
 /***/ ((module) => {
 
 module.exports = `.ace-tm .ace_gutter {
@@ -62130,18 +61808,17 @@ module.exports = `.ace-tm .ace_gutter {
 
 /***/ }),
 
-/***/ 9609:
+/***/ 39609:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 exports.isDark = false;
 exports.cssClass = "ace-tm";
-exports.cssText = __webpack_require__(6126);
+exports.cssText = __webpack_require__(46126);
 exports.$id = "ace/theme/textmate";
 
-var dom = __webpack_require__(5336);
+var dom = __webpack_require__(25336);
 dom.importCssString(exports.cssText, exports.cssClass, false);
 
 
@@ -62150,13 +61827,12 @@ dom.importCssString(exports.cssText, exports.cssClass, false);
 /***/ 7726:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
  */
 
-var Range = (__webpack_require__(3069)/* .Range */ .e);
+var Range = (__webpack_require__(93069)/* .Range */ .e);
 
 /**
  * This class provides an essay way to treat the document as a stream of tokens, and provides methods to iterate over these tokens.
@@ -62287,12 +61963,11 @@ exports.TokenIterator = TokenIterator;
 
 /***/ }),
 
-/***/ 9754:
+/***/ 39754:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-const reportError = (__webpack_require__(755)/* .reportError */ .e);
+const reportError = (__webpack_require__(80755)/* .reportError */ .e);
 
 // tokenizing lines longer than this makes editor very slow
 var MAX_TOKEN_COUNT = 2000;
@@ -62654,10 +62329,9 @@ exports.Tokenizer = Tokenizer;
 
 /***/ }),
 
-/***/ 7913:
+/***/ 17913:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 // generated by tool/unicode.js
@@ -62676,7 +62350,7 @@ exports.wordChars = String.fromCharCode.apply(null, str);
 
 /***/ }),
 
-/***/ 1583:
+/***/ 51583:
 /***/ ((__unused_webpack_module, exports) => {
 
 // not implemented
@@ -62692,459 +62366,446 @@ exports.WorkerClient = WorkerClient;
 
 /***/ })
 
-/******/ 	});
+/******/ });
 /************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
+/******/ // The module cache
+/******/ var __webpack_module_cache__ = {};
+/******/ 
+/******/ // The require function
+/******/ function __webpack_require__(moduleId) {
+/******/ 	// Check if module is in cache
+/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 	if (cachedModule !== undefined) {
+/******/ 		return cachedModule.exports;
 /******/ 	}
-/******/ 	
+/******/ 	// Create a new module (and put it into the cache)
+/******/ 	var module = __webpack_module_cache__[moduleId] = {
+/******/ 		id: moduleId,
+/******/ 		loaded: false,
+/******/ 		exports: {}
+/******/ 	};
+/******/ 
+/******/ 	// Execute the module function
+/******/ 	__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 
+/******/ 	// Flag the module as loaded
+/******/ 	module.loaded = true;
+/******/ 
+/******/ 	// Return the exports of the module
+/******/ 	return module.exports;
+/******/ }
+/******/ 
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
+/******/ /* webpack/runtime/define property getters */
+/******/ (() => {
+/******/ 	// define getter functions for harmony exports
+/******/ 	__webpack_require__.d = (exports, definition) => {
+/******/ 		for(var key in definition) {
+/******/ 			if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
 /******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__webpack_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
-/******/ 		};
-/******/ 	})();
-/******/ 	
+/******/ 		}
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/hasOwnProperty shorthand */
+/******/ (() => {
+/******/ 	__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/node module decorator */
+/******/ (() => {
+/******/ 	__webpack_require__.nmd = (module) => {
+/******/ 		module.paths = [];
+/******/ 		if (!module.children) module.children = [];
+/******/ 		return module;
+/******/ 	};
+/******/ })();
+/******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-"use strict";
-__webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   AbapMode: () => (/* reexport safe */ ace_code_src_mode_abap__WEBPACK_IMPORTED_MODULE_0__.A),
-/* harmony export */   AbcMode: () => (/* reexport safe */ ace_code_src_mode_abc__WEBPACK_IMPORTED_MODULE_1__.A),
-/* harmony export */   ActionscriptMode: () => (/* reexport safe */ ace_code_src_mode_actionscript__WEBPACK_IMPORTED_MODULE_2__.A),
-/* harmony export */   AdaMode: () => (/* reexport safe */ ace_code_src_mode_ada__WEBPACK_IMPORTED_MODULE_3__.A),
-/* harmony export */   AldaMode: () => (/* reexport safe */ ace_code_src_mode_alda__WEBPACK_IMPORTED_MODULE_4__.A),
-/* harmony export */   ApacheConfMode: () => (/* reexport safe */ ace_code_src_mode_apache_conf__WEBPACK_IMPORTED_MODULE_5__.A),
-/* harmony export */   ApexMode: () => (/* reexport safe */ ace_code_src_mode_apex__WEBPACK_IMPORTED_MODULE_6__.A),
-/* harmony export */   ApplescriptMode: () => (/* reexport safe */ ace_code_src_mode_applescript__WEBPACK_IMPORTED_MODULE_7__.A),
-/* harmony export */   AqlMode: () => (/* reexport safe */ ace_code_src_mode_aql__WEBPACK_IMPORTED_MODULE_8__.A),
-/* harmony export */   AsciidocMode: () => (/* reexport safe */ ace_code_src_mode_asciidoc__WEBPACK_IMPORTED_MODULE_9__.A),
-/* harmony export */   AslMode: () => (/* reexport safe */ ace_code_src_mode_asl__WEBPACK_IMPORTED_MODULE_10__.A),
-/* harmony export */   AssemblyArm32Mode: () => (/* reexport safe */ ace_code_src_mode_assembly_arm32__WEBPACK_IMPORTED_MODULE_11__.A),
-/* harmony export */   AssemblyX86Mode: () => (/* reexport safe */ ace_code_src_mode_assembly_x86__WEBPACK_IMPORTED_MODULE_12__.A),
-/* harmony export */   AstroMode: () => (/* reexport safe */ ace_code_src_mode_astro__WEBPACK_IMPORTED_MODULE_13__.A),
-/* harmony export */   AutohotkeyMode: () => (/* reexport safe */ ace_code_src_mode_autohotkey__WEBPACK_IMPORTED_MODULE_14__.A),
-/* harmony export */   BatchfileMode: () => (/* reexport safe */ ace_code_src_mode_batchfile__WEBPACK_IMPORTED_MODULE_15__.A),
-/* harmony export */   BibtexMode: () => (/* reexport safe */ ace_code_src_mode_bibtex__WEBPACK_IMPORTED_MODULE_16__.A),
-/* harmony export */   C9searchMode: () => (/* reexport safe */ ace_code_src_mode_c9search__WEBPACK_IMPORTED_MODULE_18__.A),
-/* harmony export */   CCppMode: () => (/* reexport safe */ ace_code_src_mode_c_cpp__WEBPACK_IMPORTED_MODULE_17__.A),
-/* harmony export */   CirruMode: () => (/* reexport safe */ ace_code_src_mode_cirru__WEBPACK_IMPORTED_MODULE_19__.A),
-/* harmony export */   ClojureMode: () => (/* reexport safe */ ace_code_src_mode_clojure__WEBPACK_IMPORTED_MODULE_20__.A),
-/* harmony export */   CobolMode: () => (/* reexport safe */ ace_code_src_mode_cobol__WEBPACK_IMPORTED_MODULE_21__.A),
-/* harmony export */   CoffeeMode: () => (/* reexport safe */ ace_code_src_mode_coffee__WEBPACK_IMPORTED_MODULE_22__.A),
-/* harmony export */   ColdfusionMode: () => (/* reexport safe */ ace_code_src_mode_coldfusion__WEBPACK_IMPORTED_MODULE_23__.A),
-/* harmony export */   CrystalMode: () => (/* reexport safe */ ace_code_src_mode_crystal__WEBPACK_IMPORTED_MODULE_24__.A),
-/* harmony export */   CsharpMode: () => (/* reexport safe */ ace_code_src_mode_csharp__WEBPACK_IMPORTED_MODULE_25__.A),
-/* harmony export */   CsoundDocumentMode: () => (/* reexport safe */ ace_code_src_mode_csound_document__WEBPACK_IMPORTED_MODULE_26__.A),
-/* harmony export */   CsoundOrchestraMode: () => (/* reexport safe */ ace_code_src_mode_csound_orchestra__WEBPACK_IMPORTED_MODULE_27__.A),
-/* harmony export */   CsoundScoreMode: () => (/* reexport safe */ ace_code_src_mode_csound_score__WEBPACK_IMPORTED_MODULE_28__.A),
-/* harmony export */   CspMode: () => (/* reexport safe */ ace_code_src_mode_csp__WEBPACK_IMPORTED_MODULE_29__.A),
-/* harmony export */   CssMode: () => (/* reexport safe */ ace_code_src_mode_css__WEBPACK_IMPORTED_MODULE_30__.A),
-/* harmony export */   CurlyMode: () => (/* reexport safe */ ace_code_src_mode_curly__WEBPACK_IMPORTED_MODULE_31__.A),
-/* harmony export */   CuttlefishMode: () => (/* reexport safe */ ace_code_src_mode_cuttlefish__WEBPACK_IMPORTED_MODULE_32__.A),
-/* harmony export */   DMode: () => (/* reexport safe */ ace_code_src_mode_d__WEBPACK_IMPORTED_MODULE_33__.A),
-/* harmony export */   DartMode: () => (/* reexport safe */ ace_code_src_mode_dart__WEBPACK_IMPORTED_MODULE_34__.A),
-/* harmony export */   DiffMode: () => (/* reexport safe */ ace_code_src_mode_diff__WEBPACK_IMPORTED_MODULE_35__.A),
-/* harmony export */   DjangoMode: () => (/* reexport safe */ ace_code_src_mode_django__WEBPACK_IMPORTED_MODULE_36__.A),
-/* harmony export */   DockerfileMode: () => (/* reexport safe */ ace_code_src_mode_dockerfile__WEBPACK_IMPORTED_MODULE_37__.A),
-/* harmony export */   DotMode: () => (/* reexport safe */ ace_code_src_mode_dot__WEBPACK_IMPORTED_MODULE_38__.A),
-/* harmony export */   DroolsMode: () => (/* reexport safe */ ace_code_src_mode_drools__WEBPACK_IMPORTED_MODULE_39__.A),
-/* harmony export */   EdifactMode: () => (/* reexport safe */ ace_code_src_mode_edifact__WEBPACK_IMPORTED_MODULE_40__.A),
-/* harmony export */   EiffelMode: () => (/* reexport safe */ ace_code_src_mode_eiffel__WEBPACK_IMPORTED_MODULE_41__.A),
-/* harmony export */   EjsMode: () => (/* reexport safe */ ace_code_src_mode_ejs__WEBPACK_IMPORTED_MODULE_42__.A),
-/* harmony export */   ElixirMode: () => (/* reexport safe */ ace_code_src_mode_elixir__WEBPACK_IMPORTED_MODULE_43__.A),
-/* harmony export */   ElmMode: () => (/* reexport safe */ ace_code_src_mode_elm__WEBPACK_IMPORTED_MODULE_44__.A),
-/* harmony export */   ErlangMode: () => (/* reexport safe */ ace_code_src_mode_erlang__WEBPACK_IMPORTED_MODULE_45__.A),
-/* harmony export */   FlixMode: () => (/* reexport safe */ ace_code_src_mode_flix__WEBPACK_IMPORTED_MODULE_46__.A),
-/* harmony export */   ForthMode: () => (/* reexport safe */ ace_code_src_mode_forth__WEBPACK_IMPORTED_MODULE_47__.A),
-/* harmony export */   FortranMode: () => (/* reexport safe */ ace_code_src_mode_fortran__WEBPACK_IMPORTED_MODULE_48__.A),
-/* harmony export */   FsharpMode: () => (/* reexport safe */ ace_code_src_mode_fsharp__WEBPACK_IMPORTED_MODULE_49__.A),
-/* harmony export */   FslMode: () => (/* reexport safe */ ace_code_src_mode_fsl__WEBPACK_IMPORTED_MODULE_50__.A),
-/* harmony export */   FtlMode: () => (/* reexport safe */ ace_code_src_mode_ftl__WEBPACK_IMPORTED_MODULE_51__.A),
-/* harmony export */   GcodeMode: () => (/* reexport safe */ ace_code_src_mode_gcode__WEBPACK_IMPORTED_MODULE_52__.A),
-/* harmony export */   GherkinMode: () => (/* reexport safe */ ace_code_src_mode_gherkin__WEBPACK_IMPORTED_MODULE_53__.A),
-/* harmony export */   GitignoreMode: () => (/* reexport safe */ ace_code_src_mode_gitignore__WEBPACK_IMPORTED_MODULE_54__.A),
-/* harmony export */   GlslMode: () => (/* reexport safe */ ace_code_src_mode_glsl__WEBPACK_IMPORTED_MODULE_55__.A),
-/* harmony export */   GobstonesMode: () => (/* reexport safe */ ace_code_src_mode_gobstones__WEBPACK_IMPORTED_MODULE_56__.A),
-/* harmony export */   GolangMode: () => (/* reexport safe */ ace_code_src_mode_golang__WEBPACK_IMPORTED_MODULE_57__.A),
-/* harmony export */   GraphqlschemaMode: () => (/* reexport safe */ ace_code_src_mode_graphqlschema__WEBPACK_IMPORTED_MODULE_58__.A),
-/* harmony export */   GroovyMode: () => (/* reexport safe */ ace_code_src_mode_groovy__WEBPACK_IMPORTED_MODULE_59__.A),
-/* harmony export */   HamlMode: () => (/* reexport safe */ ace_code_src_mode_haml__WEBPACK_IMPORTED_MODULE_60__.A),
-/* harmony export */   HandlebarsMode: () => (/* reexport safe */ ace_code_src_mode_handlebars__WEBPACK_IMPORTED_MODULE_61__.A),
-/* harmony export */   HaskellCabalMode: () => (/* reexport safe */ ace_code_src_mode_haskell_cabal__WEBPACK_IMPORTED_MODULE_62__.A),
-/* harmony export */   HaskellMode: () => (/* reexport safe */ ace_code_src_mode_haskell__WEBPACK_IMPORTED_MODULE_63__.A),
-/* harmony export */   HaxeMode: () => (/* reexport safe */ ace_code_src_mode_haxe__WEBPACK_IMPORTED_MODULE_64__.A),
-/* harmony export */   HjsonMode: () => (/* reexport safe */ ace_code_src_mode_hjson__WEBPACK_IMPORTED_MODULE_65__.A),
-/* harmony export */   HtmlElixirMode: () => (/* reexport safe */ ace_code_src_mode_html_elixir__WEBPACK_IMPORTED_MODULE_66__.A),
-/* harmony export */   HtmlMode: () => (/* reexport safe */ ace_code_src_mode_html__WEBPACK_IMPORTED_MODULE_68__.A),
-/* harmony export */   HtmlRubyMode: () => (/* reexport safe */ ace_code_src_mode_html_ruby__WEBPACK_IMPORTED_MODULE_67__.A),
-/* harmony export */   IniMode: () => (/* reexport safe */ ace_code_src_mode_ini__WEBPACK_IMPORTED_MODULE_69__.A),
-/* harmony export */   IoMode: () => (/* reexport safe */ ace_code_src_mode_io__WEBPACK_IMPORTED_MODULE_70__.A),
-/* harmony export */   IonMode: () => (/* reexport safe */ ace_code_src_mode_ion__WEBPACK_IMPORTED_MODULE_71__.A),
-/* harmony export */   JackMode: () => (/* reexport safe */ ace_code_src_mode_jack__WEBPACK_IMPORTED_MODULE_72__.A),
-/* harmony export */   JadeMode: () => (/* reexport safe */ ace_code_src_mode_jade__WEBPACK_IMPORTED_MODULE_73__.A),
-/* harmony export */   JavaMode: () => (/* reexport safe */ ace_code_src_mode_java__WEBPACK_IMPORTED_MODULE_74__.A),
-/* harmony export */   JavascriptMode: () => (/* reexport safe */ ace_code_src_mode_javascript__WEBPACK_IMPORTED_MODULE_75__.A),
-/* harmony export */   JexlMode: () => (/* reexport safe */ ace_code_src_mode_jexl__WEBPACK_IMPORTED_MODULE_76__.A),
-/* harmony export */   Json5Mode: () => (/* reexport safe */ ace_code_src_mode_json5__WEBPACK_IMPORTED_MODULE_79__.A),
-/* harmony export */   JsonMode: () => (/* reexport safe */ ace_code_src_mode_json__WEBPACK_IMPORTED_MODULE_78__.A),
-/* harmony export */   JspMode: () => (/* reexport safe */ ace_code_src_mode_jsp__WEBPACK_IMPORTED_MODULE_77__.A),
-/* harmony export */   JssmMode: () => (/* reexport safe */ ace_code_src_mode_jssm__WEBPACK_IMPORTED_MODULE_80__.A),
-/* harmony export */   JsxMode: () => (/* reexport safe */ ace_code_src_mode_jsx__WEBPACK_IMPORTED_MODULE_81__.A),
-/* harmony export */   JuliaMode: () => (/* reexport safe */ ace_code_src_mode_julia__WEBPACK_IMPORTED_MODULE_82__.A),
-/* harmony export */   KotlinMode: () => (/* reexport safe */ ace_code_src_mode_kotlin__WEBPACK_IMPORTED_MODULE_83__.A),
-/* harmony export */   LatexMode: () => (/* reexport safe */ ace_code_src_mode_latex__WEBPACK_IMPORTED_MODULE_84__.A),
-/* harmony export */   LatteMode: () => (/* reexport safe */ ace_code_src_mode_latte__WEBPACK_IMPORTED_MODULE_85__.A),
-/* harmony export */   LessMode: () => (/* reexport safe */ ace_code_src_mode_less__WEBPACK_IMPORTED_MODULE_86__.A),
-/* harmony export */   LiquidMode: () => (/* reexport safe */ ace_code_src_mode_liquid__WEBPACK_IMPORTED_MODULE_87__.A),
-/* harmony export */   LispMode: () => (/* reexport safe */ ace_code_src_mode_lisp__WEBPACK_IMPORTED_MODULE_88__.A),
-/* harmony export */   LivescriptMode: () => (/* reexport safe */ ace_code_src_mode_livescript__WEBPACK_IMPORTED_MODULE_89__.A),
-/* harmony export */   LogiqlMode: () => (/* reexport safe */ ace_code_src_mode_logiql__WEBPACK_IMPORTED_MODULE_90__.A),
-/* harmony export */   LogtalkMode: () => (/* reexport safe */ ace_code_src_mode_logtalk__WEBPACK_IMPORTED_MODULE_91__.A),
-/* harmony export */   LslMode: () => (/* reexport safe */ ace_code_src_mode_lsl__WEBPACK_IMPORTED_MODULE_92__.A),
-/* harmony export */   LuaMode: () => (/* reexport safe */ ace_code_src_mode_lua__WEBPACK_IMPORTED_MODULE_93__.A),
-/* harmony export */   LuapageMode: () => (/* reexport safe */ ace_code_src_mode_luapage__WEBPACK_IMPORTED_MODULE_94__.A),
-/* harmony export */   LuceneMode: () => (/* reexport safe */ ace_code_src_mode_lucene__WEBPACK_IMPORTED_MODULE_95__.A),
-/* harmony export */   MakefileMode: () => (/* reexport safe */ ace_code_src_mode_makefile__WEBPACK_IMPORTED_MODULE_96__.A),
-/* harmony export */   MarkdownMode: () => (/* reexport safe */ ace_code_src_mode_markdown__WEBPACK_IMPORTED_MODULE_97__.A),
-/* harmony export */   MaskMode: () => (/* reexport safe */ ace_code_src_mode_mask__WEBPACK_IMPORTED_MODULE_98__.A),
-/* harmony export */   MatlabMode: () => (/* reexport safe */ ace_code_src_mode_matlab__WEBPACK_IMPORTED_MODULE_99__.A),
-/* harmony export */   MazeMode: () => (/* reexport safe */ ace_code_src_mode_maze__WEBPACK_IMPORTED_MODULE_100__.A),
-/* harmony export */   MediawikiMode: () => (/* reexport safe */ ace_code_src_mode_mediawiki__WEBPACK_IMPORTED_MODULE_101__.A),
-/* harmony export */   MelMode: () => (/* reexport safe */ ace_code_src_mode_mel__WEBPACK_IMPORTED_MODULE_102__.A),
-/* harmony export */   MipsMode: () => (/* reexport safe */ ace_code_src_mode_mips__WEBPACK_IMPORTED_MODULE_103__.A),
-/* harmony export */   MixalMode: () => (/* reexport safe */ ace_code_src_mode_mixal__WEBPACK_IMPORTED_MODULE_104__.A),
-/* harmony export */   MushcodeMode: () => (/* reexport safe */ ace_code_src_mode_mushcode__WEBPACK_IMPORTED_MODULE_105__.A),
-/* harmony export */   MysqlMode: () => (/* reexport safe */ ace_code_src_mode_mysql__WEBPACK_IMPORTED_MODULE_106__.A),
-/* harmony export */   NasalMode: () => (/* reexport safe */ ace_code_src_mode_nasal__WEBPACK_IMPORTED_MODULE_107__.A),
-/* harmony export */   NginxMode: () => (/* reexport safe */ ace_code_src_mode_nginx__WEBPACK_IMPORTED_MODULE_108__.A),
-/* harmony export */   NimMode: () => (/* reexport safe */ ace_code_src_mode_nim__WEBPACK_IMPORTED_MODULE_109__.A),
-/* harmony export */   NixMode: () => (/* reexport safe */ ace_code_src_mode_nix__WEBPACK_IMPORTED_MODULE_110__.A),
-/* harmony export */   NsisMode: () => (/* reexport safe */ ace_code_src_mode_nsis__WEBPACK_IMPORTED_MODULE_111__.A),
-/* harmony export */   NunjucksMode: () => (/* reexport safe */ ace_code_src_mode_nunjucks__WEBPACK_IMPORTED_MODULE_112__.A),
-/* harmony export */   ObjectivecMode: () => (/* reexport safe */ ace_code_src_mode_objectivec__WEBPACK_IMPORTED_MODULE_113__.A),
-/* harmony export */   OcamlMode: () => (/* reexport safe */ ace_code_src_mode_ocaml__WEBPACK_IMPORTED_MODULE_114__.A),
-/* harmony export */   OdinMode: () => (/* reexport safe */ ace_code_src_mode_odin__WEBPACK_IMPORTED_MODULE_115__.A),
-/* harmony export */   PartiqlMode: () => (/* reexport safe */ ace_code_src_mode_partiql__WEBPACK_IMPORTED_MODULE_116__.A),
-/* harmony export */   PascalMode: () => (/* reexport safe */ ace_code_src_mode_pascal__WEBPACK_IMPORTED_MODULE_117__.A),
-/* harmony export */   PerlMode: () => (/* reexport safe */ ace_code_src_mode_perl__WEBPACK_IMPORTED_MODULE_118__.A),
-/* harmony export */   PgsqlMode: () => (/* reexport safe */ ace_code_src_mode_pgsql__WEBPACK_IMPORTED_MODULE_119__.A),
-/* harmony export */   PhpLaravelBladeMode: () => (/* reexport safe */ ace_code_src_mode_php_laravel_blade__WEBPACK_IMPORTED_MODULE_120__.A),
-/* harmony export */   PhpMode: () => (/* reexport safe */ ace_code_src_mode_php__WEBPACK_IMPORTED_MODULE_121__.A),
-/* harmony export */   PigMode: () => (/* reexport safe */ ace_code_src_mode_pig__WEBPACK_IMPORTED_MODULE_122__.A),
-/* harmony export */   PlainTextMode: () => (/* reexport safe */ ace_code_src_mode_plain_text__WEBPACK_IMPORTED_MODULE_123__.A),
-/* harmony export */   PlsqlMode: () => (/* reexport safe */ ace_code_src_mode_plsql__WEBPACK_IMPORTED_MODULE_124__.A),
-/* harmony export */   PowershellMode: () => (/* reexport safe */ ace_code_src_mode_powershell__WEBPACK_IMPORTED_MODULE_125__.A),
-/* harmony export */   PraatMode: () => (/* reexport safe */ ace_code_src_mode_praat__WEBPACK_IMPORTED_MODULE_126__.A),
-/* harmony export */   PrismaMode: () => (/* reexport safe */ ace_code_src_mode_prisma__WEBPACK_IMPORTED_MODULE_127__.A),
-/* harmony export */   PrologMode: () => (/* reexport safe */ ace_code_src_mode_prolog__WEBPACK_IMPORTED_MODULE_128__.A),
-/* harmony export */   PropertiesMode: () => (/* reexport safe */ ace_code_src_mode_properties__WEBPACK_IMPORTED_MODULE_129__.A),
-/* harmony export */   ProtobufMode: () => (/* reexport safe */ ace_code_src_mode_protobuf__WEBPACK_IMPORTED_MODULE_130__.A),
-/* harmony export */   PrqlMode: () => (/* reexport safe */ ace_code_src_mode_prql__WEBPACK_IMPORTED_MODULE_131__.A),
-/* harmony export */   PuppetMode: () => (/* reexport safe */ ace_code_src_mode_puppet__WEBPACK_IMPORTED_MODULE_132__.A),
-/* harmony export */   PythonMode: () => (/* reexport safe */ ace_code_src_mode_python__WEBPACK_IMPORTED_MODULE_133__.A),
-/* harmony export */   QmlMode: () => (/* reexport safe */ ace_code_src_mode_qml__WEBPACK_IMPORTED_MODULE_134__.A),
-/* harmony export */   RMode: () => (/* reexport safe */ ace_code_src_mode_r__WEBPACK_IMPORTED_MODULE_135__.A),
-/* harmony export */   RakuMode: () => (/* reexport safe */ ace_code_src_mode_raku__WEBPACK_IMPORTED_MODULE_136__.A),
-/* harmony export */   RazorMode: () => (/* reexport safe */ ace_code_src_mode_razor__WEBPACK_IMPORTED_MODULE_137__.A),
-/* harmony export */   RdocMode: () => (/* reexport safe */ ace_code_src_mode_rdoc__WEBPACK_IMPORTED_MODULE_138__.A),
-/* harmony export */   RedMode: () => (/* reexport safe */ ace_code_src_mode_red__WEBPACK_IMPORTED_MODULE_139__.A),
-/* harmony export */   RedshiftMode: () => (/* reexport safe */ ace_code_src_mode_redshift__WEBPACK_IMPORTED_MODULE_140__.A),
-/* harmony export */   RhtmlMode: () => (/* reexport safe */ ace_code_src_mode_rhtml__WEBPACK_IMPORTED_MODULE_141__.A),
-/* harmony export */   RobotMode: () => (/* reexport safe */ ace_code_src_mode_robot__WEBPACK_IMPORTED_MODULE_142__.A),
-/* harmony export */   RstMode: () => (/* reexport safe */ ace_code_src_mode_rst__WEBPACK_IMPORTED_MODULE_143__.A),
-/* harmony export */   RubyMode: () => (/* reexport safe */ ace_code_src_mode_ruby__WEBPACK_IMPORTED_MODULE_144__.A),
-/* harmony export */   RustMode: () => (/* reexport safe */ ace_code_src_mode_rust__WEBPACK_IMPORTED_MODULE_145__.A),
-/* harmony export */   SacMode: () => (/* reexport safe */ ace_code_src_mode_sac__WEBPACK_IMPORTED_MODULE_146__.A),
-/* harmony export */   SassMode: () => (/* reexport safe */ ace_code_src_mode_sass__WEBPACK_IMPORTED_MODULE_147__.A),
-/* harmony export */   ScadMode: () => (/* reexport safe */ ace_code_src_mode_scad__WEBPACK_IMPORTED_MODULE_148__.A),
-/* harmony export */   ScalaMode: () => (/* reexport safe */ ace_code_src_mode_scala__WEBPACK_IMPORTED_MODULE_149__.A),
-/* harmony export */   SchemeMode: () => (/* reexport safe */ ace_code_src_mode_scheme__WEBPACK_IMPORTED_MODULE_150__.A),
-/* harmony export */   ScryptMode: () => (/* reexport safe */ ace_code_src_mode_scrypt__WEBPACK_IMPORTED_MODULE_151__.A),
-/* harmony export */   ScssMode: () => (/* reexport safe */ ace_code_src_mode_scss__WEBPACK_IMPORTED_MODULE_152__.A),
-/* harmony export */   ShMode: () => (/* reexport safe */ ace_code_src_mode_sh__WEBPACK_IMPORTED_MODULE_153__.A),
-/* harmony export */   SjsMode: () => (/* reexport safe */ ace_code_src_mode_sjs__WEBPACK_IMPORTED_MODULE_154__.A),
-/* harmony export */   SlimMode: () => (/* reexport safe */ ace_code_src_mode_slim__WEBPACK_IMPORTED_MODULE_155__.A),
-/* harmony export */   SmartyMode: () => (/* reexport safe */ ace_code_src_mode_smarty__WEBPACK_IMPORTED_MODULE_156__.A),
-/* harmony export */   SmithyMode: () => (/* reexport safe */ ace_code_src_mode_smithy__WEBPACK_IMPORTED_MODULE_157__.A),
-/* harmony export */   SnippetsMode: () => (/* reexport safe */ ace_code_src_mode_snippets__WEBPACK_IMPORTED_MODULE_158__.AR),
-/* harmony export */   SoyTemplateMode: () => (/* reexport safe */ ace_code_src_mode_soy_template__WEBPACK_IMPORTED_MODULE_159__.A),
-/* harmony export */   SpaceMode: () => (/* reexport safe */ ace_code_src_mode_space__WEBPACK_IMPORTED_MODULE_160__.A),
-/* harmony export */   SparqlMode: () => (/* reexport safe */ ace_code_src_mode_sparql__WEBPACK_IMPORTED_MODULE_161__.A),
-/* harmony export */   SqlMode: () => (/* reexport safe */ ace_code_src_mode_sql__WEBPACK_IMPORTED_MODULE_162__.A),
-/* harmony export */   SqlserverMode: () => (/* reexport safe */ ace_code_src_mode_sqlserver__WEBPACK_IMPORTED_MODULE_163__.A),
-/* harmony export */   StylusMode: () => (/* reexport safe */ ace_code_src_mode_stylus__WEBPACK_IMPORTED_MODULE_164__.A),
-/* harmony export */   SvgMode: () => (/* reexport safe */ ace_code_src_mode_svg__WEBPACK_IMPORTED_MODULE_165__.A),
-/* harmony export */   SwiftMode: () => (/* reexport safe */ ace_code_src_mode_swift__WEBPACK_IMPORTED_MODULE_166__.A),
-/* harmony export */   TclMode: () => (/* reexport safe */ ace_code_src_mode_tcl__WEBPACK_IMPORTED_MODULE_167__.A),
-/* harmony export */   TerraformMode: () => (/* reexport safe */ ace_code_src_mode_terraform__WEBPACK_IMPORTED_MODULE_168__.A),
-/* harmony export */   TexMode: () => (/* reexport safe */ ace_code_src_mode_tex__WEBPACK_IMPORTED_MODULE_169__.A),
-/* harmony export */   TextMode: () => (/* reexport safe */ ace_code_src_mode_text__WEBPACK_IMPORTED_MODULE_170__.A),
-/* harmony export */   TextileMode: () => (/* reexport safe */ ace_code_src_mode_textile__WEBPACK_IMPORTED_MODULE_171__.A),
-/* harmony export */   TomlMode: () => (/* reexport safe */ ace_code_src_mode_toml__WEBPACK_IMPORTED_MODULE_172__.A),
-/* harmony export */   TsxMode: () => (/* reexport safe */ ace_code_src_mode_tsx__WEBPACK_IMPORTED_MODULE_173__.A),
-/* harmony export */   TurtleMode: () => (/* reexport safe */ ace_code_src_mode_turtle__WEBPACK_IMPORTED_MODULE_174__.A),
-/* harmony export */   TwigMode: () => (/* reexport safe */ ace_code_src_mode_twig__WEBPACK_IMPORTED_MODULE_175__.A),
-/* harmony export */   TypescriptMode: () => (/* reexport safe */ ace_code_src_mode_typescript__WEBPACK_IMPORTED_MODULE_176__.A),
-/* harmony export */   ValaMode: () => (/* reexport safe */ ace_code_src_mode_vala__WEBPACK_IMPORTED_MODULE_177__.A),
-/* harmony export */   VbscriptMode: () => (/* reexport safe */ ace_code_src_mode_vbscript__WEBPACK_IMPORTED_MODULE_178__.A),
-/* harmony export */   VelocityMode: () => (/* reexport safe */ ace_code_src_mode_velocity__WEBPACK_IMPORTED_MODULE_179__.A),
-/* harmony export */   VerilogMode: () => (/* reexport safe */ ace_code_src_mode_verilog__WEBPACK_IMPORTED_MODULE_180__.A),
-/* harmony export */   VhdlMode: () => (/* reexport safe */ ace_code_src_mode_vhdl__WEBPACK_IMPORTED_MODULE_181__.A),
-/* harmony export */   VisualforceMode: () => (/* reexport safe */ ace_code_src_mode_visualforce__WEBPACK_IMPORTED_MODULE_182__.A),
-/* harmony export */   VueMode: () => (/* reexport safe */ ace_code_src_mode_vue__WEBPACK_IMPORTED_MODULE_183__.A),
-/* harmony export */   WollokMode: () => (/* reexport safe */ ace_code_src_mode_wollok__WEBPACK_IMPORTED_MODULE_184__.A),
-/* harmony export */   XmlMode: () => (/* reexport safe */ ace_code_src_mode_xml__WEBPACK_IMPORTED_MODULE_185__.A),
-/* harmony export */   YamlMode: () => (/* reexport safe */ ace_code_src_mode_yaml__WEBPACK_IMPORTED_MODULE_186__.A),
-/* harmony export */   ZeekMode: () => (/* reexport safe */ ace_code_src_mode_zeek__WEBPACK_IMPORTED_MODULE_187__.A),
-/* harmony export */   ZigMode: () => (/* reexport safe */ ace_code_src_mode_zig__WEBPACK_IMPORTED_MODULE_188__.A)
+/* harmony export */   $8D: () => (/* reexport safe */ ace_code_src_mode_json5__WEBPACK_IMPORTED_MODULE_79__.A),
+/* harmony export */   $Sq: () => (/* reexport safe */ ace_code_src_mode_assembly_arm32__WEBPACK_IMPORTED_MODULE_11__.A),
+/* harmony export */   $cA: () => (/* reexport safe */ ace_code_src_mode_fsharp__WEBPACK_IMPORTED_MODULE_49__.A),
+/* harmony export */   Ank: () => (/* reexport safe */ ace_code_src_mode_text__WEBPACK_IMPORTED_MODULE_170__.A),
+/* harmony export */   Aom: () => (/* reexport safe */ ace_code_src_mode_pgsql__WEBPACK_IMPORTED_MODULE_119__.A),
+/* harmony export */   B$C: () => (/* reexport safe */ ace_code_src_mode_maze__WEBPACK_IMPORTED_MODULE_100__.A),
+/* harmony export */   B6t: () => (/* reexport safe */ ace_code_src_mode_latte__WEBPACK_IMPORTED_MODULE_85__.A),
+/* harmony export */   BJo: () => (/* reexport safe */ ace_code_src_mode_crystal__WEBPACK_IMPORTED_MODULE_24__.A),
+/* harmony export */   BLY: () => (/* reexport safe */ ace_code_src_mode_terraform__WEBPACK_IMPORTED_MODULE_168__.A),
+/* harmony export */   BQL: () => (/* reexport safe */ ace_code_src_mode_curly__WEBPACK_IMPORTED_MODULE_31__.A),
+/* harmony export */   BnI: () => (/* reexport safe */ ace_code_src_mode_mysql__WEBPACK_IMPORTED_MODULE_106__.A),
+/* harmony export */   Bwk: () => (/* reexport safe */ ace_code_src_mode_csound_score__WEBPACK_IMPORTED_MODULE_28__.A),
+/* harmony export */   CBA: () => (/* reexport safe */ ace_code_src_mode_html_elixir__WEBPACK_IMPORTED_MODULE_66__.A),
+/* harmony export */   DEL: () => (/* reexport safe */ ace_code_src_mode_cirru__WEBPACK_IMPORTED_MODULE_19__.A),
+/* harmony export */   DHG: () => (/* reexport safe */ ace_code_src_mode_logtalk__WEBPACK_IMPORTED_MODULE_91__.A),
+/* harmony export */   DIF: () => (/* reexport safe */ ace_code_src_mode_lua__WEBPACK_IMPORTED_MODULE_93__.A),
+/* harmony export */   DSO: () => (/* reexport safe */ ace_code_src_mode_rdoc__WEBPACK_IMPORTED_MODULE_138__.A),
+/* harmony export */   DTg: () => (/* reexport safe */ ace_code_src_mode_plain_text__WEBPACK_IMPORTED_MODULE_123__.A),
+/* harmony export */   DZq: () => (/* reexport safe */ ace_code_src_mode_xml__WEBPACK_IMPORTED_MODULE_185__.A),
+/* harmony export */   D_k: () => (/* reexport safe */ ace_code_src_mode_julia__WEBPACK_IMPORTED_MODULE_82__.A),
+/* harmony export */   E3C: () => (/* reexport safe */ ace_code_src_mode_gherkin__WEBPACK_IMPORTED_MODULE_53__.A),
+/* harmony export */   E7_: () => (/* reexport safe */ ace_code_src_mode_gcode__WEBPACK_IMPORTED_MODULE_52__.A),
+/* harmony export */   E8h: () => (/* reexport safe */ ace_code_src_mode_verilog__WEBPACK_IMPORTED_MODULE_180__.A),
+/* harmony export */   EDN: () => (/* reexport safe */ ace_code_src_mode_mask__WEBPACK_IMPORTED_MODULE_98__.A),
+/* harmony export */   Er: () => (/* reexport safe */ ace_code_src_mode_erlang__WEBPACK_IMPORTED_MODULE_45__.A),
+/* harmony export */   FZb: () => (/* reexport safe */ ace_code_src_mode_scrypt__WEBPACK_IMPORTED_MODULE_151__.A),
+/* harmony export */   G9: () => (/* reexport safe */ ace_code_src_mode_hjson__WEBPACK_IMPORTED_MODULE_65__.A),
+/* harmony export */   GJp: () => (/* reexport safe */ ace_code_src_mode_odin__WEBPACK_IMPORTED_MODULE_115__.A),
+/* harmony export */   Gqk: () => (/* reexport safe */ ace_code_src_mode_dot__WEBPACK_IMPORTED_MODULE_38__.A),
+/* harmony export */   HAU: () => (/* reexport safe */ ace_code_src_mode_coffee__WEBPACK_IMPORTED_MODULE_22__.A),
+/* harmony export */   HnP: () => (/* reexport safe */ ace_code_src_mode_mixal__WEBPACK_IMPORTED_MODULE_104__.A),
+/* harmony export */   IAE: () => (/* reexport safe */ ace_code_src_mode_php_laravel_blade__WEBPACK_IMPORTED_MODULE_120__.A),
+/* harmony export */   Isn: () => (/* reexport safe */ ace_code_src_mode_autohotkey__WEBPACK_IMPORTED_MODULE_14__.A),
+/* harmony export */   Iu_: () => (/* reexport safe */ ace_code_src_mode_elixir__WEBPACK_IMPORTED_MODULE_43__.A),
+/* harmony export */   Jw4: () => (/* reexport safe */ ace_code_src_mode_mediawiki__WEBPACK_IMPORTED_MODULE_101__.A),
+/* harmony export */   Kc5: () => (/* reexport safe */ ace_code_src_mode_ion__WEBPACK_IMPORTED_MODULE_71__.A),
+/* harmony export */   Kh$: () => (/* reexport safe */ ace_code_src_mode_coldfusion__WEBPACK_IMPORTED_MODULE_23__.A),
+/* harmony export */   LGu: () => (/* reexport safe */ ace_code_src_mode_robot__WEBPACK_IMPORTED_MODULE_142__.A),
+/* harmony export */   Lpx: () => (/* reexport safe */ ace_code_src_mode_asl__WEBPACK_IMPORTED_MODULE_10__.A),
+/* harmony export */   Mgb: () => (/* reexport safe */ ace_code_src_mode_scss__WEBPACK_IMPORTED_MODULE_152__.A),
+/* harmony export */   MqL: () => (/* reexport safe */ ace_code_src_mode_jexl__WEBPACK_IMPORTED_MODULE_76__.A),
+/* harmony export */   N$J: () => (/* reexport safe */ ace_code_src_mode_c9search__WEBPACK_IMPORTED_MODULE_18__.A),
+/* harmony export */   N8x: () => (/* reexport safe */ ace_code_src_mode_ocaml__WEBPACK_IMPORTED_MODULE_114__.A),
+/* harmony export */   Ny$: () => (/* reexport safe */ ace_code_src_mode_cuttlefish__WEBPACK_IMPORTED_MODULE_32__.A),
+/* harmony export */   O3A: () => (/* reexport safe */ ace_code_src_mode_objectivec__WEBPACK_IMPORTED_MODULE_113__.A),
+/* harmony export */   Ol6: () => (/* reexport safe */ ace_code_src_mode_ini__WEBPACK_IMPORTED_MODULE_69__.A),
+/* harmony export */   Ozt: () => (/* reexport safe */ ace_code_src_mode_haxe__WEBPACK_IMPORTED_MODULE_64__.A),
+/* harmony export */   P5j: () => (/* reexport safe */ ace_code_src_mode_sh__WEBPACK_IMPORTED_MODULE_153__.A),
+/* harmony export */   PYI: () => (/* reexport safe */ ace_code_src_mode_nginx__WEBPACK_IMPORTED_MODULE_108__.A),
+/* harmony export */   Pdf: () => (/* reexport safe */ ace_code_src_mode_ejs__WEBPACK_IMPORTED_MODULE_42__.A),
+/* harmony export */   PfC: () => (/* reexport safe */ ace_code_src_mode_csharp__WEBPACK_IMPORTED_MODULE_25__.A),
+/* harmony export */   PkL: () => (/* reexport safe */ ace_code_src_mode_velocity__WEBPACK_IMPORTED_MODULE_179__.A),
+/* harmony export */   Pnb: () => (/* reexport safe */ ace_code_src_mode_makefile__WEBPACK_IMPORTED_MODULE_96__.A),
+/* harmony export */   QKQ: () => (/* reexport safe */ ace_code_src_mode_nsis__WEBPACK_IMPORTED_MODULE_111__.A),
+/* harmony export */   QMC: () => (/* reexport safe */ ace_code_src_mode_html_ruby__WEBPACK_IMPORTED_MODULE_67__.A),
+/* harmony export */   QVg: () => (/* reexport safe */ ace_code_src_mode_prolog__WEBPACK_IMPORTED_MODULE_128__.A),
+/* harmony export */   QXj: () => (/* reexport safe */ ace_code_src_mode_actionscript__WEBPACK_IMPORTED_MODULE_2__.A),
+/* harmony export */   QaN: () => (/* reexport safe */ ace_code_src_mode_io__WEBPACK_IMPORTED_MODULE_70__.A),
+/* harmony export */   Qki: () => (/* reexport safe */ ace_code_src_mode_logiql__WEBPACK_IMPORTED_MODULE_90__.A),
+/* harmony export */   R7P: () => (/* reexport safe */ ace_code_src_mode_flix__WEBPACK_IMPORTED_MODULE_46__.A),
+/* harmony export */   RWF: () => (/* reexport safe */ ace_code_src_mode_nasal__WEBPACK_IMPORTED_MODULE_107__.A),
+/* harmony export */   RuA: () => (/* reexport safe */ ace_code_src_mode_markdown__WEBPACK_IMPORTED_MODULE_97__.A),
+/* harmony export */   S7l: () => (/* reexport safe */ ace_code_src_mode_turtle__WEBPACK_IMPORTED_MODULE_174__.A),
+/* harmony export */   SAR: () => (/* reexport safe */ ace_code_src_mode_forth__WEBPACK_IMPORTED_MODULE_47__.A),
+/* harmony export */   SFA: () => (/* reexport safe */ ace_code_src_mode_soy_template__WEBPACK_IMPORTED_MODULE_159__.A),
+/* harmony export */   SoO: () => (/* reexport safe */ ace_code_src_mode_vue__WEBPACK_IMPORTED_MODULE_183__.A),
+/* harmony export */   SvQ: () => (/* reexport safe */ ace_code_src_mode_prisma__WEBPACK_IMPORTED_MODULE_127__.A),
+/* harmony export */   T9e: () => (/* reexport safe */ ace_code_src_mode_diff__WEBPACK_IMPORTED_MODULE_35__.A),
+/* harmony export */   TJu: () => (/* reexport safe */ ace_code_src_mode_rst__WEBPACK_IMPORTED_MODULE_143__.A),
+/* harmony export */   UMC: () => (/* reexport safe */ ace_code_src_mode_html__WEBPACK_IMPORTED_MODULE_68__.A),
+/* harmony export */   UUY: () => (/* reexport safe */ ace_code_src_mode_snippets__WEBPACK_IMPORTED_MODULE_158__.AR),
+/* harmony export */   U_v: () => (/* reexport safe */ ace_code_src_mode_sass__WEBPACK_IMPORTED_MODULE_147__.A),
+/* harmony export */   VZr: () => (/* reexport safe */ ace_code_src_mode_nim__WEBPACK_IMPORTED_MODULE_109__.A),
+/* harmony export */   V_k: () => (/* reexport safe */ ace_code_src_mode_slim__WEBPACK_IMPORTED_MODULE_155__.A),
+/* harmony export */   Vc$: () => (/* reexport safe */ ace_code_src_mode_mel__WEBPACK_IMPORTED_MODULE_102__.A),
+/* harmony export */   VrL: () => (/* reexport safe */ ace_code_src_mode_partiql__WEBPACK_IMPORTED_MODULE_116__.A),
+/* harmony export */   W14: () => (/* reexport safe */ ace_code_src_mode_dockerfile__WEBPACK_IMPORTED_MODULE_37__.A),
+/* harmony export */   W6N: () => (/* reexport safe */ ace_code_src_mode_praat__WEBPACK_IMPORTED_MODULE_126__.A),
+/* harmony export */   WBH: () => (/* reexport safe */ ace_code_src_mode_fortran__WEBPACK_IMPORTED_MODULE_48__.A),
+/* harmony export */   Wb$: () => (/* reexport safe */ ace_code_src_mode_sql__WEBPACK_IMPORTED_MODULE_162__.A),
+/* harmony export */   Wfm: () => (/* reexport safe */ ace_code_src_mode_typescript__WEBPACK_IMPORTED_MODULE_176__.A),
+/* harmony export */   WsH: () => (/* reexport safe */ ace_code_src_mode_abap__WEBPACK_IMPORTED_MODULE_0__.A),
+/* harmony export */   X8F: () => (/* reexport safe */ ace_code_src_mode_lisp__WEBPACK_IMPORTED_MODULE_88__.A),
+/* harmony export */   XCI: () => (/* reexport safe */ ace_code_src_mode_jade__WEBPACK_IMPORTED_MODULE_73__.A),
+/* harmony export */   XRr: () => (/* reexport safe */ ace_code_src_mode_scad__WEBPACK_IMPORTED_MODULE_148__.A),
+/* harmony export */   YJz: () => (/* reexport safe */ ace_code_src_mode_raku__WEBPACK_IMPORTED_MODULE_136__.A),
+/* harmony export */   Yhp: () => (/* reexport safe */ ace_code_src_mode_lucene__WEBPACK_IMPORTED_MODULE_95__.A),
+/* harmony export */   Z$_: () => (/* reexport safe */ ace_code_src_mode_c_cpp__WEBPACK_IMPORTED_MODULE_17__.A),
+/* harmony export */   Z4c: () => (/* reexport safe */ ace_code_src_mode_abc__WEBPACK_IMPORTED_MODULE_1__.A),
+/* harmony export */   ZNl: () => (/* reexport safe */ ace_code_src_mode_redshift__WEBPACK_IMPORTED_MODULE_140__.A),
+/* harmony export */   Zpo: () => (/* reexport safe */ ace_code_src_mode_groovy__WEBPACK_IMPORTED_MODULE_59__.A),
+/* harmony export */   _19: () => (/* reexport safe */ ace_code_src_mode_space__WEBPACK_IMPORTED_MODULE_160__.A),
+/* harmony export */   _5P: () => (/* reexport safe */ ace_code_src_mode_csound_orchestra__WEBPACK_IMPORTED_MODULE_27__.A),
+/* harmony export */   _UC: () => (/* reexport safe */ ace_code_src_mode_swift__WEBPACK_IMPORTED_MODULE_166__.A),
+/* harmony export */   _Ug: () => (/* reexport safe */ ace_code_src_mode_less__WEBPACK_IMPORTED_MODULE_86__.A),
+/* harmony export */   _gC: () => (/* reexport safe */ ace_code_src_mode_vbscript__WEBPACK_IMPORTED_MODULE_178__.A),
+/* harmony export */   _i: () => (/* reexport safe */ ace_code_src_mode_rust__WEBPACK_IMPORTED_MODULE_145__.A),
+/* harmony export */   a0g: () => (/* reexport safe */ ace_code_src_mode_tcl__WEBPACK_IMPORTED_MODULE_167__.A),
+/* harmony export */   a4X: () => (/* reexport safe */ ace_code_src_mode_ftl__WEBPACK_IMPORTED_MODULE_51__.A),
+/* harmony export */   aIF: () => (/* reexport safe */ ace_code_src_mode_fsl__WEBPACK_IMPORTED_MODULE_50__.A),
+/* harmony export */   aQl: () => (/* reexport safe */ ace_code_src_mode_scala__WEBPACK_IMPORTED_MODULE_149__.A),
+/* harmony export */   aTY: () => (/* reexport safe */ ace_code_src_mode_qml__WEBPACK_IMPORTED_MODULE_134__.A),
+/* harmony export */   bMJ: () => (/* reexport safe */ ace_code_src_mode_powershell__WEBPACK_IMPORTED_MODULE_125__.A),
+/* harmony export */   bOd: () => (/* reexport safe */ ace_code_src_mode_livescript__WEBPACK_IMPORTED_MODULE_89__.A),
+/* harmony export */   bQR: () => (/* reexport safe */ ace_code_src_mode_ada__WEBPACK_IMPORTED_MODULE_3__.A),
+/* harmony export */   bTO: () => (/* reexport safe */ ace_code_src_mode_toml__WEBPACK_IMPORTED_MODULE_172__.A),
+/* harmony export */   bZE: () => (/* reexport safe */ ace_code_src_mode_liquid__WEBPACK_IMPORTED_MODULE_87__.A),
+/* harmony export */   bjc: () => (/* reexport safe */ ace_code_src_mode_smarty__WEBPACK_IMPORTED_MODULE_156__.A),
+/* harmony export */   bwi: () => (/* reexport safe */ ace_code_src_mode_zeek__WEBPACK_IMPORTED_MODULE_187__.A),
+/* harmony export */   c_H: () => (/* reexport safe */ ace_code_src_mode_csound_document__WEBPACK_IMPORTED_MODULE_26__.A),
+/* harmony export */   cjX: () => (/* reexport safe */ ace_code_src_mode_red__WEBPACK_IMPORTED_MODULE_139__.A),
+/* harmony export */   cmh: () => (/* reexport safe */ ace_code_src_mode_mips__WEBPACK_IMPORTED_MODULE_103__.A),
+/* harmony export */   d0_: () => (/* reexport safe */ ace_code_src_mode_aql__WEBPACK_IMPORTED_MODULE_8__.A),
+/* harmony export */   d2O: () => (/* reexport safe */ ace_code_src_mode_plsql__WEBPACK_IMPORTED_MODULE_124__.A),
+/* harmony export */   dHb: () => (/* reexport safe */ ace_code_src_mode_kotlin__WEBPACK_IMPORTED_MODULE_83__.A),
+/* harmony export */   dRo: () => (/* reexport safe */ ace_code_src_mode_csp__WEBPACK_IMPORTED_MODULE_29__.A),
+/* harmony export */   djE: () => (/* reexport safe */ ace_code_src_mode_puppet__WEBPACK_IMPORTED_MODULE_132__.A),
+/* harmony export */   drv: () => (/* reexport safe */ ace_code_src_mode_apex__WEBPACK_IMPORTED_MODULE_6__.A),
+/* harmony export */   elO: () => (/* reexport safe */ ace_code_src_mode_haskell_cabal__WEBPACK_IMPORTED_MODULE_62__.A),
+/* harmony export */   eqB: () => (/* reexport safe */ ace_code_src_mode_dart__WEBPACK_IMPORTED_MODULE_34__.A),
+/* harmony export */   f8u: () => (/* reexport safe */ ace_code_src_mode_assembly_x86__WEBPACK_IMPORTED_MODULE_12__.A),
+/* harmony export */   fUM: () => (/* reexport safe */ ace_code_src_mode_apache_conf__WEBPACK_IMPORTED_MODULE_5__.A),
+/* harmony export */   feb: () => (/* reexport safe */ ace_code_src_mode_pig__WEBPACK_IMPORTED_MODULE_122__.A),
+/* harmony export */   fnt: () => (/* reexport safe */ ace_code_src_mode_vala__WEBPACK_IMPORTED_MODULE_177__.A),
+/* harmony export */   fpl: () => (/* reexport safe */ ace_code_src_mode_css__WEBPACK_IMPORTED_MODULE_30__.A),
+/* harmony export */   g3i: () => (/* reexport safe */ ace_code_src_mode_tsx__WEBPACK_IMPORTED_MODULE_173__.A),
+/* harmony export */   g_Z: () => (/* reexport safe */ ace_code_src_mode_glsl__WEBPACK_IMPORTED_MODULE_55__.A),
+/* harmony export */   hDi: () => (/* reexport safe */ ace_code_src_mode_sjs__WEBPACK_IMPORTED_MODULE_154__.A),
+/* harmony export */   hPO: () => (/* reexport safe */ ace_code_src_mode_alda__WEBPACK_IMPORTED_MODULE_4__.A),
+/* harmony export */   hPy: () => (/* reexport safe */ ace_code_src_mode_python__WEBPACK_IMPORTED_MODULE_133__.A),
+/* harmony export */   hm2: () => (/* reexport safe */ ace_code_src_mode_nix__WEBPACK_IMPORTED_MODULE_110__.A),
+/* harmony export */   i2o: () => (/* reexport safe */ ace_code_src_mode_eiffel__WEBPACK_IMPORTED_MODULE_41__.A),
+/* harmony export */   ibo: () => (/* reexport safe */ ace_code_src_mode_yaml__WEBPACK_IMPORTED_MODULE_186__.A),
+/* harmony export */   iuA: () => (/* reexport safe */ ace_code_src_mode_vhdl__WEBPACK_IMPORTED_MODULE_181__.A),
+/* harmony export */   jQ5: () => (/* reexport safe */ ace_code_src_mode_d__WEBPACK_IMPORTED_MODULE_33__.A),
+/* harmony export */   kCU: () => (/* reexport safe */ ace_code_src_mode_haml__WEBPACK_IMPORTED_MODULE_60__.A),
+/* harmony export */   kDe: () => (/* reexport safe */ ace_code_src_mode_astro__WEBPACK_IMPORTED_MODULE_13__.A),
+/* harmony export */   kQ1: () => (/* reexport safe */ ace_code_src_mode_clojure__WEBPACK_IMPORTED_MODULE_20__.A),
+/* harmony export */   kYm: () => (/* reexport safe */ ace_code_src_mode_elm__WEBPACK_IMPORTED_MODULE_44__.A),
+/* harmony export */   khQ: () => (/* reexport safe */ ace_code_src_mode_zig__WEBPACK_IMPORTED_MODULE_188__.A),
+/* harmony export */   kzd: () => (/* reexport safe */ ace_code_src_mode_bibtex__WEBPACK_IMPORTED_MODULE_16__.A),
+/* harmony export */   l$k: () => (/* reexport safe */ ace_code_src_mode_cobol__WEBPACK_IMPORTED_MODULE_21__.A),
+/* harmony export */   l2t: () => (/* reexport safe */ ace_code_src_mode_r__WEBPACK_IMPORTED_MODULE_135__.A),
+/* harmony export */   lZP: () => (/* reexport safe */ ace_code_src_mode_java__WEBPACK_IMPORTED_MODULE_74__.A),
+/* harmony export */   la6: () => (/* reexport safe */ ace_code_src_mode_textile__WEBPACK_IMPORTED_MODULE_171__.A),
+/* harmony export */   lzn: () => (/* reexport safe */ ace_code_src_mode_gobstones__WEBPACK_IMPORTED_MODULE_56__.A),
+/* harmony export */   m4K: () => (/* reexport safe */ ace_code_src_mode_smithy__WEBPACK_IMPORTED_MODULE_157__.A),
+/* harmony export */   m79: () => (/* reexport safe */ ace_code_src_mode_mushcode__WEBPACK_IMPORTED_MODULE_105__.A),
+/* harmony export */   mbE: () => (/* reexport safe */ ace_code_src_mode_rhtml__WEBPACK_IMPORTED_MODULE_141__.A),
+/* harmony export */   mmo: () => (/* reexport safe */ ace_code_src_mode_jsp__WEBPACK_IMPORTED_MODULE_77__.A),
+/* harmony export */   n0L: () => (/* reexport safe */ ace_code_src_mode_jsx__WEBPACK_IMPORTED_MODULE_81__.A),
+/* harmony export */   n6V: () => (/* reexport safe */ ace_code_src_mode_luapage__WEBPACK_IMPORTED_MODULE_94__.A),
+/* harmony export */   nAv: () => (/* reexport safe */ ace_code_src_mode_matlab__WEBPACK_IMPORTED_MODULE_99__.A),
+/* harmony export */   nw6: () => (/* reexport safe */ ace_code_src_mode_json__WEBPACK_IMPORTED_MODULE_78__.A),
+/* harmony export */   nxh: () => (/* reexport safe */ ace_code_src_mode_jack__WEBPACK_IMPORTED_MODULE_72__.A),
+/* harmony export */   o48: () => (/* reexport safe */ ace_code_src_mode_twig__WEBPACK_IMPORTED_MODULE_175__.A),
+/* harmony export */   ogr: () => (/* reexport safe */ ace_code_src_mode_nunjucks__WEBPACK_IMPORTED_MODULE_112__.A),
+/* harmony export */   pCX: () => (/* reexport safe */ ace_code_src_mode_jssm__WEBPACK_IMPORTED_MODULE_80__.A),
+/* harmony export */   pQN: () => (/* reexport safe */ ace_code_src_mode_prql__WEBPACK_IMPORTED_MODULE_131__.A),
+/* harmony export */   pdV: () => (/* reexport safe */ ace_code_src_mode_golang__WEBPACK_IMPORTED_MODULE_57__.A),
+/* harmony export */   ppZ: () => (/* reexport safe */ ace_code_src_mode_gitignore__WEBPACK_IMPORTED_MODULE_54__.A),
+/* harmony export */   pqL: () => (/* reexport safe */ ace_code_src_mode_perl__WEBPACK_IMPORTED_MODULE_118__.A),
+/* harmony export */   pxR: () => (/* reexport safe */ ace_code_src_mode_sqlserver__WEBPACK_IMPORTED_MODULE_163__.A),
+/* harmony export */   q8W: () => (/* reexport safe */ ace_code_src_mode_graphqlschema__WEBPACK_IMPORTED_MODULE_58__.A),
+/* harmony export */   qcF: () => (/* reexport safe */ ace_code_src_mode_asciidoc__WEBPACK_IMPORTED_MODULE_9__.A),
+/* harmony export */   qp7: () => (/* reexport safe */ ace_code_src_mode_php__WEBPACK_IMPORTED_MODULE_121__.A),
+/* harmony export */   rFy: () => (/* reexport safe */ ace_code_src_mode_handlebars__WEBPACK_IMPORTED_MODULE_61__.A),
+/* harmony export */   rUJ: () => (/* reexport safe */ ace_code_src_mode_applescript__WEBPACK_IMPORTED_MODULE_7__.A),
+/* harmony export */   s6V: () => (/* reexport safe */ ace_code_src_mode_batchfile__WEBPACK_IMPORTED_MODULE_15__.A),
+/* harmony export */   shA: () => (/* reexport safe */ ace_code_src_mode_protobuf__WEBPACK_IMPORTED_MODULE_130__.A),
+/* harmony export */   sjg: () => (/* reexport safe */ ace_code_src_mode_haskell__WEBPACK_IMPORTED_MODULE_63__.A),
+/* harmony export */   st4: () => (/* reexport safe */ ace_code_src_mode_drools__WEBPACK_IMPORTED_MODULE_39__.A),
+/* harmony export */   tHx: () => (/* reexport safe */ ace_code_src_mode_properties__WEBPACK_IMPORTED_MODULE_129__.A),
+/* harmony export */   tlW: () => (/* reexport safe */ ace_code_src_mode_sac__WEBPACK_IMPORTED_MODULE_146__.A),
+/* harmony export */   ubY: () => (/* reexport safe */ ace_code_src_mode_javascript__WEBPACK_IMPORTED_MODULE_75__.A),
+/* harmony export */   ufS: () => (/* reexport safe */ ace_code_src_mode_sparql__WEBPACK_IMPORTED_MODULE_161__.A),
+/* harmony export */   ux_: () => (/* reexport safe */ ace_code_src_mode_tex__WEBPACK_IMPORTED_MODULE_169__.A),
+/* harmony export */   vRV: () => (/* reexport safe */ ace_code_src_mode_pascal__WEBPACK_IMPORTED_MODULE_117__.A),
+/* harmony export */   w$1: () => (/* reexport safe */ ace_code_src_mode_visualforce__WEBPACK_IMPORTED_MODULE_182__.A),
+/* harmony export */   wPB: () => (/* reexport safe */ ace_code_src_mode_django__WEBPACK_IMPORTED_MODULE_36__.A),
+/* harmony export */   wcG: () => (/* reexport safe */ ace_code_src_mode_stylus__WEBPACK_IMPORTED_MODULE_164__.A),
+/* harmony export */   x0G: () => (/* reexport safe */ ace_code_src_mode_ruby__WEBPACK_IMPORTED_MODULE_144__.A),
+/* harmony export */   xFR: () => (/* reexport safe */ ace_code_src_mode_razor__WEBPACK_IMPORTED_MODULE_137__.A),
+/* harmony export */   y9I: () => (/* reexport safe */ ace_code_src_mode_svg__WEBPACK_IMPORTED_MODULE_165__.A),
+/* harmony export */   yeI: () => (/* reexport safe */ ace_code_src_mode_latex__WEBPACK_IMPORTED_MODULE_84__.A),
+/* harmony export */   ylA: () => (/* reexport safe */ ace_code_src_mode_wollok__WEBPACK_IMPORTED_MODULE_184__.A),
+/* harmony export */   yw9: () => (/* reexport safe */ ace_code_src_mode_scheme__WEBPACK_IMPORTED_MODULE_150__.A),
+/* harmony export */   z$H: () => (/* reexport safe */ ace_code_src_mode_lsl__WEBPACK_IMPORTED_MODULE_92__.A),
+/* harmony export */   zoR: () => (/* reexport safe */ ace_code_src_mode_edifact__WEBPACK_IMPORTED_MODULE_40__.A)
 /* harmony export */ });
-/* harmony import */ var ace_code_src_mode_abap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4909);
-/* harmony import */ var ace_code_src_mode_abc__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(8242);
-/* harmony import */ var ace_code_src_mode_actionscript__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(8866);
-/* harmony import */ var ace_code_src_mode_ada__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3699);
-/* harmony import */ var ace_code_src_mode_alda__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6537);
-/* harmony import */ var ace_code_src_mode_apache_conf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(821);
-/* harmony import */ var ace_code_src_mode_apex__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7253);
-/* harmony import */ var ace_code_src_mode_applescript__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(4770);
-/* harmony import */ var ace_code_src_mode_aql__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(6204);
-/* harmony import */ var ace_code_src_mode_asciidoc__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(8521);
-/* harmony import */ var ace_code_src_mode_asl__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(3537);
-/* harmony import */ var ace_code_src_mode_assembly_arm32__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(4541);
-/* harmony import */ var ace_code_src_mode_assembly_x86__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(9526);
-/* harmony import */ var ace_code_src_mode_astro__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(8653);
+/* harmony import */ var ace_code_src_mode_abap__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(94909);
+/* harmony import */ var ace_code_src_mode_abc__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(18242);
+/* harmony import */ var ace_code_src_mode_actionscript__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(58866);
+/* harmony import */ var ace_code_src_mode_ada__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(63699);
+/* harmony import */ var ace_code_src_mode_alda__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(36537);
+/* harmony import */ var ace_code_src_mode_apache_conf__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(30821);
+/* harmony import */ var ace_code_src_mode_apex__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(37253);
+/* harmony import */ var ace_code_src_mode_applescript__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(24770);
+/* harmony import */ var ace_code_src_mode_aql__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(76204);
+/* harmony import */ var ace_code_src_mode_asciidoc__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(58521);
+/* harmony import */ var ace_code_src_mode_asl__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(23537);
+/* harmony import */ var ace_code_src_mode_assembly_arm32__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(14541);
+/* harmony import */ var ace_code_src_mode_assembly_x86__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(29526);
+/* harmony import */ var ace_code_src_mode_astro__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(28653);
 /* harmony import */ var ace_code_src_mode_autohotkey__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(6811);
-/* harmony import */ var ace_code_src_mode_batchfile__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(6115);
-/* harmony import */ var ace_code_src_mode_bibtex__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(6072);
-/* harmony import */ var ace_code_src_mode_c_cpp__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(9117);
-/* harmony import */ var ace_code_src_mode_c9search__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(4566);
-/* harmony import */ var ace_code_src_mode_cirru__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(3573);
-/* harmony import */ var ace_code_src_mode_clojure__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(7376);
-/* harmony import */ var ace_code_src_mode_cobol__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(617);
-/* harmony import */ var ace_code_src_mode_coffee__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(5470);
-/* harmony import */ var ace_code_src_mode_coldfusion__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(7337);
-/* harmony import */ var ace_code_src_mode_crystal__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(9838);
+/* harmony import */ var ace_code_src_mode_batchfile__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(16115);
+/* harmony import */ var ace_code_src_mode_bibtex__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(96072);
+/* harmony import */ var ace_code_src_mode_c_cpp__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(99117);
+/* harmony import */ var ace_code_src_mode_c9search__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(44566);
+/* harmony import */ var ace_code_src_mode_cirru__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(53573);
+/* harmony import */ var ace_code_src_mode_clojure__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(77376);
+/* harmony import */ var ace_code_src_mode_cobol__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(50617);
+/* harmony import */ var ace_code_src_mode_coffee__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(25470);
+/* harmony import */ var ace_code_src_mode_coldfusion__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(17337);
+/* harmony import */ var ace_code_src_mode_crystal__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(99838);
 /* harmony import */ var ace_code_src_mode_csharp__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(5379);
-/* harmony import */ var ace_code_src_mode_csound_document__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(4223);
-/* harmony import */ var ace_code_src_mode_csound_orchestra__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(9970);
-/* harmony import */ var ace_code_src_mode_csound_score__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(3581);
-/* harmony import */ var ace_code_src_mode_csp__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(5676);
-/* harmony import */ var ace_code_src_mode_css__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(3734);
-/* harmony import */ var ace_code_src_mode_curly__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(826);
-/* harmony import */ var ace_code_src_mode_cuttlefish__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(959);
-/* harmony import */ var ace_code_src_mode_d__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(4444);
-/* harmony import */ var ace_code_src_mode_dart__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(4866);
-/* harmony import */ var ace_code_src_mode_diff__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(4882);
-/* harmony import */ var ace_code_src_mode_django__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(7656);
-/* harmony import */ var ace_code_src_mode_dockerfile__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(9819);
-/* harmony import */ var ace_code_src_mode_dot__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(7169);
-/* harmony import */ var ace_code_src_mode_drools__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(894);
-/* harmony import */ var ace_code_src_mode_edifact__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(3484);
-/* harmony import */ var ace_code_src_mode_eiffel__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(3913);
-/* harmony import */ var ace_code_src_mode_ejs__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(2481);
-/* harmony import */ var ace_code_src_mode_elixir__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(4288);
+/* harmony import */ var ace_code_src_mode_csound_document__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(24223);
+/* harmony import */ var ace_code_src_mode_csound_orchestra__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(49970);
+/* harmony import */ var ace_code_src_mode_csound_score__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(53581);
+/* harmony import */ var ace_code_src_mode_csp__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(95676);
+/* harmony import */ var ace_code_src_mode_css__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(93734);
+/* harmony import */ var ace_code_src_mode_curly__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(70826);
+/* harmony import */ var ace_code_src_mode_cuttlefish__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(70959);
+/* harmony import */ var ace_code_src_mode_d__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(34444);
+/* harmony import */ var ace_code_src_mode_dart__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(94866);
+/* harmony import */ var ace_code_src_mode_diff__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(74882);
+/* harmony import */ var ace_code_src_mode_django__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(57656);
+/* harmony import */ var ace_code_src_mode_dockerfile__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(99819);
+/* harmony import */ var ace_code_src_mode_dot__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(37169);
+/* harmony import */ var ace_code_src_mode_drools__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(50894);
+/* harmony import */ var ace_code_src_mode_edifact__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(53484);
+/* harmony import */ var ace_code_src_mode_eiffel__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(83913);
+/* harmony import */ var ace_code_src_mode_ejs__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(22481);
+/* harmony import */ var ace_code_src_mode_elixir__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(74288);
 /* harmony import */ var ace_code_src_mode_elm__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(9251);
 /* harmony import */ var ace_code_src_mode_erlang__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(8118);
-/* harmony import */ var ace_code_src_mode_flix__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(3608);
+/* harmony import */ var ace_code_src_mode_flix__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(43608);
 /* harmony import */ var ace_code_src_mode_forth__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(6989);
-/* harmony import */ var ace_code_src_mode_fortran__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(5442);
-/* harmony import */ var ace_code_src_mode_fsharp__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(7892);
-/* harmony import */ var ace_code_src_mode_fsl__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(8090);
-/* harmony import */ var ace_code_src_mode_ftl__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(8284);
-/* harmony import */ var ace_code_src_mode_gcode__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(9603);
-/* harmony import */ var ace_code_src_mode_gherkin__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(4691);
-/* harmony import */ var ace_code_src_mode_gitignore__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(7932);
-/* harmony import */ var ace_code_src_mode_glsl__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(1426);
+/* harmony import */ var ace_code_src_mode_fortran__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(65442);
+/* harmony import */ var ace_code_src_mode_fsharp__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(37892);
+/* harmony import */ var ace_code_src_mode_fsl__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(98090);
+/* harmony import */ var ace_code_src_mode_ftl__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(88284);
+/* harmony import */ var ace_code_src_mode_gcode__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(19603);
+/* harmony import */ var ace_code_src_mode_gherkin__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(14691);
+/* harmony import */ var ace_code_src_mode_gitignore__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(17932);
+/* harmony import */ var ace_code_src_mode_glsl__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(51426);
 /* harmony import */ var ace_code_src_mode_gobstones__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(8225);
-/* harmony import */ var ace_code_src_mode_golang__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(6316);
-/* harmony import */ var ace_code_src_mode_graphqlschema__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(7866);
-/* harmony import */ var ace_code_src_mode_groovy__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(5656);
-/* harmony import */ var ace_code_src_mode_haml__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(2993);
-/* harmony import */ var ace_code_src_mode_handlebars__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(1513);
-/* harmony import */ var ace_code_src_mode_haskell_cabal__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(4416);
-/* harmony import */ var ace_code_src_mode_haskell__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(9874);
+/* harmony import */ var ace_code_src_mode_golang__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(76316);
+/* harmony import */ var ace_code_src_mode_graphqlschema__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(47866);
+/* harmony import */ var ace_code_src_mode_groovy__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(15656);
+/* harmony import */ var ace_code_src_mode_haml__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(72993);
+/* harmony import */ var ace_code_src_mode_handlebars__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(71513);
+/* harmony import */ var ace_code_src_mode_haskell_cabal__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(94416);
+/* harmony import */ var ace_code_src_mode_haskell__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(49874);
 /* harmony import */ var ace_code_src_mode_haxe__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(2574);
-/* harmony import */ var ace_code_src_mode_hjson__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(6786);
-/* harmony import */ var ace_code_src_mode_html_elixir__WEBPACK_IMPORTED_MODULE_66__ = __webpack_require__(4009);
-/* harmony import */ var ace_code_src_mode_html_ruby__WEBPACK_IMPORTED_MODULE_67__ = __webpack_require__(587);
-/* harmony import */ var ace_code_src_mode_html__WEBPACK_IMPORTED_MODULE_68__ = __webpack_require__(2954);
-/* harmony import */ var ace_code_src_mode_ini__WEBPACK_IMPORTED_MODULE_69__ = __webpack_require__(9986);
-/* harmony import */ var ace_code_src_mode_io__WEBPACK_IMPORTED_MODULE_70__ = __webpack_require__(995);
-/* harmony import */ var ace_code_src_mode_ion__WEBPACK_IMPORTED_MODULE_71__ = __webpack_require__(106);
-/* harmony import */ var ace_code_src_mode_jack__WEBPACK_IMPORTED_MODULE_72__ = __webpack_require__(9356);
+/* harmony import */ var ace_code_src_mode_hjson__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(66786);
+/* harmony import */ var ace_code_src_mode_html_elixir__WEBPACK_IMPORTED_MODULE_66__ = __webpack_require__(34009);
+/* harmony import */ var ace_code_src_mode_html_ruby__WEBPACK_IMPORTED_MODULE_67__ = __webpack_require__(90587);
+/* harmony import */ var ace_code_src_mode_html__WEBPACK_IMPORTED_MODULE_68__ = __webpack_require__(72954);
+/* harmony import */ var ace_code_src_mode_ini__WEBPACK_IMPORTED_MODULE_69__ = __webpack_require__(49986);
+/* harmony import */ var ace_code_src_mode_io__WEBPACK_IMPORTED_MODULE_70__ = __webpack_require__(30995);
+/* harmony import */ var ace_code_src_mode_ion__WEBPACK_IMPORTED_MODULE_71__ = __webpack_require__(10106);
+/* harmony import */ var ace_code_src_mode_jack__WEBPACK_IMPORTED_MODULE_72__ = __webpack_require__(99356);
 /* harmony import */ var ace_code_src_mode_jade__WEBPACK_IMPORTED_MODULE_73__ = __webpack_require__(9029);
-/* harmony import */ var ace_code_src_mode_java__WEBPACK_IMPORTED_MODULE_74__ = __webpack_require__(4414);
-/* harmony import */ var ace_code_src_mode_javascript__WEBPACK_IMPORTED_MODULE_75__ = __webpack_require__(3480);
-/* harmony import */ var ace_code_src_mode_jexl__WEBPACK_IMPORTED_MODULE_76__ = __webpack_require__(6829);
+/* harmony import */ var ace_code_src_mode_java__WEBPACK_IMPORTED_MODULE_74__ = __webpack_require__(64414);
+/* harmony import */ var ace_code_src_mode_javascript__WEBPACK_IMPORTED_MODULE_75__ = __webpack_require__(93480);
+/* harmony import */ var ace_code_src_mode_jexl__WEBPACK_IMPORTED_MODULE_76__ = __webpack_require__(56829);
 /* harmony import */ var ace_code_src_mode_jsp__WEBPACK_IMPORTED_MODULE_77__ = __webpack_require__(5544);
 /* harmony import */ var ace_code_src_mode_json__WEBPACK_IMPORTED_MODULE_78__ = __webpack_require__(2145);
-/* harmony import */ var ace_code_src_mode_json5__WEBPACK_IMPORTED_MODULE_79__ = __webpack_require__(734);
-/* harmony import */ var ace_code_src_mode_jssm__WEBPACK_IMPORTED_MODULE_80__ = __webpack_require__(4859);
-/* harmony import */ var ace_code_src_mode_jsx__WEBPACK_IMPORTED_MODULE_81__ = __webpack_require__(6608);
-/* harmony import */ var ace_code_src_mode_julia__WEBPACK_IMPORTED_MODULE_82__ = __webpack_require__(5572);
-/* harmony import */ var ace_code_src_mode_kotlin__WEBPACK_IMPORTED_MODULE_83__ = __webpack_require__(6320);
-/* harmony import */ var ace_code_src_mode_latex__WEBPACK_IMPORTED_MODULE_84__ = __webpack_require__(4941);
-/* harmony import */ var ace_code_src_mode_latte__WEBPACK_IMPORTED_MODULE_85__ = __webpack_require__(7990);
-/* harmony import */ var ace_code_src_mode_less__WEBPACK_IMPORTED_MODULE_86__ = __webpack_require__(3650);
+/* harmony import */ var ace_code_src_mode_json5__WEBPACK_IMPORTED_MODULE_79__ = __webpack_require__(90734);
+/* harmony import */ var ace_code_src_mode_jssm__WEBPACK_IMPORTED_MODULE_80__ = __webpack_require__(14859);
+/* harmony import */ var ace_code_src_mode_jsx__WEBPACK_IMPORTED_MODULE_81__ = __webpack_require__(86608);
+/* harmony import */ var ace_code_src_mode_julia__WEBPACK_IMPORTED_MODULE_82__ = __webpack_require__(85572);
+/* harmony import */ var ace_code_src_mode_kotlin__WEBPACK_IMPORTED_MODULE_83__ = __webpack_require__(86320);
+/* harmony import */ var ace_code_src_mode_latex__WEBPACK_IMPORTED_MODULE_84__ = __webpack_require__(14941);
+/* harmony import */ var ace_code_src_mode_latte__WEBPACK_IMPORTED_MODULE_85__ = __webpack_require__(27990);
+/* harmony import */ var ace_code_src_mode_less__WEBPACK_IMPORTED_MODULE_86__ = __webpack_require__(73650);
 /* harmony import */ var ace_code_src_mode_liquid__WEBPACK_IMPORTED_MODULE_87__ = __webpack_require__(2173);
-/* harmony import */ var ace_code_src_mode_lisp__WEBPACK_IMPORTED_MODULE_88__ = __webpack_require__(1281);
-/* harmony import */ var ace_code_src_mode_livescript__WEBPACK_IMPORTED_MODULE_89__ = __webpack_require__(9012);
-/* harmony import */ var ace_code_src_mode_logiql__WEBPACK_IMPORTED_MODULE_90__ = __webpack_require__(218);
-/* harmony import */ var ace_code_src_mode_logtalk__WEBPACK_IMPORTED_MODULE_91__ = __webpack_require__(150);
-/* harmony import */ var ace_code_src_mode_lsl__WEBPACK_IMPORTED_MODULE_92__ = __webpack_require__(6446);
-/* harmony import */ var ace_code_src_mode_lua__WEBPACK_IMPORTED_MODULE_93__ = __webpack_require__(4750);
-/* harmony import */ var ace_code_src_mode_luapage__WEBPACK_IMPORTED_MODULE_94__ = __webpack_require__(3483);
-/* harmony import */ var ace_code_src_mode_lucene__WEBPACK_IMPORTED_MODULE_95__ = __webpack_require__(7079);
-/* harmony import */ var ace_code_src_mode_makefile__WEBPACK_IMPORTED_MODULE_96__ = __webpack_require__(75);
-/* harmony import */ var ace_code_src_mode_markdown__WEBPACK_IMPORTED_MODULE_97__ = __webpack_require__(4358);
+/* harmony import */ var ace_code_src_mode_lisp__WEBPACK_IMPORTED_MODULE_88__ = __webpack_require__(71281);
+/* harmony import */ var ace_code_src_mode_livescript__WEBPACK_IMPORTED_MODULE_89__ = __webpack_require__(89012);
+/* harmony import */ var ace_code_src_mode_logiql__WEBPACK_IMPORTED_MODULE_90__ = __webpack_require__(70350);
+/* harmony import */ var ace_code_src_mode_logtalk__WEBPACK_IMPORTED_MODULE_91__ = __webpack_require__(90150);
+/* harmony import */ var ace_code_src_mode_lsl__WEBPACK_IMPORTED_MODULE_92__ = __webpack_require__(56446);
+/* harmony import */ var ace_code_src_mode_lua__WEBPACK_IMPORTED_MODULE_93__ = __webpack_require__(84750);
+/* harmony import */ var ace_code_src_mode_luapage__WEBPACK_IMPORTED_MODULE_94__ = __webpack_require__(53483);
+/* harmony import */ var ace_code_src_mode_lucene__WEBPACK_IMPORTED_MODULE_95__ = __webpack_require__(87079);
+/* harmony import */ var ace_code_src_mode_makefile__WEBPACK_IMPORTED_MODULE_96__ = __webpack_require__(30075);
+/* harmony import */ var ace_code_src_mode_markdown__WEBPACK_IMPORTED_MODULE_97__ = __webpack_require__(84358);
 /* harmony import */ var ace_code_src_mode_mask__WEBPACK_IMPORTED_MODULE_98__ = __webpack_require__(148);
-/* harmony import */ var ace_code_src_mode_matlab__WEBPACK_IMPORTED_MODULE_99__ = __webpack_require__(7549);
-/* harmony import */ var ace_code_src_mode_maze__WEBPACK_IMPORTED_MODULE_100__ = __webpack_require__(482);
-/* harmony import */ var ace_code_src_mode_mediawiki__WEBPACK_IMPORTED_MODULE_101__ = __webpack_require__(838);
-/* harmony import */ var ace_code_src_mode_mel__WEBPACK_IMPORTED_MODULE_102__ = __webpack_require__(7569);
-/* harmony import */ var ace_code_src_mode_mips__WEBPACK_IMPORTED_MODULE_103__ = __webpack_require__(8711);
-/* harmony import */ var ace_code_src_mode_mixal__WEBPACK_IMPORTED_MODULE_104__ = __webpack_require__(2899);
-/* harmony import */ var ace_code_src_mode_mushcode__WEBPACK_IMPORTED_MODULE_105__ = __webpack_require__(8609);
+/* harmony import */ var ace_code_src_mode_matlab__WEBPACK_IMPORTED_MODULE_99__ = __webpack_require__(87549);
+/* harmony import */ var ace_code_src_mode_maze__WEBPACK_IMPORTED_MODULE_100__ = __webpack_require__(70482);
+/* harmony import */ var ace_code_src_mode_mediawiki__WEBPACK_IMPORTED_MODULE_101__ = __webpack_require__(60838);
+/* harmony import */ var ace_code_src_mode_mel__WEBPACK_IMPORTED_MODULE_102__ = __webpack_require__(17569);
+/* harmony import */ var ace_code_src_mode_mips__WEBPACK_IMPORTED_MODULE_103__ = __webpack_require__(68711);
+/* harmony import */ var ace_code_src_mode_mixal__WEBPACK_IMPORTED_MODULE_104__ = __webpack_require__(22899);
+/* harmony import */ var ace_code_src_mode_mushcode__WEBPACK_IMPORTED_MODULE_105__ = __webpack_require__(38609);
 /* harmony import */ var ace_code_src_mode_mysql__WEBPACK_IMPORTED_MODULE_106__ = __webpack_require__(551);
-/* harmony import */ var ace_code_src_mode_nasal__WEBPACK_IMPORTED_MODULE_107__ = __webpack_require__(7436);
-/* harmony import */ var ace_code_src_mode_nginx__WEBPACK_IMPORTED_MODULE_108__ = __webpack_require__(5068);
-/* harmony import */ var ace_code_src_mode_nim__WEBPACK_IMPORTED_MODULE_109__ = __webpack_require__(6138);
-/* harmony import */ var ace_code_src_mode_nix__WEBPACK_IMPORTED_MODULE_110__ = __webpack_require__(4468);
-/* harmony import */ var ace_code_src_mode_nsis__WEBPACK_IMPORTED_MODULE_111__ = __webpack_require__(9619);
-/* harmony import */ var ace_code_src_mode_nunjucks__WEBPACK_IMPORTED_MODULE_112__ = __webpack_require__(1526);
-/* harmony import */ var ace_code_src_mode_objectivec__WEBPACK_IMPORTED_MODULE_113__ = __webpack_require__(6576);
+/* harmony import */ var ace_code_src_mode_nasal__WEBPACK_IMPORTED_MODULE_107__ = __webpack_require__(27436);
+/* harmony import */ var ace_code_src_mode_nginx__WEBPACK_IMPORTED_MODULE_108__ = __webpack_require__(25068);
+/* harmony import */ var ace_code_src_mode_nim__WEBPACK_IMPORTED_MODULE_109__ = __webpack_require__(86138);
+/* harmony import */ var ace_code_src_mode_nix__WEBPACK_IMPORTED_MODULE_110__ = __webpack_require__(74468);
+/* harmony import */ var ace_code_src_mode_nsis__WEBPACK_IMPORTED_MODULE_111__ = __webpack_require__(19619);
+/* harmony import */ var ace_code_src_mode_nunjucks__WEBPACK_IMPORTED_MODULE_112__ = __webpack_require__(21526);
+/* harmony import */ var ace_code_src_mode_objectivec__WEBPACK_IMPORTED_MODULE_113__ = __webpack_require__(16576);
 /* harmony import */ var ace_code_src_mode_ocaml__WEBPACK_IMPORTED_MODULE_114__ = __webpack_require__(2811);
 /* harmony import */ var ace_code_src_mode_odin__WEBPACK_IMPORTED_MODULE_115__ = __webpack_require__(3757);
-/* harmony import */ var ace_code_src_mode_partiql__WEBPACK_IMPORTED_MODULE_116__ = __webpack_require__(8749);
-/* harmony import */ var ace_code_src_mode_pascal__WEBPACK_IMPORTED_MODULE_117__ = __webpack_require__(2522);
-/* harmony import */ var ace_code_src_mode_perl__WEBPACK_IMPORTED_MODULE_118__ = __webpack_require__(9897);
-/* harmony import */ var ace_code_src_mode_pgsql__WEBPACK_IMPORTED_MODULE_119__ = __webpack_require__(8350);
+/* harmony import */ var ace_code_src_mode_partiql__WEBPACK_IMPORTED_MODULE_116__ = __webpack_require__(68749);
+/* harmony import */ var ace_code_src_mode_pascal__WEBPACK_IMPORTED_MODULE_117__ = __webpack_require__(62522);
+/* harmony import */ var ace_code_src_mode_perl__WEBPACK_IMPORTED_MODULE_118__ = __webpack_require__(29897);
+/* harmony import */ var ace_code_src_mode_pgsql__WEBPACK_IMPORTED_MODULE_119__ = __webpack_require__(98350);
 /* harmony import */ var ace_code_src_mode_php_laravel_blade__WEBPACK_IMPORTED_MODULE_120__ = __webpack_require__(9757);
-/* harmony import */ var ace_code_src_mode_php__WEBPACK_IMPORTED_MODULE_121__ = __webpack_require__(5432);
-/* harmony import */ var ace_code_src_mode_pig__WEBPACK_IMPORTED_MODULE_122__ = __webpack_require__(70);
-/* harmony import */ var ace_code_src_mode_plain_text__WEBPACK_IMPORTED_MODULE_123__ = __webpack_require__(7124);
+/* harmony import */ var ace_code_src_mode_php__WEBPACK_IMPORTED_MODULE_121__ = __webpack_require__(35432);
+/* harmony import */ var ace_code_src_mode_pig__WEBPACK_IMPORTED_MODULE_122__ = __webpack_require__(40070);
+/* harmony import */ var ace_code_src_mode_plain_text__WEBPACK_IMPORTED_MODULE_123__ = __webpack_require__(57124);
 /* harmony import */ var ace_code_src_mode_plsql__WEBPACK_IMPORTED_MODULE_124__ = __webpack_require__(7176);
-/* harmony import */ var ace_code_src_mode_powershell__WEBPACK_IMPORTED_MODULE_125__ = __webpack_require__(556);
+/* harmony import */ var ace_code_src_mode_powershell__WEBPACK_IMPORTED_MODULE_125__ = __webpack_require__(50556);
 /* harmony import */ var ace_code_src_mode_praat__WEBPACK_IMPORTED_MODULE_126__ = __webpack_require__(9162);
-/* harmony import */ var ace_code_src_mode_prisma__WEBPACK_IMPORTED_MODULE_127__ = __webpack_require__(7558);
-/* harmony import */ var ace_code_src_mode_prolog__WEBPACK_IMPORTED_MODULE_128__ = __webpack_require__(5668);
-/* harmony import */ var ace_code_src_mode_properties__WEBPACK_IMPORTED_MODULE_129__ = __webpack_require__(4520);
-/* harmony import */ var ace_code_src_mode_protobuf__WEBPACK_IMPORTED_MODULE_130__ = __webpack_require__(3029);
-/* harmony import */ var ace_code_src_mode_prql__WEBPACK_IMPORTED_MODULE_131__ = __webpack_require__(5595);
-/* harmony import */ var ace_code_src_mode_puppet__WEBPACK_IMPORTED_MODULE_132__ = __webpack_require__(2426);
-/* harmony import */ var ace_code_src_mode_python__WEBPACK_IMPORTED_MODULE_133__ = __webpack_require__(8200);
-/* harmony import */ var ace_code_src_mode_qml__WEBPACK_IMPORTED_MODULE_134__ = __webpack_require__(93);
-/* harmony import */ var ace_code_src_mode_r__WEBPACK_IMPORTED_MODULE_135__ = __webpack_require__(5475);
-/* harmony import */ var ace_code_src_mode_raku__WEBPACK_IMPORTED_MODULE_136__ = __webpack_require__(3217);
-/* harmony import */ var ace_code_src_mode_razor__WEBPACK_IMPORTED_MODULE_137__ = __webpack_require__(6032);
-/* harmony import */ var ace_code_src_mode_rdoc__WEBPACK_IMPORTED_MODULE_138__ = __webpack_require__(1113);
+/* harmony import */ var ace_code_src_mode_prisma__WEBPACK_IMPORTED_MODULE_127__ = __webpack_require__(67558);
+/* harmony import */ var ace_code_src_mode_prolog__WEBPACK_IMPORTED_MODULE_128__ = __webpack_require__(85668);
+/* harmony import */ var ace_code_src_mode_properties__WEBPACK_IMPORTED_MODULE_129__ = __webpack_require__(34520);
+/* harmony import */ var ace_code_src_mode_protobuf__WEBPACK_IMPORTED_MODULE_130__ = __webpack_require__(83029);
+/* harmony import */ var ace_code_src_mode_prql__WEBPACK_IMPORTED_MODULE_131__ = __webpack_require__(95595);
+/* harmony import */ var ace_code_src_mode_puppet__WEBPACK_IMPORTED_MODULE_132__ = __webpack_require__(22426);
+/* harmony import */ var ace_code_src_mode_python__WEBPACK_IMPORTED_MODULE_133__ = __webpack_require__(48200);
+/* harmony import */ var ace_code_src_mode_qml__WEBPACK_IMPORTED_MODULE_134__ = __webpack_require__(60093);
+/* harmony import */ var ace_code_src_mode_r__WEBPACK_IMPORTED_MODULE_135__ = __webpack_require__(85475);
+/* harmony import */ var ace_code_src_mode_raku__WEBPACK_IMPORTED_MODULE_136__ = __webpack_require__(33217);
+/* harmony import */ var ace_code_src_mode_razor__WEBPACK_IMPORTED_MODULE_137__ = __webpack_require__(46032);
+/* harmony import */ var ace_code_src_mode_rdoc__WEBPACK_IMPORTED_MODULE_138__ = __webpack_require__(21113);
 /* harmony import */ var ace_code_src_mode_red__WEBPACK_IMPORTED_MODULE_139__ = __webpack_require__(4439);
-/* harmony import */ var ace_code_src_mode_redshift__WEBPACK_IMPORTED_MODULE_140__ = __webpack_require__(8812);
-/* harmony import */ var ace_code_src_mode_rhtml__WEBPACK_IMPORTED_MODULE_141__ = __webpack_require__(9086);
-/* harmony import */ var ace_code_src_mode_robot__WEBPACK_IMPORTED_MODULE_142__ = __webpack_require__(7576);
-/* harmony import */ var ace_code_src_mode_rst__WEBPACK_IMPORTED_MODULE_143__ = __webpack_require__(1616);
-/* harmony import */ var ace_code_src_mode_ruby__WEBPACK_IMPORTED_MODULE_144__ = __webpack_require__(1148);
+/* harmony import */ var ace_code_src_mode_redshift__WEBPACK_IMPORTED_MODULE_140__ = __webpack_require__(30692);
+/* harmony import */ var ace_code_src_mode_rhtml__WEBPACK_IMPORTED_MODULE_141__ = __webpack_require__(29086);
+/* harmony import */ var ace_code_src_mode_robot__WEBPACK_IMPORTED_MODULE_142__ = __webpack_require__(17576);
+/* harmony import */ var ace_code_src_mode_rst__WEBPACK_IMPORTED_MODULE_143__ = __webpack_require__(81616);
+/* harmony import */ var ace_code_src_mode_ruby__WEBPACK_IMPORTED_MODULE_144__ = __webpack_require__(78242);
 /* harmony import */ var ace_code_src_mode_rust__WEBPACK_IMPORTED_MODULE_145__ = __webpack_require__(2554);
-/* harmony import */ var ace_code_src_mode_sac__WEBPACK_IMPORTED_MODULE_146__ = __webpack_require__(3078);
-/* harmony import */ var ace_code_src_mode_sass__WEBPACK_IMPORTED_MODULE_147__ = __webpack_require__(3301);
-/* harmony import */ var ace_code_src_mode_scad__WEBPACK_IMPORTED_MODULE_148__ = __webpack_require__(8858);
-/* harmony import */ var ace_code_src_mode_scala__WEBPACK_IMPORTED_MODULE_149__ = __webpack_require__(4668);
-/* harmony import */ var ace_code_src_mode_scheme__WEBPACK_IMPORTED_MODULE_150__ = __webpack_require__(3091);
-/* harmony import */ var ace_code_src_mode_scrypt__WEBPACK_IMPORTED_MODULE_151__ = __webpack_require__(7384);
+/* harmony import */ var ace_code_src_mode_sac__WEBPACK_IMPORTED_MODULE_146__ = __webpack_require__(93078);
+/* harmony import */ var ace_code_src_mode_sass__WEBPACK_IMPORTED_MODULE_147__ = __webpack_require__(73301);
+/* harmony import */ var ace_code_src_mode_scad__WEBPACK_IMPORTED_MODULE_148__ = __webpack_require__(98858);
+/* harmony import */ var ace_code_src_mode_scala__WEBPACK_IMPORTED_MODULE_149__ = __webpack_require__(45856);
+/* harmony import */ var ace_code_src_mode_scheme__WEBPACK_IMPORTED_MODULE_150__ = __webpack_require__(63091);
+/* harmony import */ var ace_code_src_mode_scrypt__WEBPACK_IMPORTED_MODULE_151__ = __webpack_require__(67384);
 /* harmony import */ var ace_code_src_mode_scss__WEBPACK_IMPORTED_MODULE_152__ = __webpack_require__(1401);
-/* harmony import */ var ace_code_src_mode_sh__WEBPACK_IMPORTED_MODULE_153__ = __webpack_require__(7618);
-/* harmony import */ var ace_code_src_mode_sjs__WEBPACK_IMPORTED_MODULE_154__ = __webpack_require__(8297);
-/* harmony import */ var ace_code_src_mode_slim__WEBPACK_IMPORTED_MODULE_155__ = __webpack_require__(3226);
-/* harmony import */ var ace_code_src_mode_smarty__WEBPACK_IMPORTED_MODULE_156__ = __webpack_require__(5168);
-/* harmony import */ var ace_code_src_mode_smithy__WEBPACK_IMPORTED_MODULE_157__ = __webpack_require__(4139);
-/* harmony import */ var ace_code_src_mode_snippets__WEBPACK_IMPORTED_MODULE_158__ = __webpack_require__(5627);
+/* harmony import */ var ace_code_src_mode_sh__WEBPACK_IMPORTED_MODULE_153__ = __webpack_require__(17618);
+/* harmony import */ var ace_code_src_mode_sjs__WEBPACK_IMPORTED_MODULE_154__ = __webpack_require__(98297);
+/* harmony import */ var ace_code_src_mode_slim__WEBPACK_IMPORTED_MODULE_155__ = __webpack_require__(92037);
+/* harmony import */ var ace_code_src_mode_smarty__WEBPACK_IMPORTED_MODULE_156__ = __webpack_require__(45168);
+/* harmony import */ var ace_code_src_mode_smithy__WEBPACK_IMPORTED_MODULE_157__ = __webpack_require__(94139);
+/* harmony import */ var ace_code_src_mode_snippets__WEBPACK_IMPORTED_MODULE_158__ = __webpack_require__(75627);
 /* harmony import */ var ace_code_src_mode_soy_template__WEBPACK_IMPORTED_MODULE_159__ = __webpack_require__(5686);
 /* harmony import */ var ace_code_src_mode_space__WEBPACK_IMPORTED_MODULE_160__ = __webpack_require__(1250);
-/* harmony import */ var ace_code_src_mode_sparql__WEBPACK_IMPORTED_MODULE_161__ = __webpack_require__(8686);
-/* harmony import */ var ace_code_src_mode_sql__WEBPACK_IMPORTED_MODULE_162__ = __webpack_require__(4716);
-/* harmony import */ var ace_code_src_mode_sqlserver__WEBPACK_IMPORTED_MODULE_163__ = __webpack_require__(1301);
-/* harmony import */ var ace_code_src_mode_stylus__WEBPACK_IMPORTED_MODULE_164__ = __webpack_require__(7884);
-/* harmony import */ var ace_code_src_mode_svg__WEBPACK_IMPORTED_MODULE_165__ = __webpack_require__(3335);
-/* harmony import */ var ace_code_src_mode_swift__WEBPACK_IMPORTED_MODULE_166__ = __webpack_require__(7483);
-/* harmony import */ var ace_code_src_mode_tcl__WEBPACK_IMPORTED_MODULE_167__ = __webpack_require__(3175);
-/* harmony import */ var ace_code_src_mode_terraform__WEBPACK_IMPORTED_MODULE_168__ = __webpack_require__(412);
-/* harmony import */ var ace_code_src_mode_tex__WEBPACK_IMPORTED_MODULE_169__ = __webpack_require__(7492);
-/* harmony import */ var ace_code_src_mode_text__WEBPACK_IMPORTED_MODULE_170__ = __webpack_require__(2113);
-/* harmony import */ var ace_code_src_mode_textile__WEBPACK_IMPORTED_MODULE_171__ = __webpack_require__(1785);
-/* harmony import */ var ace_code_src_mode_toml__WEBPACK_IMPORTED_MODULE_172__ = __webpack_require__(6754);
-/* harmony import */ var ace_code_src_mode_tsx__WEBPACK_IMPORTED_MODULE_173__ = __webpack_require__(2422);
-/* harmony import */ var ace_code_src_mode_turtle__WEBPACK_IMPORTED_MODULE_174__ = __webpack_require__(5233);
-/* harmony import */ var ace_code_src_mode_twig__WEBPACK_IMPORTED_MODULE_175__ = __webpack_require__(2685);
-/* harmony import */ var ace_code_src_mode_typescript__WEBPACK_IMPORTED_MODULE_176__ = __webpack_require__(1879);
-/* harmony import */ var ace_code_src_mode_vala__WEBPACK_IMPORTED_MODULE_177__ = __webpack_require__(6217);
-/* harmony import */ var ace_code_src_mode_vbscript__WEBPACK_IMPORTED_MODULE_178__ = __webpack_require__(6923);
-/* harmony import */ var ace_code_src_mode_velocity__WEBPACK_IMPORTED_MODULE_179__ = __webpack_require__(7069);
-/* harmony import */ var ace_code_src_mode_verilog__WEBPACK_IMPORTED_MODULE_180__ = __webpack_require__(2850);
-/* harmony import */ var ace_code_src_mode_vhdl__WEBPACK_IMPORTED_MODULE_181__ = __webpack_require__(9809);
+/* harmony import */ var ace_code_src_mode_sparql__WEBPACK_IMPORTED_MODULE_161__ = __webpack_require__(98686);
+/* harmony import */ var ace_code_src_mode_sql__WEBPACK_IMPORTED_MODULE_162__ = __webpack_require__(34716);
+/* harmony import */ var ace_code_src_mode_sqlserver__WEBPACK_IMPORTED_MODULE_163__ = __webpack_require__(91301);
+/* harmony import */ var ace_code_src_mode_stylus__WEBPACK_IMPORTED_MODULE_164__ = __webpack_require__(37884);
+/* harmony import */ var ace_code_src_mode_svg__WEBPACK_IMPORTED_MODULE_165__ = __webpack_require__(93335);
+/* harmony import */ var ace_code_src_mode_swift__WEBPACK_IMPORTED_MODULE_166__ = __webpack_require__(47483);
+/* harmony import */ var ace_code_src_mode_tcl__WEBPACK_IMPORTED_MODULE_167__ = __webpack_require__(23175);
+/* harmony import */ var ace_code_src_mode_terraform__WEBPACK_IMPORTED_MODULE_168__ = __webpack_require__(20412);
+/* harmony import */ var ace_code_src_mode_tex__WEBPACK_IMPORTED_MODULE_169__ = __webpack_require__(37492);
+/* harmony import */ var ace_code_src_mode_text__WEBPACK_IMPORTED_MODULE_170__ = __webpack_require__(72113);
+/* harmony import */ var ace_code_src_mode_textile__WEBPACK_IMPORTED_MODULE_171__ = __webpack_require__(31785);
+/* harmony import */ var ace_code_src_mode_toml__WEBPACK_IMPORTED_MODULE_172__ = __webpack_require__(56754);
+/* harmony import */ var ace_code_src_mode_tsx__WEBPACK_IMPORTED_MODULE_173__ = __webpack_require__(42422);
+/* harmony import */ var ace_code_src_mode_turtle__WEBPACK_IMPORTED_MODULE_174__ = __webpack_require__(55233);
+/* harmony import */ var ace_code_src_mode_twig__WEBPACK_IMPORTED_MODULE_175__ = __webpack_require__(42685);
+/* harmony import */ var ace_code_src_mode_typescript__WEBPACK_IMPORTED_MODULE_176__ = __webpack_require__(81879);
+/* harmony import */ var ace_code_src_mode_vala__WEBPACK_IMPORTED_MODULE_177__ = __webpack_require__(76217);
+/* harmony import */ var ace_code_src_mode_vbscript__WEBPACK_IMPORTED_MODULE_178__ = __webpack_require__(26923);
+/* harmony import */ var ace_code_src_mode_velocity__WEBPACK_IMPORTED_MODULE_179__ = __webpack_require__(97069);
+/* harmony import */ var ace_code_src_mode_verilog__WEBPACK_IMPORTED_MODULE_180__ = __webpack_require__(22850);
+/* harmony import */ var ace_code_src_mode_vhdl__WEBPACK_IMPORTED_MODULE_181__ = __webpack_require__(39809);
 /* harmony import */ var ace_code_src_mode_visualforce__WEBPACK_IMPORTED_MODULE_182__ = __webpack_require__(5886);
-/* harmony import */ var ace_code_src_mode_vue__WEBPACK_IMPORTED_MODULE_183__ = __webpack_require__(7976);
-/* harmony import */ var ace_code_src_mode_wollok__WEBPACK_IMPORTED_MODULE_184__ = __webpack_require__(4538);
-/* harmony import */ var ace_code_src_mode_xml__WEBPACK_IMPORTED_MODULE_185__ = __webpack_require__(3776);
-/* harmony import */ var ace_code_src_mode_yaml__WEBPACK_IMPORTED_MODULE_186__ = __webpack_require__(5051);
-/* harmony import */ var ace_code_src_mode_zeek__WEBPACK_IMPORTED_MODULE_187__ = __webpack_require__(3405);
-/* harmony import */ var ace_code_src_mode_zig__WEBPACK_IMPORTED_MODULE_188__ = __webpack_require__(849);
+/* harmony import */ var ace_code_src_mode_vue__WEBPACK_IMPORTED_MODULE_183__ = __webpack_require__(17976);
+/* harmony import */ var ace_code_src_mode_wollok__WEBPACK_IMPORTED_MODULE_184__ = __webpack_require__(54538);
+/* harmony import */ var ace_code_src_mode_xml__WEBPACK_IMPORTED_MODULE_185__ = __webpack_require__(13776);
+/* harmony import */ var ace_code_src_mode_yaml__WEBPACK_IMPORTED_MODULE_186__ = __webpack_require__(35051);
+/* harmony import */ var ace_code_src_mode_zeek__WEBPACK_IMPORTED_MODULE_187__ = __webpack_require__(33405);
+/* harmony import */ var ace_code_src_mode_zig__WEBPACK_IMPORTED_MODULE_188__ = __webpack_require__(80849);
 // modes
 
 
@@ -63338,8 +62999,195 @@ __webpack_require__.r(__webpack_exports__);
 
 })();
 
-/******/ 	return __webpack_exports__;
-/******/ })()
-;
-});
+var __webpack_exports__AbapMode = __webpack_exports__.WsH;
+var __webpack_exports__AbcMode = __webpack_exports__.Z4c;
+var __webpack_exports__ActionscriptMode = __webpack_exports__.QXj;
+var __webpack_exports__AdaMode = __webpack_exports__.bQR;
+var __webpack_exports__AldaMode = __webpack_exports__.hPO;
+var __webpack_exports__ApacheConfMode = __webpack_exports__.fUM;
+var __webpack_exports__ApexMode = __webpack_exports__.drv;
+var __webpack_exports__ApplescriptMode = __webpack_exports__.rUJ;
+var __webpack_exports__AqlMode = __webpack_exports__.d0_;
+var __webpack_exports__AsciidocMode = __webpack_exports__.qcF;
+var __webpack_exports__AslMode = __webpack_exports__.Lpx;
+var __webpack_exports__AssemblyArm32Mode = __webpack_exports__.$Sq;
+var __webpack_exports__AssemblyX86Mode = __webpack_exports__.f8u;
+var __webpack_exports__AstroMode = __webpack_exports__.kDe;
+var __webpack_exports__AutohotkeyMode = __webpack_exports__.Isn;
+var __webpack_exports__BatchfileMode = __webpack_exports__.s6V;
+var __webpack_exports__BibtexMode = __webpack_exports__.kzd;
+var __webpack_exports__C9searchMode = __webpack_exports__.N$J;
+var __webpack_exports__CCppMode = __webpack_exports__.Z$_;
+var __webpack_exports__CirruMode = __webpack_exports__.DEL;
+var __webpack_exports__ClojureMode = __webpack_exports__.kQ1;
+var __webpack_exports__CobolMode = __webpack_exports__.l$k;
+var __webpack_exports__CoffeeMode = __webpack_exports__.HAU;
+var __webpack_exports__ColdfusionMode = __webpack_exports__.Kh$;
+var __webpack_exports__CrystalMode = __webpack_exports__.BJo;
+var __webpack_exports__CsharpMode = __webpack_exports__.PfC;
+var __webpack_exports__CsoundDocumentMode = __webpack_exports__.c_H;
+var __webpack_exports__CsoundOrchestraMode = __webpack_exports__._5P;
+var __webpack_exports__CsoundScoreMode = __webpack_exports__.Bwk;
+var __webpack_exports__CspMode = __webpack_exports__.dRo;
+var __webpack_exports__CssMode = __webpack_exports__.fpl;
+var __webpack_exports__CurlyMode = __webpack_exports__.BQL;
+var __webpack_exports__CuttlefishMode = __webpack_exports__.Ny$;
+var __webpack_exports__DMode = __webpack_exports__.jQ5;
+var __webpack_exports__DartMode = __webpack_exports__.eqB;
+var __webpack_exports__DiffMode = __webpack_exports__.T9e;
+var __webpack_exports__DjangoMode = __webpack_exports__.wPB;
+var __webpack_exports__DockerfileMode = __webpack_exports__.W14;
+var __webpack_exports__DotMode = __webpack_exports__.Gqk;
+var __webpack_exports__DroolsMode = __webpack_exports__.st4;
+var __webpack_exports__EdifactMode = __webpack_exports__.zoR;
+var __webpack_exports__EiffelMode = __webpack_exports__.i2o;
+var __webpack_exports__EjsMode = __webpack_exports__.Pdf;
+var __webpack_exports__ElixirMode = __webpack_exports__.Iu_;
+var __webpack_exports__ElmMode = __webpack_exports__.kYm;
+var __webpack_exports__ErlangMode = __webpack_exports__.Er;
+var __webpack_exports__FlixMode = __webpack_exports__.R7P;
+var __webpack_exports__ForthMode = __webpack_exports__.SAR;
+var __webpack_exports__FortranMode = __webpack_exports__.WBH;
+var __webpack_exports__FsharpMode = __webpack_exports__.$cA;
+var __webpack_exports__FslMode = __webpack_exports__.aIF;
+var __webpack_exports__FtlMode = __webpack_exports__.a4X;
+var __webpack_exports__GcodeMode = __webpack_exports__.E7_;
+var __webpack_exports__GherkinMode = __webpack_exports__.E3C;
+var __webpack_exports__GitignoreMode = __webpack_exports__.ppZ;
+var __webpack_exports__GlslMode = __webpack_exports__.g_Z;
+var __webpack_exports__GobstonesMode = __webpack_exports__.lzn;
+var __webpack_exports__GolangMode = __webpack_exports__.pdV;
+var __webpack_exports__GraphqlschemaMode = __webpack_exports__.q8W;
+var __webpack_exports__GroovyMode = __webpack_exports__.Zpo;
+var __webpack_exports__HamlMode = __webpack_exports__.kCU;
+var __webpack_exports__HandlebarsMode = __webpack_exports__.rFy;
+var __webpack_exports__HaskellCabalMode = __webpack_exports__.elO;
+var __webpack_exports__HaskellMode = __webpack_exports__.sjg;
+var __webpack_exports__HaxeMode = __webpack_exports__.Ozt;
+var __webpack_exports__HjsonMode = __webpack_exports__.G9;
+var __webpack_exports__HtmlElixirMode = __webpack_exports__.CBA;
+var __webpack_exports__HtmlMode = __webpack_exports__.UMC;
+var __webpack_exports__HtmlRubyMode = __webpack_exports__.QMC;
+var __webpack_exports__IniMode = __webpack_exports__.Ol6;
+var __webpack_exports__IoMode = __webpack_exports__.QaN;
+var __webpack_exports__IonMode = __webpack_exports__.Kc5;
+var __webpack_exports__JackMode = __webpack_exports__.nxh;
+var __webpack_exports__JadeMode = __webpack_exports__.XCI;
+var __webpack_exports__JavaMode = __webpack_exports__.lZP;
+var __webpack_exports__JavascriptMode = __webpack_exports__.ubY;
+var __webpack_exports__JexlMode = __webpack_exports__.MqL;
+var __webpack_exports__Json5Mode = __webpack_exports__.$8D;
+var __webpack_exports__JsonMode = __webpack_exports__.nw6;
+var __webpack_exports__JspMode = __webpack_exports__.mmo;
+var __webpack_exports__JssmMode = __webpack_exports__.pCX;
+var __webpack_exports__JsxMode = __webpack_exports__.n0L;
+var __webpack_exports__JuliaMode = __webpack_exports__.D_k;
+var __webpack_exports__KotlinMode = __webpack_exports__.dHb;
+var __webpack_exports__LatexMode = __webpack_exports__.yeI;
+var __webpack_exports__LatteMode = __webpack_exports__.B6t;
+var __webpack_exports__LessMode = __webpack_exports__._Ug;
+var __webpack_exports__LiquidMode = __webpack_exports__.bZE;
+var __webpack_exports__LispMode = __webpack_exports__.X8F;
+var __webpack_exports__LivescriptMode = __webpack_exports__.bOd;
+var __webpack_exports__LogiqlMode = __webpack_exports__.Qki;
+var __webpack_exports__LogtalkMode = __webpack_exports__.DHG;
+var __webpack_exports__LslMode = __webpack_exports__.z$H;
+var __webpack_exports__LuaMode = __webpack_exports__.DIF;
+var __webpack_exports__LuapageMode = __webpack_exports__.n6V;
+var __webpack_exports__LuceneMode = __webpack_exports__.Yhp;
+var __webpack_exports__MakefileMode = __webpack_exports__.Pnb;
+var __webpack_exports__MarkdownMode = __webpack_exports__.RuA;
+var __webpack_exports__MaskMode = __webpack_exports__.EDN;
+var __webpack_exports__MatlabMode = __webpack_exports__.nAv;
+var __webpack_exports__MazeMode = __webpack_exports__.B$C;
+var __webpack_exports__MediawikiMode = __webpack_exports__.Jw4;
+var __webpack_exports__MelMode = __webpack_exports__.Vc$;
+var __webpack_exports__MipsMode = __webpack_exports__.cmh;
+var __webpack_exports__MixalMode = __webpack_exports__.HnP;
+var __webpack_exports__MushcodeMode = __webpack_exports__.m79;
+var __webpack_exports__MysqlMode = __webpack_exports__.BnI;
+var __webpack_exports__NasalMode = __webpack_exports__.RWF;
+var __webpack_exports__NginxMode = __webpack_exports__.PYI;
+var __webpack_exports__NimMode = __webpack_exports__.VZr;
+var __webpack_exports__NixMode = __webpack_exports__.hm2;
+var __webpack_exports__NsisMode = __webpack_exports__.QKQ;
+var __webpack_exports__NunjucksMode = __webpack_exports__.ogr;
+var __webpack_exports__ObjectivecMode = __webpack_exports__.O3A;
+var __webpack_exports__OcamlMode = __webpack_exports__.N8x;
+var __webpack_exports__OdinMode = __webpack_exports__.GJp;
+var __webpack_exports__PartiqlMode = __webpack_exports__.VrL;
+var __webpack_exports__PascalMode = __webpack_exports__.vRV;
+var __webpack_exports__PerlMode = __webpack_exports__.pqL;
+var __webpack_exports__PgsqlMode = __webpack_exports__.Aom;
+var __webpack_exports__PhpLaravelBladeMode = __webpack_exports__.IAE;
+var __webpack_exports__PhpMode = __webpack_exports__.qp7;
+var __webpack_exports__PigMode = __webpack_exports__.feb;
+var __webpack_exports__PlainTextMode = __webpack_exports__.DTg;
+var __webpack_exports__PlsqlMode = __webpack_exports__.d2O;
+var __webpack_exports__PowershellMode = __webpack_exports__.bMJ;
+var __webpack_exports__PraatMode = __webpack_exports__.W6N;
+var __webpack_exports__PrismaMode = __webpack_exports__.SvQ;
+var __webpack_exports__PrologMode = __webpack_exports__.QVg;
+var __webpack_exports__PropertiesMode = __webpack_exports__.tHx;
+var __webpack_exports__ProtobufMode = __webpack_exports__.shA;
+var __webpack_exports__PrqlMode = __webpack_exports__.pQN;
+var __webpack_exports__PuppetMode = __webpack_exports__.djE;
+var __webpack_exports__PythonMode = __webpack_exports__.hPy;
+var __webpack_exports__QmlMode = __webpack_exports__.aTY;
+var __webpack_exports__RMode = __webpack_exports__.l2t;
+var __webpack_exports__RakuMode = __webpack_exports__.YJz;
+var __webpack_exports__RazorMode = __webpack_exports__.xFR;
+var __webpack_exports__RdocMode = __webpack_exports__.DSO;
+var __webpack_exports__RedMode = __webpack_exports__.cjX;
+var __webpack_exports__RedshiftMode = __webpack_exports__.ZNl;
+var __webpack_exports__RhtmlMode = __webpack_exports__.mbE;
+var __webpack_exports__RobotMode = __webpack_exports__.LGu;
+var __webpack_exports__RstMode = __webpack_exports__.TJu;
+var __webpack_exports__RubyMode = __webpack_exports__.x0G;
+var __webpack_exports__RustMode = __webpack_exports__._i;
+var __webpack_exports__SacMode = __webpack_exports__.tlW;
+var __webpack_exports__SassMode = __webpack_exports__.U_v;
+var __webpack_exports__ScadMode = __webpack_exports__.XRr;
+var __webpack_exports__ScalaMode = __webpack_exports__.aQl;
+var __webpack_exports__SchemeMode = __webpack_exports__.yw9;
+var __webpack_exports__ScryptMode = __webpack_exports__.FZb;
+var __webpack_exports__ScssMode = __webpack_exports__.Mgb;
+var __webpack_exports__ShMode = __webpack_exports__.P5j;
+var __webpack_exports__SjsMode = __webpack_exports__.hDi;
+var __webpack_exports__SlimMode = __webpack_exports__.V_k;
+var __webpack_exports__SmartyMode = __webpack_exports__.bjc;
+var __webpack_exports__SmithyMode = __webpack_exports__.m4K;
+var __webpack_exports__SnippetsMode = __webpack_exports__.UUY;
+var __webpack_exports__SoyTemplateMode = __webpack_exports__.SFA;
+var __webpack_exports__SpaceMode = __webpack_exports__._19;
+var __webpack_exports__SparqlMode = __webpack_exports__.ufS;
+var __webpack_exports__SqlMode = __webpack_exports__.Wb$;
+var __webpack_exports__SqlserverMode = __webpack_exports__.pxR;
+var __webpack_exports__StylusMode = __webpack_exports__.wcG;
+var __webpack_exports__SvgMode = __webpack_exports__.y9I;
+var __webpack_exports__SwiftMode = __webpack_exports__._UC;
+var __webpack_exports__TclMode = __webpack_exports__.a0g;
+var __webpack_exports__TerraformMode = __webpack_exports__.BLY;
+var __webpack_exports__TexMode = __webpack_exports__.ux_;
+var __webpack_exports__TextMode = __webpack_exports__.Ank;
+var __webpack_exports__TextileMode = __webpack_exports__.la6;
+var __webpack_exports__TomlMode = __webpack_exports__.bTO;
+var __webpack_exports__TsxMode = __webpack_exports__.g3i;
+var __webpack_exports__TurtleMode = __webpack_exports__.S7l;
+var __webpack_exports__TwigMode = __webpack_exports__.o48;
+var __webpack_exports__TypescriptMode = __webpack_exports__.Wfm;
+var __webpack_exports__ValaMode = __webpack_exports__.fnt;
+var __webpack_exports__VbscriptMode = __webpack_exports__._gC;
+var __webpack_exports__VelocityMode = __webpack_exports__.PkL;
+var __webpack_exports__VerilogMode = __webpack_exports__.E8h;
+var __webpack_exports__VhdlMode = __webpack_exports__.iuA;
+var __webpack_exports__VisualforceMode = __webpack_exports__.w$1;
+var __webpack_exports__VueMode = __webpack_exports__.SoO;
+var __webpack_exports__WollokMode = __webpack_exports__.ylA;
+var __webpack_exports__XmlMode = __webpack_exports__.DZq;
+var __webpack_exports__YamlMode = __webpack_exports__.ibo;
+var __webpack_exports__ZeekMode = __webpack_exports__.bwi;
+var __webpack_exports__ZigMode = __webpack_exports__.khQ;
+export { __webpack_exports__AbapMode as AbapMode, __webpack_exports__AbcMode as AbcMode, __webpack_exports__ActionscriptMode as ActionscriptMode, __webpack_exports__AdaMode as AdaMode, __webpack_exports__AldaMode as AldaMode, __webpack_exports__ApacheConfMode as ApacheConfMode, __webpack_exports__ApexMode as ApexMode, __webpack_exports__ApplescriptMode as ApplescriptMode, __webpack_exports__AqlMode as AqlMode, __webpack_exports__AsciidocMode as AsciidocMode, __webpack_exports__AslMode as AslMode, __webpack_exports__AssemblyArm32Mode as AssemblyArm32Mode, __webpack_exports__AssemblyX86Mode as AssemblyX86Mode, __webpack_exports__AstroMode as AstroMode, __webpack_exports__AutohotkeyMode as AutohotkeyMode, __webpack_exports__BatchfileMode as BatchfileMode, __webpack_exports__BibtexMode as BibtexMode, __webpack_exports__C9searchMode as C9searchMode, __webpack_exports__CCppMode as CCppMode, __webpack_exports__CirruMode as CirruMode, __webpack_exports__ClojureMode as ClojureMode, __webpack_exports__CobolMode as CobolMode, __webpack_exports__CoffeeMode as CoffeeMode, __webpack_exports__ColdfusionMode as ColdfusionMode, __webpack_exports__CrystalMode as CrystalMode, __webpack_exports__CsharpMode as CsharpMode, __webpack_exports__CsoundDocumentMode as CsoundDocumentMode, __webpack_exports__CsoundOrchestraMode as CsoundOrchestraMode, __webpack_exports__CsoundScoreMode as CsoundScoreMode, __webpack_exports__CspMode as CspMode, __webpack_exports__CssMode as CssMode, __webpack_exports__CurlyMode as CurlyMode, __webpack_exports__CuttlefishMode as CuttlefishMode, __webpack_exports__DMode as DMode, __webpack_exports__DartMode as DartMode, __webpack_exports__DiffMode as DiffMode, __webpack_exports__DjangoMode as DjangoMode, __webpack_exports__DockerfileMode as DockerfileMode, __webpack_exports__DotMode as DotMode, __webpack_exports__DroolsMode as DroolsMode, __webpack_exports__EdifactMode as EdifactMode, __webpack_exports__EiffelMode as EiffelMode, __webpack_exports__EjsMode as EjsMode, __webpack_exports__ElixirMode as ElixirMode, __webpack_exports__ElmMode as ElmMode, __webpack_exports__ErlangMode as ErlangMode, __webpack_exports__FlixMode as FlixMode, __webpack_exports__ForthMode as ForthMode, __webpack_exports__FortranMode as FortranMode, __webpack_exports__FsharpMode as FsharpMode, __webpack_exports__FslMode as FslMode, __webpack_exports__FtlMode as FtlMode, __webpack_exports__GcodeMode as GcodeMode, __webpack_exports__GherkinMode as GherkinMode, __webpack_exports__GitignoreMode as GitignoreMode, __webpack_exports__GlslMode as GlslMode, __webpack_exports__GobstonesMode as GobstonesMode, __webpack_exports__GolangMode as GolangMode, __webpack_exports__GraphqlschemaMode as GraphqlschemaMode, __webpack_exports__GroovyMode as GroovyMode, __webpack_exports__HamlMode as HamlMode, __webpack_exports__HandlebarsMode as HandlebarsMode, __webpack_exports__HaskellCabalMode as HaskellCabalMode, __webpack_exports__HaskellMode as HaskellMode, __webpack_exports__HaxeMode as HaxeMode, __webpack_exports__HjsonMode as HjsonMode, __webpack_exports__HtmlElixirMode as HtmlElixirMode, __webpack_exports__HtmlMode as HtmlMode, __webpack_exports__HtmlRubyMode as HtmlRubyMode, __webpack_exports__IniMode as IniMode, __webpack_exports__IoMode as IoMode, __webpack_exports__IonMode as IonMode, __webpack_exports__JackMode as JackMode, __webpack_exports__JadeMode as JadeMode, __webpack_exports__JavaMode as JavaMode, __webpack_exports__JavascriptMode as JavascriptMode, __webpack_exports__JexlMode as JexlMode, __webpack_exports__Json5Mode as Json5Mode, __webpack_exports__JsonMode as JsonMode, __webpack_exports__JspMode as JspMode, __webpack_exports__JssmMode as JssmMode, __webpack_exports__JsxMode as JsxMode, __webpack_exports__JuliaMode as JuliaMode, __webpack_exports__KotlinMode as KotlinMode, __webpack_exports__LatexMode as LatexMode, __webpack_exports__LatteMode as LatteMode, __webpack_exports__LessMode as LessMode, __webpack_exports__LiquidMode as LiquidMode, __webpack_exports__LispMode as LispMode, __webpack_exports__LivescriptMode as LivescriptMode, __webpack_exports__LogiqlMode as LogiqlMode, __webpack_exports__LogtalkMode as LogtalkMode, __webpack_exports__LslMode as LslMode, __webpack_exports__LuaMode as LuaMode, __webpack_exports__LuapageMode as LuapageMode, __webpack_exports__LuceneMode as LuceneMode, __webpack_exports__MakefileMode as MakefileMode, __webpack_exports__MarkdownMode as MarkdownMode, __webpack_exports__MaskMode as MaskMode, __webpack_exports__MatlabMode as MatlabMode, __webpack_exports__MazeMode as MazeMode, __webpack_exports__MediawikiMode as MediawikiMode, __webpack_exports__MelMode as MelMode, __webpack_exports__MipsMode as MipsMode, __webpack_exports__MixalMode as MixalMode, __webpack_exports__MushcodeMode as MushcodeMode, __webpack_exports__MysqlMode as MysqlMode, __webpack_exports__NasalMode as NasalMode, __webpack_exports__NginxMode as NginxMode, __webpack_exports__NimMode as NimMode, __webpack_exports__NixMode as NixMode, __webpack_exports__NsisMode as NsisMode, __webpack_exports__NunjucksMode as NunjucksMode, __webpack_exports__ObjectivecMode as ObjectivecMode, __webpack_exports__OcamlMode as OcamlMode, __webpack_exports__OdinMode as OdinMode, __webpack_exports__PartiqlMode as PartiqlMode, __webpack_exports__PascalMode as PascalMode, __webpack_exports__PerlMode as PerlMode, __webpack_exports__PgsqlMode as PgsqlMode, __webpack_exports__PhpLaravelBladeMode as PhpLaravelBladeMode, __webpack_exports__PhpMode as PhpMode, __webpack_exports__PigMode as PigMode, __webpack_exports__PlainTextMode as PlainTextMode, __webpack_exports__PlsqlMode as PlsqlMode, __webpack_exports__PowershellMode as PowershellMode, __webpack_exports__PraatMode as PraatMode, __webpack_exports__PrismaMode as PrismaMode, __webpack_exports__PrologMode as PrologMode, __webpack_exports__PropertiesMode as PropertiesMode, __webpack_exports__ProtobufMode as ProtobufMode, __webpack_exports__PrqlMode as PrqlMode, __webpack_exports__PuppetMode as PuppetMode, __webpack_exports__PythonMode as PythonMode, __webpack_exports__QmlMode as QmlMode, __webpack_exports__RMode as RMode, __webpack_exports__RakuMode as RakuMode, __webpack_exports__RazorMode as RazorMode, __webpack_exports__RdocMode as RdocMode, __webpack_exports__RedMode as RedMode, __webpack_exports__RedshiftMode as RedshiftMode, __webpack_exports__RhtmlMode as RhtmlMode, __webpack_exports__RobotMode as RobotMode, __webpack_exports__RstMode as RstMode, __webpack_exports__RubyMode as RubyMode, __webpack_exports__RustMode as RustMode, __webpack_exports__SacMode as SacMode, __webpack_exports__SassMode as SassMode, __webpack_exports__ScadMode as ScadMode, __webpack_exports__ScalaMode as ScalaMode, __webpack_exports__SchemeMode as SchemeMode, __webpack_exports__ScryptMode as ScryptMode, __webpack_exports__ScssMode as ScssMode, __webpack_exports__ShMode as ShMode, __webpack_exports__SjsMode as SjsMode, __webpack_exports__SlimMode as SlimMode, __webpack_exports__SmartyMode as SmartyMode, __webpack_exports__SmithyMode as SmithyMode, __webpack_exports__SnippetsMode as SnippetsMode, __webpack_exports__SoyTemplateMode as SoyTemplateMode, __webpack_exports__SpaceMode as SpaceMode, __webpack_exports__SparqlMode as SparqlMode, __webpack_exports__SqlMode as SqlMode, __webpack_exports__SqlserverMode as SqlserverMode, __webpack_exports__StylusMode as StylusMode, __webpack_exports__SvgMode as SvgMode, __webpack_exports__SwiftMode as SwiftMode, __webpack_exports__TclMode as TclMode, __webpack_exports__TerraformMode as TerraformMode, __webpack_exports__TexMode as TexMode, __webpack_exports__TextMode as TextMode, __webpack_exports__TextileMode as TextileMode, __webpack_exports__TomlMode as TomlMode, __webpack_exports__TsxMode as TsxMode, __webpack_exports__TurtleMode as TurtleMode, __webpack_exports__TwigMode as TwigMode, __webpack_exports__TypescriptMode as TypescriptMode, __webpack_exports__ValaMode as ValaMode, __webpack_exports__VbscriptMode as VbscriptMode, __webpack_exports__VelocityMode as VelocityMode, __webpack_exports__VerilogMode as VerilogMode, __webpack_exports__VhdlMode as VhdlMode, __webpack_exports__VisualforceMode as VisualforceMode, __webpack_exports__VueMode as VueMode, __webpack_exports__WollokMode as WollokMode, __webpack_exports__XmlMode as XmlMode, __webpack_exports__YamlMode as YamlMode, __webpack_exports__ZeekMode as ZeekMode, __webpack_exports__ZigMode as ZigMode };
+
 //# sourceMappingURL=ace-modes.js.map

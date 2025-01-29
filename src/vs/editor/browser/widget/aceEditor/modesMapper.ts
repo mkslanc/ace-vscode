@@ -1,4 +1,4 @@
-import {TextMode, JavascriptMode, JsonMode, CssMode, HtmlMode} from './ace-modes';
+import {TextMode, JavascriptMode, JsonMode, CssMode, HtmlMode} from './ace-code-bundle/ace-modes.js';
 
 //TODO: handle more modes
 export function mapToAceMode(mode: string) {

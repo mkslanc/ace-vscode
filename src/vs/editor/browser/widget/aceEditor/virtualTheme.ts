@@ -1,6 +1,6 @@
-import {IColorTheme} from 'vs/platform/theme/common/themeService';
-import {ColorThemeData} from 'vs/workbench/services/themes/common/colorThemeData';
-import {ITokenColorizationSetting} from 'vs/workbench/services/textMate/common/TMHelper';
+import {IColorTheme} from '../../../../platform/theme/common/themeService.js';
+import {ColorThemeData} from '../../../../workbench/services/themes/common/colorThemeData.js';
+import {ITokenColorizationSetting} from '../../../../workbench/services/textMate/common/TMHelper.js';
 
 export class VirtualTheme {
 	isDark: boolean;

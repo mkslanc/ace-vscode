@@ -1,4 +1,4 @@
-import {ITextModel} from 'vs/editor/common/model';
+import {ITextModel} from '../../../common/model.js';
 import {
 	Editor,
 	VirtualRenderer,
@@ -7,27 +7,27 @@ import {
 	Range,
 	MarkerGroup, HoverTooltip,
 	config, Autocomplete
-} from 'vs/editor/browser/widget/aceEditor/ace-editor';
+} from './ace-code-bundle/ace-editor.js';
 import {
 	fromAceDelta,
 	fromAcePosition, mergeRanges,
 	toAceRange, toAceRangeFromSelection,
 	toAnnotations,
 	toCompletion, toMarkerGroupItemDiagnostics
-} from 'vs/editor/browser/widget/aceEditor/converters';
-import {mapToAceMode} from 'vs/editor/browser/widget/aceEditor/modesMapper';
+} from './converters.js';
+import {mapToAceMode} from './modesMapper.js';
 import IModelContentChange = monaco.editor.IModelContentChange;
-import {ViewModel} from 'vs/editor/common/viewModel/viewModelImpl';
-import {ISelection, Selection} from 'vs/editor/common/core/selection';
-import {ILanguageFeaturesService} from 'vs/editor/common/services/languageFeatures';
-import {CompletionOptions, provideSuggestionItems} from 'vs/editor/contrib/suggest/browser/suggest';
-import {CompletionContext, CompletionTriggerKind} from 'vs/editor/common/languages';
-import {CancellationToken, CancellationTokenSource} from 'vs/base/common/cancellation';
-import {IMarker, IMarkerService} from 'vs/platform/markers/common/markers';
-import {URI} from 'vs/base/common/uri';
-import {getHoversPromise} from 'vs/editor/contrib/hover/browser/getHover';
-import {IColorTheme, IThemeService} from 'vs/platform/theme/common/themeService';
-import {ThemeConverter, VirtualTheme} from 'vs/editor/browser/widget/aceEditor/virtualTheme';
+import {ViewModel} from '../../../common/viewModel/viewModelImpl.js';
+import {ISelection, Selection} from '../../../common/core/selection.js';
+import {ILanguageFeaturesService} from '../../../common/services/languageFeatures.js';
+import {CompletionOptions, provideSuggestionItems} from '../../../contrib/suggest/browser/suggest.js';
+import {CompletionContext, CompletionTriggerKind} from '../../../common/languages.js';
+import {CancellationToken, CancellationTokenSource} from '../../../../base/common/cancellation.js';
+import {IMarker, IMarkerService} from '../../../../platform/markers/common/markers.js';
+import {URI} from '../../../../base/common/uri.js';
+import {getHoversPromise} from '../../../contrib/hover/browser/getHover.js';
+import {IColorTheme, IThemeService} from '../../../../platform/theme/common/themeService.js';
+import {ThemeConverter, VirtualTheme} from './virtualTheme.js';
 
 interface FileSession {
 	session: Ace.EditSession;

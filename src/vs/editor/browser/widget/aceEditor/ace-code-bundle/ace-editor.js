@@ -1,20 +1,8 @@
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else {
-		var a = factory();
-		for(var i in a) (typeof exports === 'object' ? exports : root)[i] = a[i];
-	}
-})(this, () => {
-return /******/ (() => { // webpackBootstrap
-/******/ 	var __webpack_modules__ = ({
+/******/ var __webpack_modules__ = ({
 
 /***/ 28151:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /**
  * The main class required to set up an Ace instance in the browser.
  *
@@ -45,7 +33,7 @@ exports.config = __webpack_require__(33294);
 
 /**
  * Embeds the Ace editor into the DOM, at the element provided by `el`.
- * @param {String | HTMLElement & {env?, value?}} el Either the id of an element, or the element itself
+ * @param {String | HTMLElement & {env?: any, value?: any} | null} [el] Either the id of an element, or the element itself
  * @param {Object } [options] Options for the editor
  * @returns {Editor}
  **/
@@ -103,7 +91,8 @@ exports.Editor = Editor;
 exports.EditSession = EditSession;
 exports.UndoManager = UndoManager;
 exports.VirtualRenderer = Renderer;
-exports.version = exports.config.version;
+var version = exports.config.version;
+exports.version = version;
 
 
 /***/ }),
@@ -111,7 +100,6 @@ exports.version = exports.config.version;
 /***/ 68558:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./document").Document} Document
@@ -139,7 +127,7 @@ class Anchor {
         else
             this.setPosition(row, column);
     }
-    
+
     /**
      * Returns an object identifying the `row` and `column` position of the current anchor.
      * @returns {import("../ace-internal").Ace.Point}
@@ -156,10 +144,11 @@ class Anchor {
     getDocument() {
         return this.document;
     }
-    
+
     /**
      * Internal function called when `"change"` event fired.
      * @param {import("../ace-internal").Ace.Delta} delta
+     * @internal
      */
     onChange(delta) {
         if (delta.start.row == delta.end.row && delta.start.row != this.row)
@@ -167,7 +156,7 @@ class Anchor {
 
         if (delta.start.row > this.row)
             return;
-            
+
         var point = $getTransformedPoint(delta, {row: this.row, column: this.column}, this.$insertRight);
         this.setPosition(point.row, point.column, true);
     }
@@ -307,7 +296,6 @@ exports.e = Anchor;
 /***/ 24096:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 function throwDeltaError(delta, errorText){
@@ -398,13 +386,13 @@ exports.B = function(docLines, delta, doNotValidate) {
 /***/ 3842:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 /**
  * @typedef {import("./editor").Editor} Editor
  * @typedef {import("../ace-internal").Ace.CompletionProviderOptions} CompletionProviderOptions
  * @typedef {import("../ace-internal").Ace.CompletionOptions} CompletionOptions
+ * @typedef {import("../ace-internal").Ace.Position} Position
  */
 var HashHandler = (__webpack_require__(54739).HashHandler);
 var AcePopup = (__webpack_require__(91844)/* .AcePopup */ .uE);
@@ -430,24 +418,24 @@ var preventParentScroll = (__webpack_require__(98526)/* .preventParentScroll */ 
  * it would be used instead of `docText`.
  * @property {string} [completerId] - the identifier of the completer
  * @property {import("../ace-internal").Ace.IRange} [range] - An object specifying the range of text to be replaced with the new completion value (experimental)
- * @property {string} [command] - A command to be executed after the completion is inserted (experimental)
+ * @property {any} [command] - A command to be executed after the completion is inserted (experimental)
  * @property {string} [snippet] - a text snippet that would be inserted when the completion is selected
  * @property {string} [value] - The text that would be inserted when selecting this completion.
- * @property {import("../ace-internal").Ace.Completer & {insertMatch:(editor: Editor, data: Completion) => void}} [completer]
+ * @property {import("../ace-internal").Ace.Completer} [completer]
  * @property {boolean} [hideInlinePreview]
  * @export
  */
 
 /**
  * @typedef {BaseCompletion & {snippet: string}} SnippetCompletion
- * @property {string} snippet 
+ * @property {string} snippet
  * @property {string} [value]
  * @export
  */
 
 /**
  * @typedef {BaseCompletion & {value: string}} ValueCompletion
- * @property {string} value 
+ * @property {string} value
  * @property {string} [snippet]
  * @export
  */
@@ -478,12 +466,13 @@ class Autocomplete {
         this.keyboardHandler.bindKeys(this.commands);
         this.parentNode = null;
         this.setSelectOnHover = false;
+        /**@private*/
         this.hasSeen = new Set();
 
         /**
-         *  @property {Boolean} showLoadingState - A boolean indicating whether the loading states of the Autocompletion should be shown to the end-user. If enabled 
+         *  @property {Boolean} showLoadingState - A boolean indicating whether the loading states of the Autocompletion should be shown to the end-user. If enabled
          * it shows a loading indicator on the popup while autocomplete is loading.
-         * 
+         *
          * Experimental: This visualisation is not yet considered stable and might change in the future.
          */
         this.showLoadingState = false;
@@ -530,7 +519,7 @@ class Autocomplete {
 
     $init() {
         /**@type {AcePopup}**/
-        this.popup = new AcePopup(this.parentNode || document.body || document.documentElement); 
+        this.popup = new AcePopup(this.parentNode || document.body || document.documentElement);
         this.popup.on("click", function(e) {
             this.insertMatch();
             e.stop();
@@ -657,6 +646,10 @@ class Autocomplete {
         });
         this.$elements = null;
     }
+
+    /**
+     * @internal
+     */
     onLayoutChange() {
         if (!this.popup.isOpen) return this.unObserveLayoutChanges();
         this.$updatePopupPosition();
@@ -702,7 +695,7 @@ class Autocomplete {
         if (this.popup.tryShow(pos, lineHeight, "top")) {
             return;
         }
-        
+
         this.popup.show(pos, lineHeight);
     }
 
@@ -735,17 +728,17 @@ class Autocomplete {
         }
 
         editor.keyBinding.addKeyboardHandler(this.keyboardHandler);
-        
+
         var newRow;
         if (this.stickySelection)
-            newRow = this.popup.data.indexOf(previousSelectedItem); 
-        if (!newRow || newRow === -1) 
+            newRow = this.popup.data.indexOf(previousSelectedItem);
+        if (!newRow || newRow === -1)
             newRow = 0;
-        
+
         this.popup.setRow(this.autoSelect ? newRow : -1);
-     
+
         // If we stay on the same row, but the content is different, we want to update the popup.
-        if (newRow === oldRow && previousSelectedItem !== this.completions.filtered[newRow]) 
+        if (newRow === oldRow && previousSelectedItem !== this.completions.filtered[newRow])
             this.$onPopupChange();
 
         // If we stay on the same line and have inlinePreview enabled, we want to make sure the
@@ -868,11 +861,11 @@ class Autocomplete {
             this.detach();
         return result;
     }
-    
+
     /**
      * This is the entry point for the autocompletion class, triggers the actions which collect and display suggestions
      * @param {Editor} editor
-     * @param {CompletionOptions} options
+     * @param {CompletionOptions} [options]
      */
     showPopup(editor, options) {
         if (this.editor)
@@ -895,6 +888,11 @@ class Autocomplete {
         this.updateCompletions(false, options);
     }
 
+    /**
+     *
+     * @param {{pos: Position, prefix: string}} [initialPosition]
+     * @return {CompletionProvider}
+     */
     getCompletionProvider(initialPosition) {
         if (!this.completionProvider)
             this.completionProvider = new CompletionProvider(initialPosition);
@@ -912,7 +910,7 @@ class Autocomplete {
 
     /**
      * @param {boolean} keepPopupPosition
-     * @param {CompletionOptions} options
+     * @param {CompletionOptions} [options]
      */
     updateCompletions(keepPopupPosition, options) {
         if (keepPopupPosition && this.base && this.completions) {
@@ -930,7 +928,7 @@ class Autocomplete {
             this.openPopup(this.editor, prefix, keepPopupPosition);
             return;
         }
-        
+
         if (options && options.matches) {
             var pos = this.editor.getSelectionRange().start;
             this.base = this.editor.session.doc.createAnchor(pos.row, pos.column);
@@ -993,7 +991,7 @@ class Autocomplete {
                 }
             // If showLoadingState is true and there is still a completer loading, show 'Loading...'
             // in the top row of the completer popup.
-            this.completions = !finished && this.showLoadingState ? 
+            this.completions = !finished && this.showLoadingState ?
                 new FilteredList(
                     Autocomplete.completionsForLoading.concat(filtered), completions.filterText
                 ) :
@@ -1021,7 +1019,7 @@ class Autocomplete {
         var doc = null;
         if (!selected || !this.editor || !this.popup.isOpen)
             return this.hideDocTooltip();
-        
+
         var completersLength = this.editor.completers.length;
         for (var i = 0; i < completersLength; i++) {
             var completer = this.editor.completers[i];
@@ -1107,7 +1105,11 @@ class Autocomplete {
         if (el.parentNode)
             el.parentNode.removeChild(el);
     }
-    
+
+    /**
+     * @param e
+     * @internal
+     */
     onTooltipClick(e) {
         var a = e.target;
         while (a && a != this.tooltipNode) {
@@ -1133,6 +1135,30 @@ class Autocomplete {
             this.editor.completer = null;
         }
         this.inlineRenderer = this.popup = this.editor = null;
+    }
+
+    /**
+     * @param {Editor} editor
+     * @return {Autocomplete}
+     */
+    static for(editor) {
+        if (editor.completer instanceof Autocomplete) {
+            return editor.completer;
+        }
+        if (editor.completer) {
+            editor.completer.destroy();
+            editor.completer = null;
+        }
+        if (config.get("sharedPopups")) {
+            if (!Autocomplete["$sharedInstance"])
+                Autocomplete["$sharedInstance"] = new Autocomplete();
+            editor.completer = Autocomplete["$sharedInstance"];
+        } else {
+            editor.completer = new Autocomplete();
+            editor.once("destroy", destroyCompleter);
+        }
+        // @ts-expect-error
+        return editor.completer;
     }
 
 }
@@ -1164,26 +1190,6 @@ Autocomplete.prototype.commands = {
     "PageDown": function(editor) { editor.completer.popup.gotoPageDown(); }
 };
 
-
-Autocomplete.for = function(editor) {
-    if (editor.completer instanceof Autocomplete) {
-        return editor.completer;
-    }
-    if (editor.completer) {
-        editor.completer.destroy();
-        editor.completer = null;
-    }
-    if (config.get("sharedPopups")) {
-        if (!Autocomplete["$sharedInstance"])
-            Autocomplete["$sharedInstance"] = new Autocomplete();
-        editor.completer = Autocomplete["$sharedInstance"];
-    } else {
-        editor.completer = new Autocomplete();
-        editor.once("destroy", destroyCompleter);
-    }
-    return editor.completer;
-};
-
 Autocomplete.startCommand = {
     name: "startAutocomplete",
     exec: function(editor, options) {
@@ -1202,10 +1208,10 @@ Autocomplete.startCommand = {
  * This class is responsible for providing completions and inserting them to the editor
  */
 class CompletionProvider {
-    
+
 
     /**
-     * @param {{pos: import("../ace-internal").Ace.Position, prefix: string}} initialPosition
+     * @param {{pos: Position, prefix: string}} [initialPosition]
      */
     constructor(initialPosition) {
         this.initialPosition = initialPosition;
@@ -1242,7 +1248,7 @@ class CompletionProvider {
             // TODO add support for options.deleteSuffix
             if (!this.completions)
                 return false;
-            
+
             var replaceBefore = this.completions.filterText.length;
             var replaceAfter = 0;
             if (data.range && data.range.start.row === data.range.end.row) {
@@ -1265,7 +1271,7 @@ class CompletionProvider {
                     editor.session.remove(range);
                 }
             }
-          
+
             if (data.snippet) {
                 snippetManager.insertSnippet(editor, data.snippet);
             }
@@ -1275,7 +1281,7 @@ class CompletionProvider {
             if (data.completer && data.completer.onInsert && typeof data.completer.onInsert == "function") {
                 data.completer.onInsert(editor, data);
             }
-            
+
             if (data.command && data.command === "startAutocomplete") {
                 editor.execCommand(data.command);
             }
@@ -1300,9 +1306,9 @@ class CompletionProvider {
     gatherCompletions(editor, callback) {
         var session = editor.getSession();
         var pos = editor.getCursorPosition();
-    
+
         var prefix = util.getCompletionPrefix(editor);
-    
+
         var matches = [];
         this.completers = editor.completers;
         var total = editor.completers.length;
@@ -1376,7 +1382,7 @@ class CompletionProvider {
 
             processResults(results);
         }.bind(this));
-        
+
         isImmediate = false;
         if (immediateResults) {
             var results = immediateResults;
@@ -1396,6 +1402,10 @@ class CompletionProvider {
 }
 
 class FilteredList {
+    /**
+     * @param {any} array
+     * @param {string} [filterText]
+     */
     constructor(array, filterText) {
         this.all = array;
         this.filtered = array;
@@ -1403,7 +1413,7 @@ class FilteredList {
         this.exactMatch = false;
         this.ignoreCaption = false;
     }
-    
+
     setFilter(str) {
         if (str.length > this.filterText && str.lastIndexOf(this.filterText, 0) === 0)
             var matches = this.filtered;
@@ -1413,7 +1423,7 @@ class FilteredList {
         this.filterText = str;
         matches = this.filterCompletions(matches, this.filterText);
         matches = matches.sort(function(a, b) {
-            return b.exactMatch - a.exactMatch || b.$score - a.$score 
+            return b.exactMatch - a.exactMatch || b.$score - a.$score
                 || (a.caption || a.value).localeCompare(b.caption || b.value);
         });
 
@@ -1428,7 +1438,7 @@ class FilteredList {
 
         this.filtered = matches;
     }
-    
+
     filterCompletions(items, needle) {
         var results = [];
         var upper = needle.toUpperCase();
@@ -1492,7 +1502,6 @@ __webpack_unused_export__ = FilteredList;
 /***/ 77368:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../editor").Editor} Editor
@@ -1582,7 +1591,6 @@ exports.r = AceInline;
 /***/ 10244:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 /**
@@ -1668,7 +1676,6 @@ exports.f = AceInlineScreenReader;
 /***/ 91844:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 var Renderer = (__webpack_require__(28390)/* .VirtualRenderer */ ._);
@@ -2148,7 +2155,6 @@ dom.importCssString(`
 .ace_autocomplete .ace_line .ace_ {
     flex: 0 1 auto;
     overflow: hidden;
-    white-space: nowrap;
     text-overflow: ellipsis;
 }
 .ace_autocomplete .ace_completion-spacer {
@@ -2246,7 +2252,6 @@ exports.getCompletions = function (editor, session, pos, prefix, callback) {
 /***/ 46083:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 /**
@@ -2334,7 +2339,6 @@ exports.triggerAutocomplete = function (editor, previousChar) {
 /***/ 83486:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./document").Document} Document
@@ -2360,6 +2364,7 @@ class BackgroundTokenizer {
         /**@type {false|number}*/
         this.running = false;
         this.lines = [];
+        /**@type {string[]|string[][]}*/
         this.states = [];
         this.currentLine = 0;
         this.tokenizer = tokenizer;
@@ -2513,7 +2518,7 @@ class BackgroundTokenizer {
     /**
      * Returns the state of tokenization at the end of a row.
      * @param {Number} row The row to get state at
-     * @returns {string}
+     * @returns {string | string[]}
      **/
     getState(row) {
         if (this.currentLine == row)
@@ -2562,7 +2567,6 @@ exports.V = BackgroundTokenizer;
 /***/ 19457:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
@@ -2604,7 +2608,7 @@ class BidiHandler {
         this.isMoveLeftOperation = false;
         this.seenBidi = bidiRE.test(session.getValue());
     }
-    
+
     /**
      * Returns 'true' if row contains Bidi characters, in such case
      * creates Bidi map to be used in operations related to selection
@@ -2624,13 +2628,17 @@ class BidiHandler {
         return this.bidiMap.bidiLevels;
     }
 
+    /**
+     * @param {import("../ace-internal").Ace.Delta} delta
+     * @internal
+     */
     onChange(delta) {
         if (!this.seenBidi) {
             if (delta.action == "insert" && bidiRE.test(delta.lines.join("\n"))) {
                 this.seenBidi = true;
                 this.currentRow = null;
             }
-        } 
+        }
         else {
             this.currentRow = null;
         }
@@ -2671,7 +2679,7 @@ class BidiHandler {
     updateRowLine(docRow, splitIndex) {
         if (docRow === undefined)
             docRow = this.getDocumentRow();
-            
+
         var isLastRow = (docRow === this.session.getLength() - 1),
             endOfLine = isLastRow ? this.EOF : this.EOL;
 
@@ -2701,7 +2709,7 @@ class BidiHandler {
         } else {
             this.line += this.showInvisibles ? endOfLine : bidiUtil.DOT;
         }
-            
+
         /* replace tab and wide characters by commensurate spaces */
         var session = this.session, shift = 0, size;
         this.line = this.line.replace(/\t|[\u1100-\u2029, \u202F-\uFFE6]/g, function(ch, i){
@@ -2718,7 +2726,7 @@ class BidiHandler {
             this.rtlLineOffset = this.contentWidth - this.fontMetrics.$main.getBoundingClientRect().width;
         }
     }
-    
+
     updateBidiMap() {
         var textCharTypes = [];
         if (bidiUtil.hasBidiCharacters(this.line, textCharTypes) || this.isRtlDir) {
@@ -2762,7 +2770,7 @@ class BidiHandler {
     }
 
     setEolChar(eolChar) {
-        this.EOL = eolChar; 
+        this.EOL = eolChar;
     }
 
     setContentWidth(width) {
@@ -2774,11 +2782,11 @@ class BidiHandler {
         if (row != undefined)
             return (this.session.getLine(row).charAt(0) == this.RLE);
         else
-            return this.isRtlDir; 
+            return this.isRtlDir;
     }
 
     setRtlDirection(editor, isRtlDir) {
-        var cursor = editor.getCursorPosition(); 
+        var cursor = editor.getCursorPosition();
         for (var row = editor.selection.getSelectionAnchor().row; row <= cursor.row; row++) {
             if (!isRtlDir && editor.session.getLine(row).charAt(0) === editor.session.$bidiHandler.RLE)
                 editor.session.doc.removeInLine(row, 0, 1);
@@ -2803,7 +2811,7 @@ class BidiHandler {
 
         if (!this.session.getOverwrite() && col <= leftBoundary && levels[visualIdx] % 2 !== 0)
             visualIdx++;
-            
+
         for (var i = 0; i < visualIdx; i++) {
             left += this.charWidths[levels[i]];
         }
@@ -2831,7 +2839,7 @@ class BidiHandler {
         var map = this.bidiMap, levels = map.bidiLevels, level, selections = [], offset = 0,
             selColMin = Math.min(startCol, endCol) - this.wrapIndent, selColMax = Math.max(startCol, endCol) - this.wrapIndent,
                 isSelected = false, isSelectedPrev = false, selectionStart = 0;
-            
+
         if (this.wrapIndent)
             offset += this.isRtlDir ? (-1 * this.wrapOffset) : this.wrapOffset;
 
@@ -2876,7 +2884,7 @@ class BidiHandler {
 
         if (this.wrapIndent)
            posX -= this.isRtlDir ? (-1 * this.wrapOffset) : this.wrapOffset;
-    
+
         while(posX > offset + charWidth/2) {
             offset += charWidth;
             if(visualIdx === levels.length - 1) {
@@ -2886,7 +2894,7 @@ class BidiHandler {
             }
             charWidth = this.charWidths[levels[++visualIdx]];
         }
-    
+
         if (visualIdx > 0 && (levels[visualIdx - 1] % 2 !== 0) && (levels[visualIdx] % 2 === 0)){
         /* Bidi character on the left and None Bidi character on the right */
             if(posX < offset)
@@ -2928,7 +2936,6 @@ exports.l = BidiHandler;
 /***/ 16514:
 /***/ ((module) => {
 
-"use strict";
 
 
 var $cancelT;
@@ -2951,7 +2958,6 @@ module.exports = {
 /***/ 34278:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  *
@@ -2992,10 +2998,31 @@ class CommandManager extends MultiHashHandler{
             }
             return false;
         }
-
+        
         if (typeof command === "string")
             command = this.commands[command];
 
+        if (!this.canExecute(command, editor)) {
+            return false; 
+        }
+        
+        var e = {editor: editor, command: command, args: args};
+        e.returnValue = this._emit("exec", e);
+        this._signal("afterExec", e);
+
+        return e.returnValue === false ? false : true;
+    }
+
+    /**
+     *
+     * @param {string | import("../../ace-internal").Ace.Command} command
+     * @param {Editor} editor
+     * @returns {boolean}
+     */
+    canExecute(command, editor) {
+        if (typeof command === "string")
+            command = this.commands[command];
+        
         if (!command)
             return false;
 
@@ -3004,13 +3031,10 @@ class CommandManager extends MultiHashHandler{
 
         if (this.$checkCommandState != false && command.isAvailable && !command.isAvailable(editor))
             return false;
-
-        var e = {editor: editor, command: command, args: args};
-        e.returnValue = this._emit("exec", e);
-        this._signal("afterExec", e);
-
-        return e.returnValue === false ? false : true;
+        
+        return true;
     }
+    
 
     /**
      * @param {Editor} editor
@@ -3086,7 +3110,6 @@ exports.f = CommandManager;
 /***/ 94922:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var lang = __webpack_require__(10732);
@@ -4101,6 +4124,7 @@ exports.keyboardHandler = new HashHandler(exports.multiSelectCommands);
 
 /* module decorator */ module = __webpack_require__.nmd(module);
 "no use strict";
+
 var lang = __webpack_require__(10732);
 var net = __webpack_require__(98999);
 var dom = __webpack_require__(25336);
@@ -4108,6 +4132,7 @@ var AppConfig = (__webpack_require__(35704)/* .AppConfig */ .X);
 
 module.exports = exports = new AppConfig();
 
+/** @type {import("../ace-internal").Ace.ConfigOptions} */
 var options = {
     packaged: false,
     workerPath: null,
@@ -4122,8 +4147,9 @@ var options = {
 };
 
 /**
- * @param {string} key
- * @return {*}
+ * @template {keyof import("../ace-internal").Ace.ConfigOptions} K
+ * @param {K} key - The key of the config option to retrieve.
+ * @returns {import("../ace-internal").Ace.ConfigOptions[K]} - The value of the config option.
  */
 exports.get = function(key) {
     if (!options.hasOwnProperty(key))
@@ -4132,8 +4158,9 @@ exports.get = function(key) {
 };
 
 /**
- * @param {string} key
- * @param value
+ * @template {keyof import("../ace-internal").Ace.ConfigOptions} K
+ * @param {K} key
+ * @param {import("../ace-internal").Ace.ConfigOptions[K]} value
  */
 exports.set = function(key, value) {
     if (options.hasOwnProperty(key))
@@ -4144,7 +4171,7 @@ exports.set = function(key, value) {
         dom.useStrictCSP(value);
 };
 /**
- * @return {{[key: string]: any}}
+ * @return {import("../ace-internal").Ace.ConfigOptions}
  */
 exports.all = function() {
     return lang.copyObject(options);
@@ -4202,9 +4229,8 @@ var loader = function(moduleName, cb) {
     console.error("loader is not configured");
 };
 var customLoader;
-/**
- * @param {(moduleName: string, afterLoad: (err: Error | null, module: unknown) => void) => void}cb
- */
+
+/** @arg {(name: string, callback: (error: any, module: any) => void) => void} cb */
 exports.setLoader = function(cb) {
     customLoader = cb;
 };
@@ -4296,7 +4322,7 @@ var reportErrorIfPathIsNotConfigured = function() {
     }
 };
 
-exports.version = "1.33.1";
+exports.version = "1.37.5";
 
 
 
@@ -4343,6 +4369,7 @@ module.exports = `
     direction: ltr;
     text-align: left;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    forced-color-adjust: none;
 }
 
 .ace_scroller {
@@ -4438,7 +4465,7 @@ module.exports = `
     float: left;
 }
 
-.ace_gutter-cell.ace_error, .ace_icon.ace_error, .ace_icon.ace_error_fold {
+.ace_gutter-cell.ace_error, .ace_icon.ace_error, .ace_icon.ace_error_fold, .ace_gutter-cell.ace_security, .ace_icon.ace_security, .ace_icon.ace_security_fold {
     background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAABOFBMVEX/////////QRswFAb/Ui4wFAYwFAYwFAaWGAfDRymzOSH/PxswFAb/SiUwFAYwFAbUPRvjQiDllog5HhHdRybsTi3/Tyv9Tir+Syj/UC3////XurebMBIwFAb/RSHbPx/gUzfdwL3kzMivKBAwFAbbvbnhPx66NhowFAYwFAaZJg8wFAaxKBDZurf/RB6mMxb/SCMwFAYwFAbxQB3+RB4wFAb/Qhy4Oh+4QifbNRcwFAYwFAYwFAb/QRzdNhgwFAYwFAbav7v/Uy7oaE68MBK5LxLewr/r2NXewLswFAaxJw4wFAbkPRy2PyYwFAaxKhLm1tMwFAazPiQwFAaUGAb/QBrfOx3bvrv/VC/maE4wFAbRPBq6MRO8Qynew8Dp2tjfwb0wFAbx6eju5+by6uns4uH9/f36+vr/GkHjAAAAYnRSTlMAGt+64rnWu/bo8eAA4InH3+DwoN7j4eLi4xP99Nfg4+b+/u9B/eDs1MD1mO7+4PHg2MXa347g7vDizMLN4eG+Pv7i5evs/v79yu7S3/DV7/498Yv24eH+4ufQ3Ozu/v7+y13sRqwAAADLSURBVHjaZc/XDsFgGIBhtDrshlitmk2IrbHFqL2pvXf/+78DPokj7+Fz9qpU/9UXJIlhmPaTaQ6QPaz0mm+5gwkgovcV6GZzd5JtCQwgsxoHOvJO15kleRLAnMgHFIESUEPmawB9ngmelTtipwwfASilxOLyiV5UVUyVAfbG0cCPHig+GBkzAENHS0AstVF6bacZIOzgLmxsHbt2OecNgJC83JERmePUYq8ARGkJx6XtFsdddBQgZE2nPR6CICZhawjA4Fb/chv+399kfR+MMMDGOQAAAABJRU5ErkJggg==");
     background-repeat: no-repeat;
     background-position: 2px center;
@@ -4450,17 +4477,22 @@ module.exports = `
     background-position: 2px center;
 }
 
-.ace_gutter-cell.ace_info, .ace_icon.ace_info {
+.ace_gutter-cell.ace_info, .ace_icon.ace_info, .ace_gutter-cell.ace_hint, .ace_icon.ace_hint {
     background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAAAAAA6mKC9AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAJ0Uk5TAAB2k804AAAAPklEQVQY02NgIB68QuO3tiLznjAwpKTgNyDbMegwisCHZUETUZV0ZqOquBpXj2rtnpSJT1AEnnRmL2OgGgAAIKkRQap2htgAAAAASUVORK5CYII=");
     background-repeat: no-repeat;
     background-position: 2px center;
 }
-.ace_dark .ace_gutter-cell.ace_info, .ace_dark .ace_icon.ace_info {
+
+.ace_dark .ace_gutter-cell.ace_info, .ace_dark .ace_icon.ace_info, .ace_dark .ace_gutter-cell.ace_hint, .ace_dark .ace_icon.ace_hint {
     background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAJFBMVEUAAAChoaGAgIAqKiq+vr6tra1ZWVmUlJSbm5s8PDxubm56enrdgzg3AAAAAXRSTlMAQObYZgAAAClJREFUeNpjYMAPdsMYHegyJZFQBlsUlMFVCWUYKkAZMxZAGdxlDMQBAG+TBP4B6RyJAAAAAElFTkSuQmCC");
 }
 
 .ace_icon_svg.ace_error {
     -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAxNiI+CjxnIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlPSJyZWQiIHNoYXBlLXJlbmRlcmluZz0iZ2VvbWV0cmljUHJlY2lzaW9uIj4KPGNpcmNsZSBmaWxsPSJub25lIiBjeD0iOCIgY3k9IjgiIHI9IjciIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPGxpbmUgeDE9IjExIiB5MT0iNSIgeDI9IjUiIHkyPSIxMSIvPgo8bGluZSB4MT0iMTEiIHkxPSIxMSIgeDI9IjUiIHkyPSI1Ii8+CjwvZz4KPC9zdmc+");
+    background-color: crimson;
+}
+.ace_icon_svg.ace_security {
+    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjAgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgICA8ZyBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iZGFya29yYW5nZSIgZmlsbD0ibm9uZSIgc2hhcGUtcmVuZGVyaW5nPSJnZW9tZXRyaWNQcmVjaXNpb24iPgogICAgICAgIDxwYXRoIGNsYXNzPSJzdHJva2UtbGluZWpvaW4tcm91bmQiIGQ9Ik04IDE0LjgzMDdDOCAxNC44MzA3IDIgMTIuOTA0NyAyIDguMDg5OTJWMy4yNjU0OEM1LjMxIDMuMjY1NDggNy45ODk5OSAxLjM0OTE4IDcuOTg5OTkgMS4zNDkxOEM3Ljk4OTk5IDEuMzQ5MTggMTAuNjkgMy4yNjU0OCAxNCAzLjI2NTQ4VjguMDg5OTJDMTQgMTIuOTA0NyA4IDE0LjgzMDcgOCAxNC44MzA3WiIvPgogICAgICAgIDxwYXRoIGQ9Ik0yIDguMDg5OTJWMy4yNjU0OEM1LjMxIDMuMjY1NDggNy45ODk5OSAxLjM0OTE4IDcuOTg5OTkgMS4zNDkxOCIvPgogICAgICAgIDxwYXRoIGQ9Ik0xMy45OSA4LjA4OTkyVjMuMjY1NDhDMTAuNjggMy4yNjU0OCA4IDEuMzQ5MTggOCAxLjM0OTE4Ii8+CiAgICAgICAgPHBhdGggY2xhc3M9InN0cm9rZS1saW5lam9pbi1yb3VuZCIgZD0iTTggNFY5Ii8+CiAgICAgICAgPHBhdGggY2xhc3M9InN0cm9rZS1saW5lam9pbi1yb3VuZCIgZD0iTTggMTBWMTIiLz4KICAgIDwvZz4KPC9zdmc+");
     background-color: crimson;
 }
 .ace_icon_svg.ace_warning {
@@ -4471,9 +4503,17 @@ module.exports = `
     -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAxNiI+CjxnIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlPSJibHVlIiBzaGFwZS1yZW5kZXJpbmc9Imdlb21ldHJpY1ByZWNpc2lvbiI+CjxjaXJjbGUgZmlsbD0ibm9uZSIgY3g9IjgiIGN5PSI4IiByPSI3IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjxwb2x5bGluZSBwb2ludHM9IjggMTEgOCA4Ii8+Cjxwb2x5bGluZSBwb2ludHM9IjkgOCA2IDgiLz4KPGxpbmUgeDE9IjEwIiB5MT0iMTEiIHgyPSI2IiB5Mj0iMTEiLz4KPHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjAuMDEiIGhlaWdodD0iMC4wMSIvPgo8L2c+Cjwvc3ZnPg==");
     background-color: royalblue;
 }
+.ace_icon_svg.ace_hint {
+    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjAgMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgICA8ZyBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0ic2lsdmVyIiBmaWxsPSJub25lIiBzaGFwZS1yZW5kZXJpbmc9Imdlb21ldHJpY1ByZWNpc2lvbiI+CiAgICAgICAgPHBhdGggY2xhc3M9InN0cm9rZS1saW5lam9pbi1yb3VuZCIgZD0iTTYgMTRIMTAiLz4KICAgICAgICA8cGF0aCBkPSJNOCAxMUg5QzkgOS40NzAwMiAxMiA4LjU0MDAyIDEyIDUuNzYwMDJDMTIuMDIgNC40MDAwMiAxMS4zOSAzLjM2MDAyIDEwLjQzIDIuNjcwMDJDOSAxLjY0MDAyIDcuMDAwMDEgMS42NDAwMiA1LjU3MDAxIDIuNjcwMDJDNC42MTAwMSAzLjM2MDAyIDMuOTggNC40MDAwMiA0IDUuNzYwMDJDNCA4LjU0MDAyIDcuMDAwMDEgOS40NzAwMiA3LjAwMDAxIDExSDhaIi8+CiAgICA8L2c+Cjwvc3ZnPg==");
+    background-color: silver;
+}
 
 .ace_icon_svg.ace_error_fold {
     -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAxNiIgZmlsbD0ibm9uZSI+CiAgPHBhdGggZD0ibSAxOC45Mjk4NTEsNy44Mjk4MDc2IGMgMC4xNDYzNTMsNi4zMzc0NjA0IC02LjMyMzE0Nyw3Ljc3Nzg0NDQgLTcuNDc3OTEyLDcuNzc3ODQ0NCAtMi4xMDcyNzI2LC0wLjEyODc1IDUuMTE3Njc4LDAuMzU2MjQ5IDUuMDUxNjk4LC03Ljg3MDA2MTggLTAuNjA0NjcyLC04LjAwMzk3MzQ5IC03LjA3NzI3MDYsLTcuNTYzMTE4OSAtNC44NTczLC03LjQzMDM5NTU2IDEuNjA2LC0wLjExNTE0MjI1IDYuODk3NDg1LDEuMjYyNTQ1OTYgNy4yODM1MTQsNy41MjI2MTI5NiB6IiBmaWxsPSJjcmltc29uIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0ibSA4LjExNDc1NjIsMi4wNTI5ODI4IGMgMy4zNDkxNjk4LDAgNi4wNjQxMzI4LDIuNjc2ODYyNyA2LjA2NDEzMjgsNS45Nzg5NTMgMCwzLjMwMjExMjIgLTIuNzE0OTYzLDUuOTc4OTIwMiAtNi4wNjQxMzI4LDUuOTc4OTIwMiAtMy4zNDkxNDczLDAgLTYuMDY0MTc3MiwtMi42NzY4MDggLTYuMDY0MTc3MiwtNS45Nzg5MjAyIDAuMDA1MzksLTMuMjk5ODg2MSAyLjcxNzI2NTYsLTUuOTczNjQwOCA2LjA2NDE3NzIsLTUuOTc4OTUzIHogbSAwLC0xLjczNTgyNzE5IGMgLTQuMzIxNDgzNiwwIC03LjgyNDc0MDM4LDMuNDU0MDE4NDkgLTcuODI0NzQwMzgsNy43MTQ3ODAxOSAwLDQuMjYwNzI4MiAzLjUwMzI1Njc4LDcuNzE0NzQ1MiA3LjgyNDc0MDM4LDcuNzE0NzQ1MiA0LjMyMTQ0OTgsMCA3LjgyNDY5OTgsLTMuNDU0MDE3IDcuODI0Njk5OCwtNy43MTQ3NDUyIDAsLTIuMDQ2MDkxNCAtMC44MjQzOTIsLTQuMDA4MzY3MiAtMi4yOTE3NTYsLTUuNDU1MTc0NiBDIDEyLjE4MDIyNSwxLjEyOTk2NDggMTAuMTkwMDEzLDAuMzE3MTU1NjEgOC4xMTQ3NTYyLDAuMzE3MTU1NjEgWiBNIDYuOTM3NDU2Myw4LjI0MDU5ODUgNC42NzE4Njg1LDEwLjQ4NTg1MiA2LjAwODY4MTQsMTEuODc2NzI4IDguMzE3MDAzNSw5LjYwMDc5MTEgMTAuNjI1MzM3LDExLjg3NjcyOCAxMS45NjIxMzgsMTAuNDg1ODUyIDkuNjk2NTUwOCw4LjI0MDU5ODUgMTEuOTYyMTM4LDYuMDA2ODA2NiAxMC41NzMyNDYsNC42Mzc0MzM1IDguMzE3MDAzNSw2Ljg3MzQyOTcgNi4wNjA3NjA3LDQuNjM3NDMzNSA0LjY3MTg2ODUsNi4wMDY4MDY2IFoiIGZpbGw9ImNyaW1zb24iIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=");
+    background-color: crimson;
+}
+.ace_icon_svg.ace_security_fold {
+    -webkit-mask-image: url("data:image/svg+xml;base64,CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMTcgMTQiIGZpbGw9Im5vbmUiPgogICAgPHBhdGggZD0iTTEwLjAwMDEgMTMuNjk5MkMxMC4wMDAxIDEzLjY5OTIgMTEuOTI0MSAxMy40NzYzIDEzIDEyLjY5OTJDMTQuNDEzOSAxMS42NzgxIDE2IDEwLjUgMTYuMTI1MSA2LjgxMTI2VjIuNTg5ODdDMTYuMTI1MSAyLjU0NzY4IDE2LjEyMjEgMi41MDYxOSAxNi4xMTY0IDIuNDY1NTlWMS43MTQ4NUgxNS4yNDE0TDE1LjIzMDcgMS43MTQ4NEwxNC42MjUxIDEuNjk5MjJWNi44MTEyM0MxNC42MjUxIDguNTEwNjEgMTQuNjI1MSA5LjQ2NDYxIDEyLjc4MjQgMTEuNzIxQzEyLjE1ODYgMTIuNDg0OCAxMC4wMDAxIDEzLjY5OTIgMTAuMDAwMSAxMy42OTkyWiIgZmlsbD0iY3JpbXNvbiIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgICA8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTcuMzM2MDkgMC4zNjc0NzVDNy4wMzIxNCAwLjE1MjY1MiA2LjYyNTQ4IDAuMTUzNjE0IDYuMzIyNTMgMC4zNjk5OTdMNi4zMDg2OSAwLjM3OTU1NEM2LjI5NTUzIDAuMzg4NTg4IDYuMjczODggMC40MDMyNjYgNi4yNDQxNyAwLjQyMjc4OUM2LjE4NDcxIDAuNDYxODYgNi4wOTMyMSAwLjUyMDE3MSA1Ljk3MzEzIDAuNTkxMzczQzUuNzMyNTEgMC43MzQwNTkgNS4zNzk5IDAuOTI2ODY0IDQuOTQyNzkgMS4xMjAwOUM0LjA2MTQ0IDEuNTA5NyAyLjg3NTQxIDEuODgzNzcgMS41ODk4NCAxLjg4Mzc3SDAuNzE0ODQ0VjIuNzU4NzdWNi45ODAxNUMwLjcxNDg0NCA5LjQ5Mzc0IDIuMjg4NjYgMTEuMTk3MyAzLjcwMjU0IDEyLjIxODVDNC40MTg0NSAxMi43MzU1IDUuMTI4NzQgMTMuMTA1MyA1LjY1NzMzIDEzLjM0NTdDNS45MjI4NCAxMy40NjY0IDYuMTQ1NjYgMTMuNTU1OSA2LjMwNDY1IDEzLjYxNjFDNi4zODQyMyAxMy42NDYyIDYuNDQ4MDUgMTMuNjY5IDYuNDkzNDkgMTMuNjg0OEM2LjUxNjIyIDEzLjY5MjcgNi41MzQzOCAxMy42OTg5IDYuNTQ3NjQgMTMuNzAzM0w2LjU2MzgyIDEzLjcwODdMNi41NjkwOCAxMy43MTA0TDYuNTcwOTkgMTMuNzExTDYuODM5ODQgMTMuNzUzM0w2LjU3MjQyIDEzLjcxMTVDNi43NDYzMyAxMy43NjczIDYuOTMzMzUgMTMuNzY3MyA3LjEwNzI3IDEzLjcxMTVMNy4xMDg3IDEzLjcxMUw3LjExMDYxIDEzLjcxMDRMNy4xMTU4NyAxMy43MDg3TDcuMTMyMDUgMTMuNzAzM0M3LjE0NTMxIDEzLjY5ODkgNy4xNjM0NiAxMy42OTI3IDcuMTg2MTkgMTMuNjg0OEM3LjIzMTY0IDEzLjY2OSA3LjI5NTQ2IDEzLjY0NjIgNy4zNzUwMyAxMy42MTYxQzcuNTM0MDMgMTMuNTU1OSA3Ljc1Njg1IDEzLjQ2NjQgOC4wMjIzNiAxMy4zNDU3QzguNTUwOTUgMTMuMTA1MyA5LjI2MTIzIDEyLjczNTUgOS45NzcxNSAxMi4yMTg1QzExLjM5MSAxMS4xOTczIDEyLjk2NDggOS40OTM3NyAxMi45NjQ4IDYuOTgwMThWMi43NTg4QzEyLjk2NDggMi43MTY2IDEyLjk2MTkgMi42NzUxMSAxMi45NTYxIDIuNjM0NTFWMS44ODM3N0gxMi4wODExQzEyLjA3NzUgMS44ODM3NyAxMi4wNzQgMS44ODM3NyAxMi4wNzA0IDEuODgzNzdDMTAuNzk3OSAxLjg4MDA0IDkuNjE5NjIgMS41MTEwMiA4LjczODk0IDEuMTI0ODZDOC43MzUzNCAxLjEyMzI3IDguNzMxNzQgMS4xMjE2OCA4LjcyODE0IDEuMTIwMDlDOC4yOTEwMyAwLjkyNjg2NCA3LjkzODQyIDAuNzM0MDU5IDcuNjk3NzkgMC41OTEzNzNDNy41Nzc3MiAwLjUyMDE3MSA3LjQ4NjIyIDAuNDYxODYgNy40MjY3NiAwLjQyMjc4OUM3LjM5NzA1IDAuNDAzMjY2IDcuMzc1MzkgMC4zODg1ODggNy4zNjIyNCAwLjM3OTU1NEw3LjM0ODk2IDAuMzcwMzVDNy4zNDg5NiAwLjM3MDM1IDcuMzQ4NDcgMC4zNzAwMiA3LjM0NTYzIDAuMzc0MDU0TDcuMzM3NzkgMC4zNjg2NTlMNy4zMzYwOSAwLjM2NzQ3NVpNOC4wMzQ3MSAyLjcyNjkxQzguODYwNCAzLjA5MDYzIDkuOTYwNjYgMy40NjMwOSAxMS4yMDYxIDMuNTg5MDdWNi45ODAxNUgxMS4yMTQ4QzExLjIxNDggOC42Nzk1MyAxMC4xNjM3IDkuOTI1MDcgOC45NTI1NCAxMC43OTk4QzguMzU1OTUgMTEuMjMwNiA3Ljc1Mzc0IDExLjU0NTQgNy4yOTc5NiAxMS43NTI3QzcuMTE2NzEgMTEuODM1MSA2Ljk2MDYyIDExLjg5OTYgNi44Mzk4NCAxMS45NDY5QzYuNzE5MDYgMTEuODk5NiA2LjU2Mjk3IDExLjgzNTEgNi4zODE3MyAxMS43NTI3QzUuOTI1OTUgMTEuNTQ1NCA1LjMyMzczIDExLjIzMDYgNC43MjcxNSAxMC43OTk4QzMuNTE2MDMgOS45MjUwNyAyLjQ2NDg0IDguNjc5NTUgMi40NjQ4NCA2Ljk4MDE4VjMuNTg5MDlDMy43MTczOCAzLjQ2MjM5IDQuODIzMDggMy4wODYzOSA1LjY1MDMzIDIuNzIwNzFDNi4xNDIyOCAyLjUwMzI0IDYuNTQ0ODUgMi4yODUzNyA2LjgzMjU0IDIuMTE2MjRDNy4xMjE4MSAyLjI4NTM1IDcuNTI3IDIuNTAzNTIgOC4wMjE5NiAyLjcyMTMxQzguMDI2MiAyLjcyMzE3IDguMDMwNDUgMi43MjUwNCA4LjAzNDcxIDIuNzI2OTFaTTUuOTY0ODQgMy40MDE0N1Y3Ljc3NjQ3SDcuNzE0ODRWMy40MDE0N0g1Ljk2NDg0Wk01Ljk2NDg0IDEwLjQwMTVWOC42NTE0N0g3LjcxNDg0VjEwLjQwMTVINS45NjQ4NFoiIGZpbGw9ImNyaW1zb24iIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=");
     background-color: crimson;
 }
 .ace_icon_svg.ace_warning_fold {
@@ -4953,18 +4993,32 @@ module.exports = `
 }
 
 .ace_placeholder {
+    position: relative;
     font-family: arial;
     transform: scale(0.9);
     transform-origin: left;
     white-space: pre;
     opacity: 0.7;
     margin: 0 10px;
+    z-index: 1;
 }
 
 .ace_ghost_text {
     opacity: 0.5;
     font-style: italic;
+}
+
+.ace_ghost_text_container > div {
     white-space: pre;
+}
+
+.ghost_text_line_wrapped::after {
+    content: "↩";
+    position: absolute;
+}
+
+.ace_lineWidgetContainer.ace_ghost_text {
+    margin: 0px 4px
 }
 
 .ace_screenreader-only {
@@ -4974,6 +5028,10 @@ module.exports = `
     width:1px;
     height:1px;
     overflow:hidden;
+}
+
+.ace_hidden_token {
+    display: none;
 }`;
 
 
@@ -4982,7 +5040,6 @@ module.exports = `
 /***/ 64594:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 /**
@@ -5080,7 +5137,7 @@ class Document {
 
     /**
      * [Sets the new line mode.]{: #Document.setNewLineMode.desc}
-     * @param {NewLineMode} newLineMode [The newline mode to use; can be either `windows`, `unix`, or `auto`]{: #Document.setNewLineMode.param}
+     * @param {NewLineMode} newLineMode [The newline mode to use; can be either `windows`, `unix`, or `auto`]
      
      **/
     setNewLineMode(newLineMode) {
@@ -5092,7 +5149,7 @@ class Document {
     }
 
     /**
-     * [Returns the type of newlines being used; either `windows`, `unix`, or `auto`]{: #Document.getNewLineMode}
+     * Returns the type of newlines being used; either `windows`, `unix`, or `auto`
      * @returns {NewLineMode}
      **/
     getNewLineMode() {
@@ -5678,7 +5735,6 @@ exports.B = Document;
 /***/ 48827:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./layer/font_metrics").FontMetrics} FontMetrics
@@ -5687,6 +5743,7 @@ exports.B = Document;
  * @typedef {import("../ace-internal").Ace.Delta} Delta
  * @typedef {import("../ace-internal").Ace.IRange} IRange
  * @typedef {import("../ace-internal").Ace.SyntaxMode} SyntaxMode
+ * @typedef {import("../ace-internal").Ace.LineWidget} LineWidget
  */
 
 var oop = __webpack_require__(42011);
@@ -5697,6 +5754,7 @@ var EventEmitter = (__webpack_require__(17858)/* .EventEmitter */ .v);
 var Selection = (__webpack_require__(82094)/* .Selection */ .Y);
 var TextMode = (__webpack_require__(72113)/* .Mode */ .A);
 var Range = (__webpack_require__(93069)/* .Range */ .e);
+var LineWidgets = (__webpack_require__(1252)/* .LineWidgets */ .H);
 var Document = (__webpack_require__(64594)/* .Document */ .B);
 var BackgroundTokenizer = (__webpack_require__(83486)/* .BackgroundTokenizer */ .V);
 var SearchHighlight = (__webpack_require__(30349)/* .SearchHighlight */ .t);
@@ -5726,6 +5784,8 @@ class EditSession {
         this.$backMarkers = {};
         this.$markerId = 1;
         this.$undoSelect = true;
+        this.$editor = null;
+        this.prevOp = {};
 
         /** @type {FoldLine[]} */
         this.$foldData = [];
@@ -5734,10 +5794,10 @@ class EditSession {
             return this.join("\n");
         };
 
-        // Set default background tokenizer with Text mode until editor session mode is set 
+        // Set default background tokenizer with Text mode until editor session mode is set
         this.bgTokenizer = new BackgroundTokenizer((new TextMode()).getTokenizer(), this);
 
-        
+
         var _self = this;
         this.bgTokenizer.on("update", function(e) {
             _self._signal("tokenizerUpdate", e);
@@ -5750,7 +5810,12 @@ class EditSession {
             text = new Document(/**@type{string}*/(text));
 
         this.setDocument(text);
+
         this.selection = new Selection(this);
+        this.$onSelectionChange = this.onSelectionChange.bind(this);
+        this.selection.on("changeSelection", this.$onSelectionChange);
+        this.selection.on("changeCursor", this.$onSelectionChange);
+
         this.$bidiHandler = new BidiHandler(this);
 
         config.resetOptions(this);
@@ -5758,6 +5823,84 @@ class EditSession {
         config._signal("session", this);
 
         this.destroyed = false;
+        this.$initOperationListeners();
+    }
+
+    $initOperationListeners() {
+        /**@type {import("../ace-internal").Ace.Operation | null}*/
+        this.curOp = null;
+        this.on("change", () => {
+            if (!this.curOp) {
+                this.startOperation();
+                this.curOp.selectionBefore = this.$lastSel;
+            }
+            this.curOp.docChanged = true;
+        }, true);
+        this.on("changeSelection", () => {
+            if (!this.curOp) {
+                this.startOperation();
+                this.curOp.selectionBefore = this.$lastSel;
+            }
+            this.curOp.selectionChanged = true;
+        }, true);
+
+        // Fallback mechanism in case current operation doesn't finish more explicitly.
+        // Triggered, for example, when a consumer makes programmatic changes without invoking endOperation afterwards.
+        this.$operationResetTimer = lang.delayedCall(this.endOperation.bind(this, true));
+    }
+
+    /**
+     * Start an Ace operation, which will then batch all the subsequent changes (to either content or selection) under a single atomic operation.
+     * @param {{command?: {name?: string}, args?: any}|undefined} [commandEvent] Optional name for the operation
+     */
+    startOperation(commandEvent) {
+        if (this.curOp) {
+            if (!commandEvent || this.curOp.command) {
+                return;
+            }
+            this.prevOp = this.curOp;
+        }
+        if (!commandEvent) {
+            commandEvent = {};
+        }
+
+        this.$operationResetTimer.schedule();
+        this.curOp = {
+            command: commandEvent.command || {},
+            args: commandEvent.args
+        };
+        this.curOp.selectionBefore = this.selection.toJSON();
+        this._signal("startOperation", commandEvent);
+    }
+
+    /**
+     * End current Ace operation.
+     * Emits "beforeEndOperation" event just before clearing everything, where the current operation can be accessed through `curOp` property.
+     * @param {any} [e]
+     */
+    endOperation(e) {
+        if (this.curOp) {
+            if (e && e.returnValue === false) {
+                this.curOp = null;
+                this._signal("endOperation", e);
+                return;
+            }
+            if (e == true && this.curOp.command && this.curOp.command.name == "mouse") {
+                // When current operation is mousedown, we wait for the mouseup to end the operation.
+                // So during a user selection, we would only end the operation when the final selection is known.
+                return;
+            }
+
+            const currentSelection = this.selection.toJSON();
+            this.curOp.selectionAfter = currentSelection;
+            this.$lastSel = this.selection.toJSON();
+            this.getUndoManager().addSelection(currentSelection);
+
+            this._signal("beforeEndOperation");
+            this.prevOp = this.curOp;
+            this.curOp = null;
+            this._signal("endOperation", e);
+        }
     }
 
     /**
@@ -5785,6 +5928,35 @@ class EditSession {
         return this.doc;
     }
 
+    /**
+     * Get "widgetManager" from EditSession
+     * 
+     * @returns {LineWidgets} object
+     */
+    get widgetManager() {
+        const widgetManager = new LineWidgets(this);
+        // todo remove the widgetManger assignement from lineWidgets constructor when introducing breaking changes
+        this.widgetManager = widgetManager;
+
+        if (this.$editor)
+            widgetManager.attach(this.$editor);
+        
+        return widgetManager;
+    }
+
+    /**
+     * Set "widgetManager" in EditSession
+     * 
+     * @returns void
+     */
+    set widgetManager(value) {
+        Object.defineProperty(this, "widgetManager", {
+            writable: true, 
+            enumerable: true,
+            configurable: true,
+            value: value,
+        });
+    }
     /**
      * @param {Number} docRow The row to work with
      *
@@ -5833,14 +6005,19 @@ class EditSession {
             this.bgTokenizer.start(0);
     }
 
+    /**
+     * @param e
+     * @internal
+     */
     onChangeFold(e) {
         var fold = e.data;
         this.$resetRowCache(fold.start.row);
     }
 
     /**
-     * 
+     *
      * @param {Delta} delta
+     * @internal
      */
     onChange(delta) {
         this.$modified = true;
@@ -5859,12 +6036,16 @@ class EditSession {
             }
             this.$undoManager.add(delta, this.mergeUndoDeltas);
             this.mergeUndoDeltas = true;
-            
+
             this.$informUndoManager.schedule();
         }
 
         this.bgTokenizer.$updateOnChange(delta);
         this._signal("change", delta);
+    }
+
+    onSelectionChange() {
+        this._signal("changeSelection");
     }
 
     /**
@@ -5894,7 +6075,7 @@ class EditSession {
         undoManager.$redoStack = session.history.redo;
         undoManager.mark = session.history.mark;
         undoManager.$rev = session.history.rev;
-    
+
         const editSession = new EditSession(session.value);
         session.folds.forEach(function(fold) {
           editSession.addFold("...", Range.fromPoints(fold.start, fold.end));
@@ -5906,10 +6087,10 @@ class EditSession {
         editSession.setScrollTop(session.scrollTop);
         editSession.setUndoManager(undoManager);
         editSession.selection.fromJSON(session.selection);
-    
+
         return editSession;
     }
- 
+
     /**
      * Returns the current edit session.
      * @method toJSON
@@ -5930,7 +6111,7 @@ class EditSession {
             value: this.doc.getValue()
         };
     }
- 
+
     /**
      * Returns the current [[Document `Document`]] as a string.
      * @method toString
@@ -5953,7 +6134,7 @@ class EditSession {
     /**
      * {:BackgroundTokenizer.getState}
      * @param {Number} row The row to start at
-     * @returns {string}
+     * @returns {string | string[]}
      * @related BackgroundTokenizer.getState
      **/
     getState(row) {
@@ -6003,10 +6184,10 @@ class EditSession {
      **/
     setUndoManager(undoManager) {
         this.$undoManager = undoManager;
-        
+
         if (this.$informUndoManager)
             this.$informUndoManager.cancel();
-        
+
         if (undoManager) {
             var self = this;
             undoManager.addSession(this);
@@ -6056,7 +6237,7 @@ class EditSession {
     setUseSoftTabs(val) {
         this.setOption("useSoftTabs", val);
     }
-    
+
     /**
      * Returns `true` if soft tabs are being used, `false` otherwise.
      * @returns {Boolean}
@@ -6455,13 +6636,14 @@ class EditSession {
 
     /**
      * Reloads all the tokens on the current session. This function calls [[BackgroundTokenizer.start `BackgroundTokenizer.start ()`]] to all the rows; it also emits the `'tokenizerUpdate'` event.
+     * @internal
      **/
     onReloadTokenizer(e) {
         var rows = e.data;
         this.bgTokenizer.start(rows.first);
         this._signal("tokenizerUpdate", e);
     }
-    
+
     /**
      * Sets a new text mode for the `EditSession`. This method also emits the `'changeMode'` event. If a [[BackgroundTokenizer `BackgroundTokenizer`]] is set, the `'tokenizerUpdate'` event is also emitted.
      * @param {SyntaxMode | string} mode Set a new text mode
@@ -6516,9 +6698,9 @@ class EditSession {
     $onChangeMode(mode, $isPlaceholder) {
         if (!$isPlaceholder)
             this.$modeId = mode.$id;
-        if (this.$mode === mode) 
+        if (this.$mode === mode)
             return;
-            
+
         var oldMode = this.$mode;
         this.$mode = mode;
 
@@ -6542,7 +6724,7 @@ class EditSession {
         /**@type {RegExp}*/
         this.nonTokenRe = mode.nonTokenRe;
 
-        
+
         if (!$isPlaceholder) {
             // experimental method, used by c9 findiniles
             if (mode.attachToSession)
@@ -6583,7 +6765,7 @@ class EditSession {
      * @param {Number} scrollTop The new scroll top value
      **/
     setScrollTop(scrollTop) {
-        // TODO: should we force integer lineheight instead? scrollTop = Math.round(scrollTop); 
+        // TODO: should we force integer lineheight instead? scrollTop = Math.round(scrollTop);
         if (this.$scrollTop === scrollTop || isNaN(scrollTop))
             return;
 
@@ -6626,7 +6808,7 @@ class EditSession {
      **/
     getScreenWidth() {
         this.$computeWidth();
-        if (this.lineWidgets) 
+        if (this.lineWidgets)
             return Math.max(this.getLineWidgetMaxWidth(), this.screenWidth);
         return this.screenWidth;
     }
@@ -6738,7 +6920,7 @@ class EditSession {
     remove(range) {
         return this.doc.remove(range);
     }
-    
+
     /**
      * Removes a range of full lines. This method also triggers the `'change'` event.
      * @param {Number} firstRow The first row to be removed
@@ -6755,7 +6937,7 @@ class EditSession {
     /**
      * Reverts previous changes to your document.
      * @param {Delta[]} deltas An array of previous changes
-     * @param {Boolean} [dontSelect] [If `true`, doesn't select the range of where the change occured]{: #dontSelect}
+     * @param {Boolean} [dontSelect] If `true`, doesn't select the range of where the change occured
      **/
     undoChanges(deltas, dontSelect) {
         if (!deltas.length)
@@ -6812,14 +6994,14 @@ class EditSession {
     /**
      * Enables or disables highlighting of the range where an undo occurred.
      * @param {Boolean} enable If `true`, selects the range of the reinserted change
-     *      
+     *
      **/
     setUndoSelect(enable) {
         this.$undoSelect = enable;
     }
 
     /**
-     * 
+     *
      * @param {Delta[]} deltas
      * @param {boolean} [isUndo]
      * @return {Range}
@@ -6842,7 +7024,7 @@ class EditSession {
                 }
                 continue;
             }
-            
+
             if (isInsert(delta)) {
                 point = delta.start;
                 if (range.compare(point.row, point.column) == -1) {
@@ -6975,7 +7157,7 @@ class EditSession {
     }
 
     /**
-     * 
+     *
      * @param {number} firstRow
      * @param {number} lastRow
      * @param [dir]
@@ -7005,7 +7187,7 @@ class EditSession {
             x.end.row += diff;
             return x;
         });
-        
+
         var lines = dir == 0
             ? this.doc.getLines(firstRow, lastRow)
             : this.doc.removeFullLines(firstRow, lastRow);
@@ -7115,7 +7297,7 @@ class EditSession {
         }
         return range;
     }
-    
+
     /**
      * Sets whether or not line wrapping is enabled. If `useWrapMode` is different than the current value, the `'changeWrapMode'` event is emitted.
      * @param {Boolean} useWrapMode Enable (or disable) wrap mode
@@ -7191,7 +7373,7 @@ class EditSession {
     }
 
     /**
-     * 
+     *
      * @param {number} wrapLimit
      * @param {number} [min]
      * @param {number} [max]
@@ -7214,7 +7396,7 @@ class EditSession {
     getWrapLimit() {
         return this.$wrapLimit;
     }
-    
+
     /**
      * Sets the line length for soft wrap in the editor. Lines will break
      *  at a minimum of the given length minus 20 chars and at a maximum
@@ -7224,7 +7406,7 @@ class EditSession {
     setWrapLimit(limit) {
         this.setWrapLimitRange(limit, limit);
     }
-    
+
     /**
      * Returns an object that defines the minimum and maximum of the wrap limit; it looks something like this:
      *
@@ -7252,7 +7434,7 @@ class EditSession {
         var lastRow = end.row;
         var len = lastRow - firstRow;
         var removedFolds = null;
-        
+
         this.$updating = true;
         if (len != 0) {
             if (action === "remove") {
@@ -7647,13 +7829,13 @@ class EditSession {
         var h = 1;
         if (this.lineWidgets)
             h += this.lineWidgets[row] && this.lineWidgets[row].rowCount || 0;
-        
+
         if (!this.$useWrapMode || !this.$wrapData[row])
             return h;
         else
             return this.$wrapData[row].length + h;
     }
-    
+
     /**
      * @param {Number} row
      * @returns {Number}
@@ -7945,7 +8127,7 @@ class EditSession {
                 wrapIndent = screenRowOffset > 0 ? wrapRow.indent : 0;
             }
         }
-        
+
         if (this.lineWidgets && this.lineWidgets[row] && this.lineWidgets[row].rowsAbove)
             screenRow += this.lineWidgets[row].rowsAbove;
 
@@ -8028,7 +8210,7 @@ class EditSession {
             if (!maxScreenColumn)
                 maxScreenColumn = Infinity;
             screenColumn = screenColumn || 0;
-            
+
             var c, column;
             for (column = 0; column < str.length; column++) {
                 c = str.charAt(column);
@@ -8042,7 +8224,7 @@ class EditSession {
                     break;
                 }
             }
-            
+
             return [screenColumn, column];
         };
     }
@@ -8067,10 +8249,15 @@ class EditSession {
             this.bgTokenizer.cleanup();
             this.destroyed = true;
         }
+        this.endOperation();
         this.$stopWorker();
         this.removeAllListeners();
         if (this.doc) {
             this.doc.off("change", this.$onChange);
+        }
+        if (this.selection) {
+            this.selection.off("changeCursor", this.$onSelectionChange);
+            this.selection.off("changeSelection", this.$onSelectionChange);
         }
         this.selection.detach();
     }
@@ -8111,7 +8298,7 @@ EditSession.prototype.$wrapLimitRange = {
     max : null
 };
 /**
- * 
+ *
  * @type {null | import("../ace-internal").Ace.LineWidget[]}
  */
 EditSession.prototype.lineWidgets = null;
@@ -8208,7 +8395,7 @@ config.defineOptions(EditSession.prototype, "session", {
             return "off";
         },
         handlesSet: true
-    },    
+    },
     wrapMethod: {
         /**
          * @param {"code"|"text"|"auto"|boolean} val
@@ -8238,7 +8425,7 @@ config.defineOptions(EditSession.prototype, "session", {
                 this.setUseWrapMode(true);
             }
         },
-        initialValue: true 
+        initialValue: true
     },
     firstLineNumber: {
         set: function() {this._signal("changeBreakpoint");},
@@ -8306,7 +8493,6 @@ exports.m = EditSession;
 /***/ 17799:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../edit_session").EditSession} EditSession
@@ -8810,7 +8996,6 @@ exports.F = BracketMatch;
 /***/ 38363:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./fold_line").FoldLine} FoldLine
@@ -8962,7 +9147,6 @@ exports.q = Fold;
 /***/ 94138:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./fold").Fold} Fold
@@ -9247,7 +9431,6 @@ exports.z = FoldLine;
 /***/ 22037:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 // @ts-nocheck
 
 
@@ -9966,14 +10149,15 @@ function Folding() {
             if (dir != 1) {
                 do {
                     token = iterator.stepBackward();
-                } while (token && re.test(token.type) && !/^comment.end/.test(token.type));
+                } while (token && re.test(token.type));
                 token = iterator.stepForward();
             }
             
             range.start.row = iterator.getCurrentTokenRow();
-            range.start.column = iterator.getCurrentTokenColumn() + (/^comment.start/.test(token.type) ? token.value.length : 2);
+            range.start.column = iterator.getCurrentTokenColumn() + token.value.length;
 
             iterator = new TokenIterator(this, row, column);
+            var initState = this.getState(iterator.$row);
             
             if (dir != -1) {
                 var lastRow = -1;
@@ -9981,21 +10165,18 @@ function Folding() {
                     token = iterator.stepForward();
                     if (lastRow == -1) {
                         var state = this.getState(iterator.$row);
-                        if (!re.test(state))
+                        if (initState.toString() !== state.toString())
                             lastRow = iterator.$row;
                     } else if (iterator.$row > lastRow) {
                         break;
                     }
-                } while (token && re.test(token.type) && !/^comment.start/.test(token.type));
+                } while (token && re.test(token.type));
                 token = iterator.stepBackward();
             } else
                 token = iterator.getCurrentToken();
 
             range.end.row = iterator.getCurrentTokenRow();
             range.end.column = iterator.getCurrentTokenColumn();
-            if (!/^comment.end/.test(token.type)) {
-                range.end.column += token.value.length - 2;
-            }
             return range;
         }
     };
@@ -10292,7 +10473,6 @@ exports.x = Folding;
 /***/ 77180:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 /**
@@ -10318,7 +10498,6 @@ var CommandManager = (__webpack_require__(34278)/* .CommandManager */ .f);
 var defaultCommands = (__webpack_require__(94922)/* .commands */ .C);
 var config = __webpack_require__(33294);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
-var LineWidgets = (__webpack_require__(1252)/* .LineWidgets */ .H);
 var GutterKeyboardHandler = (__webpack_require__(73051)/* .GutterKeyboardHandler */ .K);
 var nls = (__webpack_require__(33294).nls);
 
@@ -10343,11 +10522,10 @@ class Editor {
      **/
     constructor(renderer, session, options) {
         /**@type{EditSession}*/this.session;
-        
         this.$toDestroy = [];
-        
+
         var container = renderer.getContainerElement();
-        /**@type {HTMLElement & {env?, value?}}*/
+        /**@type {HTMLElement & {env?:any, value?:any}}*/
         this.container = container;
         /**@type {VirtualRenderer}*/
         this.renderer = renderer;
@@ -10394,61 +10572,42 @@ class Editor {
     $initOperationListeners() {
         this.commands.on("exec", this.startOperation.bind(this), true);
         this.commands.on("afterExec", this.endOperation.bind(this), true);
-
-        this.$opResetTimer = lang.delayedCall(this.endOperation.bind(this, true));
-        
-        // todo: add before change events?
-        this.on("change", function() {
-            if (!this.curOp) {
-                this.startOperation();
-                this.curOp.selectionBefore = this.$lastSel;
-            }
-            this.curOp.docChanged = true;
-        }.bind(this), true);
-        
-        this.on("changeSelection", function() {
-            if (!this.curOp) {
-                this.startOperation();
-                this.curOp.selectionBefore = this.$lastSel;
-            }
-            this.curOp.selectionChanged = true;
-        }.bind(this), true);
     }
 
     startOperation(commandEvent) {
-        if (this.curOp) {
-            if (!commandEvent || this.curOp.command)
-                return;
-            this.prevOp = this.curOp;
-        }
-        if (!commandEvent) {
-            this.previousCommand = null;
-            commandEvent = {};
-        }
-
-        this.$opResetTimer.schedule();
-        /**
-         * @type {{[key: string]: any;}}
-         */
-        this.curOp = this.session.curOp = {
-            command: commandEvent.command || {},
-            args: commandEvent.args,
-            scrollTop: this.renderer.scrollTop
-        };
-        this.curOp.selectionBefore = this.selection.toJSON();
+        this.session.startOperation(commandEvent);
     }
 
-    /** 
+    /**
      * @arg e
      */
     endOperation(e) {
+        this.session.endOperation(e);
+    }
+
+    onStartOperation(commandEvent) {
+        this.curOp = this.session.curOp;
+        this.curOp.scrollTop = this.renderer.scrollTop;
+        this.prevOp = this.session.prevOp;
+
+        if (!commandEvent) {
+            this.previousCommand = null;
+        }
+    }
+
+    /**
+     * @arg e
+     */
+    onEndOperation(e) {
         if (this.curOp && this.session) {
-            if (e && e.returnValue === false || !this.session)
-                return (this.curOp = null);
-            if (e == true && this.curOp.command && this.curOp.command.name == "mouse")
+            if (e && e.returnValue === false) {
+                this.curOp = null;
                 return;
+            }
+
             this._signal("beforeEndOperation");
             if (!this.curOp) return;
+
             var command = this.curOp.command;
             var scrollIntoView = command && command.scrollIntoView;
             if (scrollIntoView) {
@@ -10476,18 +10635,14 @@ class Editor {
                 if (scrollIntoView == "animate")
                     this.renderer.animateScrolling(this.curOp.scrollTop);
             }
-            var sel = this.selection.toJSON();
-            this.curOp.selectionAfter = sel;
-            this.$lastSel = this.selection.toJSON();
-            
-            // console.log(this.$lastSel+"  endOP")
-            this.session.getUndoManager().addSelection(sel);
+
+            this.$lastSel = this.session.selection.toJSON();
             this.prevOp = this.curOp;
             this.curOp = null;
         }
     }
 
-    /** 
+    /**
      * @param e
      */
     $historyTracker(e) {
@@ -10557,7 +10712,7 @@ class Editor {
     }
 
 
-   
+
     /**
      * Sets a new editsession to use. This method also emits the `'changeSession'` event.
      * @param {EditSession} [session] The new session to use
@@ -10565,7 +10720,7 @@ class Editor {
     setSession(session) {
         if (this.session == session)
             return;
-        
+
         // make sure operationEnd events are not emitted to wrong session
         if (this.curOp) this.endOperation();
         this.curOp = {};
@@ -10586,6 +10741,8 @@ class Editor {
             this.session.off("changeOverwrite", this.$onCursorChange);
             this.session.off("changeScrollTop", this.$onScrollTopChange);
             this.session.off("changeScrollLeft", this.$onScrollLeftChange);
+            this.session.off("startOperation", this.$onStartOperation);
+            this.session.off("endOperation", this.$onEndOperation);
 
             var selection = this.session.getSelection();
             selection.off("changeCursor", this.$onCursorChange);
@@ -10597,56 +10754,61 @@ class Editor {
             this.$onDocumentChange = this.onDocumentChange.bind(this);
             session.on("change", this.$onDocumentChange);
             this.renderer.setSession(session);
-    
+
             this.$onChangeMode = this.onChangeMode.bind(this);
             session.on("changeMode", this.$onChangeMode);
-    
+
             this.$onTokenizerUpdate = this.onTokenizerUpdate.bind(this);
             session.on("tokenizerUpdate", this.$onTokenizerUpdate);
-    
+
             this.$onChangeTabSize = this.renderer.onChangeTabSize.bind(this.renderer);
             session.on("changeTabSize", this.$onChangeTabSize);
-    
+
             this.$onChangeWrapLimit = this.onChangeWrapLimit.bind(this);
             session.on("changeWrapLimit", this.$onChangeWrapLimit);
-    
+
             this.$onChangeWrapMode = this.onChangeWrapMode.bind(this);
             session.on("changeWrapMode", this.$onChangeWrapMode);
-    
+
             this.$onChangeFold = this.onChangeFold.bind(this);
             session.on("changeFold", this.$onChangeFold);
-    
+
             this.$onChangeFrontMarker = this.onChangeFrontMarker.bind(this);
             this.session.on("changeFrontMarker", this.$onChangeFrontMarker);
-    
+
             this.$onChangeBackMarker = this.onChangeBackMarker.bind(this);
             this.session.on("changeBackMarker", this.$onChangeBackMarker);
-    
+
             this.$onChangeBreakpoint = this.onChangeBreakpoint.bind(this);
             this.session.on("changeBreakpoint", this.$onChangeBreakpoint);
-    
+
             this.$onChangeAnnotation = this.onChangeAnnotation.bind(this);
             this.session.on("changeAnnotation", this.$onChangeAnnotation);
-    
+
             this.$onCursorChange = this.onCursorChange.bind(this);
             this.session.on("changeOverwrite", this.$onCursorChange);
-    
+
             this.$onScrollTopChange = this.onScrollTopChange.bind(this);
             this.session.on("changeScrollTop", this.$onScrollTopChange);
-    
+
             this.$onScrollLeftChange = this.onScrollLeftChange.bind(this);
             this.session.on("changeScrollLeft", this.$onScrollLeftChange);
-    
+
             this.selection = session.getSelection();
             this.selection.on("changeCursor", this.$onCursorChange);
-    
+
             this.$onSelectionChange = this.onSelectionChange.bind(this);
             this.selection.on("changeSelection", this.$onSelectionChange);
-    
+
+            this.$onStartOperation = this.onStartOperation.bind(this);
+            this.session.on("startOperation", this.$onStartOperation);
+            this.$onEndOperation = this.onEndOperation.bind(this);
+            this.session.on("endOperation", this.$onEndOperation);
+
             this.onChangeMode();
-    
+
             this.onCursorChange();
-    
+
             this.onScrollTopChange();
             this.onScrollLeftChange();
             this.onSelectionChange();
@@ -10665,12 +10827,14 @@ class Editor {
             session: session,
             oldSession: oldSession
         });
-        
+
         this.curOp = null;
-        
+
         oldSession && oldSession._signal("changeEditor", {oldEditor: this});
+        if (oldSession) oldSession.$editor = null;
         session && session._signal("changeEditor", {editor: this});
-        
+        if (session) session.$editor = this;
+
         if (session && !session.destroyed)
             session.bgTokenizer.scheduleStart();
     }
@@ -10771,7 +10935,7 @@ class Editor {
 
     /**
      * Gets the current font size of the editor text.
-     * @return {string}
+     * @return {string | number}
      */
     getFontSize() {
         return this.getOption("fontSize") ||
@@ -10780,7 +10944,7 @@ class Editor {
 
     /**
      * Set a new font size (in pixels) for the editor text.
-     * @param {String} size A font size ( _e.g._ "12px")
+     * @param {String | number} size A font size ( _e.g._ "12px")
      **/
     setFontSize(size) {
         this.setOption("fontSize", size);
@@ -10881,6 +11045,7 @@ class Editor {
 
     /**
      * Emitted once the editor comes into focus.
+     * @internal
      **/
     onFocus(e) {
         if (this.$isFocused)
@@ -10893,6 +11058,7 @@ class Editor {
 
     /**
      * Emitted once the editor has been blurred.
+     * @internal
      **/
     onBlur(e) {
         if (!this.$isFocused)
@@ -10914,6 +11080,7 @@ class Editor {
     /**
      * Emitted whenever the document is changed.
      * @param {import("../ace-internal").Ace.Delta} delta Contains a single property, `data`, which has the delta of changes
+     * @internal
      **/
     onDocumentChange(delta) {
         // Rerender and emit "change" event.
@@ -10922,27 +11089,36 @@ class Editor {
         this.renderer.updateLines(delta.start.row, lastRow, wrap);
 
         this._signal("change", delta);
-        
+
         // Update cursor because tab characters can influence the cursor position.
         this.$cursorChange();
     }
 
+    /**
+     * @internal
+     */
     onTokenizerUpdate(e) {
         var rows = e.data;
         this.renderer.updateLines(rows.first, rows.last);
     }
 
-
+    /**
+     * @internal
+     */
     onScrollTopChange() {
         this.renderer.scrollToY(this.session.getScrollTop());
     }
 
+    /**
+     * @internal
+     */
     onScrollLeftChange() {
         this.renderer.scrollToX(this.session.getScrollLeft());
     }
 
     /**
      * Emitted when the selection changes.
+     * @internal
      **/
     onCursorChange() {
         this.$cursorChange();
@@ -10980,8 +11156,8 @@ class Editor {
     }
 
     /**
-     * 
      * @param e
+     * @internal
      */
     onSelectionChange(e) {
         var session = this.session;
@@ -11015,9 +11191,9 @@ class Editor {
         var startColumn = selection.start.column;
         var endColumn = selection.end.column;
         var line = session.getLine(selection.start.row);
-        
+
         var needle = line.substring(startColumn, endColumn);
-        // maximum allowed size for regular expressions in 32000, 
+        // maximum allowed size for regular expressions in 32000,
         // but getting close to it has significant impact on the performance
         if (needle.length > 5000 || !/[\w\d]/.test(needle))
             return;
@@ -11027,51 +11203,68 @@ class Editor {
             caseSensitive: true,
             needle: needle
         });
-        
+
         var wordWithBoundary = line.substring(startColumn - 1, endColumn + 1);
         if (!re.test(wordWithBoundary))
             return;
-        
+
         return re;
     }
 
-
+    /**
+     * @internal
+     */
     onChangeFrontMarker() {
         this.renderer.updateFrontMarkers();
     }
 
+    /**
+     * @internal
+     */
     onChangeBackMarker() {
         this.renderer.updateBackMarkers();
     }
 
-
+    /**
+     * @internal
+     */
     onChangeBreakpoint() {
         this.renderer.updateBreakpoints();
     }
 
+    /**
+     * @internal
+     */
     onChangeAnnotation() {
         this.renderer.setAnnotations(this.session.getAnnotations());
     }
 
     /**
      * @param e
+     * @internal
      */
     onChangeMode (e) {
         this.renderer.updateText();
         this._emit("changeMode", e);
     }
 
-
+    /**
+     * @internal
+     */
     onChangeWrapLimit() {
         this.renderer.updateFull();
     }
 
+    /**
+     * @internal
+     */
     onChangeWrapMode() {
         this.renderer.onResize(true);
     }
 
 
     /**
+     * @internal
      */
     onChangeFold() {
         // Update the active line marker as due to folding changes the current
@@ -11081,7 +11274,7 @@ class Editor {
         this.renderer.updateFull();
     }
 
-    
+
     /**
      * Returns the string of text currently highlighted.
      * @returns {String}
@@ -11089,8 +11282,8 @@ class Editor {
     getSelectedText() {
         return this.session.getTextRange(this.getSelectionRange());
     }
-    
-  
+
+
     /**
      * Returns the string of text currently highlighted.
      * @returns {String}
@@ -11117,6 +11310,7 @@ class Editor {
 
     /**
      * Called whenever a text "copy" happens.
+     * @internal
      **/
     onCopy() {
         this.commands.exec("copy", this);
@@ -11124,6 +11318,7 @@ class Editor {
 
     /**
      * Called whenever a text "cut" happens.
+     * @internal
      **/
     onCut() {
         this.commands.exec("cut", this);
@@ -11134,6 +11329,7 @@ class Editor {
      * Called whenever a text "paste" happens.
      * @param {String} text The pasted text
      * @param {any} event
+     * @internal
      **/
     onPaste(text, event) {
         var e = {text: text, event: event};
@@ -11141,12 +11337,12 @@ class Editor {
     }
 
     /**
-     * 
+     *
      * @param e
      * @returns {boolean}
      */
     $handlePaste(e) {
-        if (typeof e == "string") 
+        if (typeof e == "string")
             e = {text: e};
         this._signal("paste", e);
         var text = e.text;
@@ -11165,23 +11361,23 @@ class Editor {
         } else {
             var lines = text.split(/\r\n|\r|\n/);
             var ranges = this.selection.rangeList.ranges;
-    
+
             var isFullLine = lines.length == 2 && (!lines[0] || !lines[1]);
             if (lines.length != ranges.length || isFullLine)
                 return this.commands.exec("insertstring", this, text);
-    
+
             for (var i = ranges.length; i--;) {
                 var range = ranges[i];
                 if (!range.isEmpty())
                     session.remove(range);
-    
+
                 session.insert(range.start, lines[i]);
             }
         }
     }
 
     /**
-     * 
+     *
      * @param {string | string[]} command
      * @param [args]
      * @return {boolean}
@@ -11215,7 +11411,7 @@ class Editor {
 
             }
         }
-        
+
         if (text == "\t")
             text = this.session.getTabString();
 
@@ -11278,6 +11474,7 @@ class Editor {
             ? [new Range(0, 0, session.doc.getLength() - 1, 0)]
             : this.selection.getAllRanges();
 
+        /**@type{string|string[]}*/
         var prevLineState = "";
         var prevLine = "";
         var lineIndent = "";
@@ -11285,7 +11482,7 @@ class Editor {
         for (var i = 0; i < ranges.length; i++) {
             var startRow = ranges[i].start.row;
             var endRow = ranges[i].end.row;
-            
+
             for (var row = startRow; row <= endRow; row++) {
                 if (row > 0) {
                     prevLineState = session.getState(row - 1);
@@ -11311,15 +11508,16 @@ class Editor {
     }
 
     /**
-     * 
+     *
      * @param text
      * @param composition
      * @returns {*}
+     * @internal
      */
     onTextInput(text, composition) {
         if (!composition)
             return this.keyBinding.onTextInput(text);
-        
+
         this.startOperation({command: { name: "insertstring" }});
         var applyComposition = this.applyComposition.bind(this, text, composition);
         if (this.selection.rangeCount)
@@ -11356,6 +11554,9 @@ class Editor {
         }
     }
 
+    /**
+     * @internal
+     */
     onCommandKey(e, hashId, keyCode) {
         return this.keyBinding.onCommandKey(e, hashId, keyCode);
     }
@@ -11429,7 +11630,7 @@ class Editor {
 
     /**
      * Returns the current selection style.
-     * @returns {import("../ace-internal").Ace.EditorOptions["selectionStyle"]} 
+     * @returns {import("../ace-internal").Ace.EditorOptions["selectionStyle"]}
      **/
     getSelectionStyle() {
         return this.getOption("selectionStyle");
@@ -11662,7 +11863,7 @@ class Editor {
             else
                 this.selection.selectRight();
         }
-        
+
         var range = this.getSelectionRange();
         if (this.getBehavioursEnabled()) {
             var session = this.session;
@@ -11756,15 +11957,11 @@ class Editor {
      * Set the "ghost" text in provided position. "Ghost" text is a kind of
      * preview text inside the editor which can be used to preview some code
      * inline in the editor such as, for example, code completions.
-     * 
+     *
      * @param {String} text Text to be inserted as "ghost" text
      * @param {Point} [position] Position to insert text to
      */
     setGhostText(text, position) {
-        if (!this.session.widgetManager) {
-            this.session.widgetManager = new LineWidgets(this.session);
-            this.session.widgetManager.attach(this);
-        }
         this.renderer.setGhostText(text, position);
     }
 
@@ -11772,8 +11969,6 @@ class Editor {
      * Removes "ghost" text currently displayed in the editor.
      */
     removeGhostText() {
-        if (!this.session.widgetManager) return;
-
         this.renderer.removeGhostText();
     }
 
@@ -11855,7 +12050,7 @@ class Editor {
                 return;
             }
         }
-        
+
         var line = session.getLine(range.start.row);
         var position = range.start;
         var size = session.getTabSize();
@@ -12148,7 +12343,7 @@ class Editor {
      * @param {Range} range The range of text you want moved within the document
      * @param {Point} toPosition The location (row and column) where you want to move the text to
      * @param {boolean} [copy]
-     * 
+     *
      * @returns {Range} The new range where the text was moved to.
      * @related EditSession.moveText
      **/
@@ -12193,7 +12388,7 @@ class Editor {
             // @ts-expect-error TODO: possible bug, no args in parameters
             selection.rangeList.detach(this.session);
             this.inVirtualSelectionMode = true;
-            
+
             var diff = 0;
             var totalDiff = 0;
             var l = ranges.length;
@@ -12222,7 +12417,7 @@ class Editor {
                 if (!copy) diff = 0;
                 totalDiff += diff;
             }
-            
+
             selection.fromOrientedRange(selection.ranges[0]);
             selection.rangeList.attach(this.session);
             this.inVirtualSelectionMode = false;
@@ -12247,14 +12442,23 @@ class Editor {
         };
     }
 
+    /**
+     * @internal
+     */
     onCompositionStart(compositionState) {
         this.renderer.showComposition(compositionState);
     }
 
+    /**
+     * @internal
+     */
     onCompositionUpdate(text) {
         this.renderer.setCompositionText(text);
     }
 
+    /**
+     * @internal
+     */
     onCompositionEnd() {
         this.renderer.hideComposition();
     }
@@ -12438,7 +12642,7 @@ class Editor {
     getSelectionRange() {
         return this.selection.getRange();
     }
-    
+
     /**
      * Selects all the text in editor.
      * @related Selection.selectAll
@@ -12921,7 +13125,7 @@ class Editor {
     }
 
     /**
-     * 
+     *
      * @param {Range} range
      * @param {boolean} [animate]
      */
@@ -12973,6 +13177,7 @@ class Editor {
         if (this._$emitInputEvent)
             this._$emitInputEvent.cancel();
         this.removeAllListeners();
+
     }
 
     /**
@@ -13108,7 +13313,7 @@ config.defineOptions(Editor.prototype, "editor", {
     readOnly: {
         set: function(readOnly) {
             this.textInput.setReadOnly(readOnly);
-            this.$resetCursorStyle(); 
+            this.$resetCursorStyle();
         },
         initialValue: false
     },
@@ -13150,7 +13355,7 @@ config.defineOptions(Editor.prototype, "editor", {
         handlesSet: true,
         hidden: true
     },
-    
+
     showLineNumbers: {
         set: function(show) {
             this.renderer.$gutterLayer.setShowLineNumbers(show);
@@ -13219,10 +13424,10 @@ config.defineOptions(Editor.prototype, "editor", {
                 if (e.target == this.renderer.scroller && e.keyCode === keys['enter']){
                     e.preventDefault();
                     var row = this.getCursorPosition().row;
-                    
+
                     if (!this.isRowVisible(row))
                         this.scrollToLine(row, true, true);
-    
+
                     this.focus();
                 }
             };
@@ -13234,6 +13439,7 @@ config.defineOptions(Editor.prototype, "editor", {
             // - Prevent tab-trapping.
             // - Hide irrelevant elements from assistive technology.
             // - On Windows, set more lines to the textarea.
+            // - set aria-label to the text input.
             if (value){
                 this.renderer.enableKeyboardAccessibility = true;
                 this.renderer.keyboardFocusClassName = "ace_keyboard-focus";
@@ -13256,7 +13462,7 @@ config.defineOptions(Editor.prototype, "editor", {
                 this.renderer.$gutter.setAttribute("tabindex", 0);
                 this.renderer.$gutter.setAttribute("aria-hidden", false);
                 this.renderer.$gutter.setAttribute("role", "group");
-                this.renderer.$gutter.setAttribute("aria-roledescription", nls("editor.gutter.aria-roledescription", "editor"));
+                this.renderer.$gutter.setAttribute("aria-roledescription", nls("editor.gutter.aria-roledescription", "editor gutter"));
                 this.renderer.$gutter.setAttribute("aria-label",
                     nls("editor.gutter.aria-label", "Editor gutter, press Enter to interact with controls using arrow keys, press Escape to exit")
                 );
@@ -13268,6 +13474,10 @@ config.defineOptions(Editor.prototype, "editor", {
                     gutterKeyboardHandler = new GutterKeyboardHandler(this);
 
                 gutterKeyboardHandler.addListener();
+
+                this.textInput.setAriaOptions({
+                    setLabel: true
+                });
             } else {
                 this.renderer.enableKeyboardAccessibility = false;
 
@@ -13278,7 +13488,7 @@ config.defineOptions(Editor.prototype, "editor", {
                 this.renderer.scroller.removeAttribute("aria-roledescription");
                 this.renderer.scroller.classList.remove(this.renderer.keyboardFocusClassName);
                 this.renderer.scroller.removeAttribute("aria-label");
-            
+
                 this.renderer.scroller.removeEventListener("keyup", focusOnEnterKeyup.bind(this));
                 this.commands.removeCommand(blurCommand);
 
@@ -13296,6 +13506,17 @@ config.defineOptions(Editor.prototype, "editor", {
             }
         },
         initialValue: false
+    },
+    textInputAriaLabel: {
+        set: function(val) { this.$textInputAriaLabel = val; },
+        initialValue: ""
+    },
+    enableMobileMenu: {
+        /**
+         * @param {boolean} val
+         */
+        set: function(val) { this.$enableMobileMenu = val; },
+        initialValue: true
     },
     customScrollbar: "renderer",
     hScrollBarAlwaysVisible: "renderer",
@@ -13379,9 +13600,7 @@ exports.M = Editor;
 /***/ 70585:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
-var LineWidgets = (__webpack_require__(1252)/* .LineWidgets */ .H);
 var dom = __webpack_require__(25336);
 var Range = (__webpack_require__(93069)/* .Range */ .e);
 var nls = (__webpack_require__(33294).nls);
@@ -13452,11 +13671,6 @@ function findAnnotations(session, row, dir) {
  */
 exports.showErrorMarker = function(editor, dir) {
     var session = editor.session;
-    if (!session.widgetManager) {
-        session.widgetManager = new LineWidgets(session);
-        session.widgetManager.attach(editor);
-    }
-    
     var pos = editor.getCursorPosition();
     var row = pos.row;
     var oldWidget = session.widgetManager.getWidgetsAtRow(row).filter(function(w) {
@@ -13480,7 +13694,7 @@ exports.showErrorMarker = function(editor, dir) {
         return;
     } else {
         gutterAnno = {
-            text: [nls("error-marker.good-state", "Looks good!")],
+            displayText: [nls("error-marker.good-state", "Looks good!")],
             className: "ace_ok"
         };
     }
@@ -13504,7 +13718,12 @@ exports.showErrorMarker = function(editor, dir) {
     
     w.el.className = "error_widget_wrapper";
     el.className = "error_widget " + gutterAnno.className;
-    el.innerHTML = gutterAnno.text.join("<br>");
+    gutterAnno.displayText.forEach(function (annoTextLine, i) {
+        el.appendChild(dom.createTextNode(annoTextLine));
+        if (i < gutterAnno.displayText.length - 1) {
+            el.appendChild(dom.createElement("br"));
+        }
+    });
     
     el.appendChild(dom.createElement("div"));
     
@@ -13583,7 +13802,6 @@ dom.importCssString(`
 /***/ 54224:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 /**@type{import("../snippets").snippetManager & {files?: {[key: string]: any}}}*/
@@ -13824,7 +14042,6 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
 /***/ 73051:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
@@ -14321,7 +14538,6 @@ __webpack_unused_export__ = GutterKeyboardEvent;
 /***/ 54739:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 /**
@@ -14491,7 +14707,7 @@ class MultiHashHandler {
     }
 
     /**
-     * @param {Record<string, CommandLike>} commands
+     * @param {Record<string, CommandLike | string>} commands
      */
     removeCommands(commands) {
         Object.keys(commands).forEach(function(name) {
@@ -14500,7 +14716,7 @@ class MultiHashHandler {
     }
 
     /**
-     * @param {Record<string, CommandLike>} keyList
+     * @param {Record<string, CommandLike | string>} keyList
      */
     bindKeys(keyList) {
         Object.keys(keyList).forEach(function(key) {
@@ -14554,7 +14770,7 @@ class MultiHashHandler {
     }
 
     /**
-     * @param {{ $keyChain: string | any[]; }} data
+     * @param {any} data
      * @param {number} hashId
      * @param {string} keyString
      * @param {number} keyCode
@@ -14629,7 +14845,6 @@ exports.MultiHashHandler = MultiHashHandler;
 /***/ 11058:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../editor").Editor} Editor
@@ -14717,7 +14932,7 @@ class KeyBinding {
     getKeyboardHandler() {
         return this.$handlers[this.$handlers.length - 1];
     }
-    
+
     getStatusText() {
         var data = this.$data;
         var editor = data.editor;
@@ -14738,7 +14953,7 @@ class KeyBinding {
             );
             if (!toExecute || !toExecute.command)
                 continue;
-            
+
             // allow keyboardHandler to consume keys
             if (toExecute.command == "null") {
                 success = true;
@@ -14747,7 +14962,7 @@ class KeyBinding {
                 success = commands.exec(toExecute.command, this.$editor, toExecute.args, e);
             }
             // do not stop input events to not break repeating
-            if (success && e && hashId != -1 && 
+            if (success && e && hashId != -1 &&
                 toExecute["passEvent"] != true && toExecute.command["passEvent"] != true
             ) {
                 event.stopEvent(e);
@@ -14755,15 +14970,15 @@ class KeyBinding {
             if (success)
                 break;
         }
-        
+
         if (!success && hashId == -1) {
             toExecute = {command: "insertstring"};
             success = commands.exec("insertstring", this.$editor, keyString);
         }
-        
+
         if (success && this.$editor._signal)
             this.$editor._signal("keyboardActivity", toExecute);
-        
+
         return success;
     }
 
@@ -14772,6 +14987,7 @@ class KeyBinding {
      * @param {number} hashId
      * @param {number} keyCode
      * @return {boolean}
+     * @internal
      */
     onCommandKey(e, hashId, keyCode) {
         var keyString = keyUtil.keyCodeToString(keyCode);
@@ -14781,6 +14997,7 @@ class KeyBinding {
     /**
      * @param {string} text
      * @return {boolean}
+     * @internal
      */
     onTextInput(text) {
         return this.$callKeyboardHandlers(-1, text);
@@ -14796,7 +15013,6 @@ exports.M = KeyBinding;
 /***/ 30058:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
@@ -14873,6 +15089,19 @@ TextInput= function(parentNode, host) {
         
         numberOfExtraLines = number;
     };
+
+    this.setAriaLabel = function() {
+        var ariaLabel = "";
+        if (host.$textInputAriaLabel) {
+            ariaLabel += `${host.$textInputAriaLabel}, `;
+        }
+        if(host.session) {
+            var row = host.session.selection.cursor.row;
+            ariaLabel += nls("text-input.aria-label", "Cursor at row $0", [row + 1]);
+        }
+        text.setAttribute("aria-label", ariaLabel);
+    };
+
     this.setAriaOptions = function(options) {
         if (options.activeDescendant) {
             text.setAttribute("aria-haspopup", "true");
@@ -14888,14 +15117,11 @@ TextInput= function(parentNode, host) {
         }     
         if (options.setLabel) {
             text.setAttribute("aria-roledescription", nls("text-input.aria-roledescription", "editor"));
-            if(host.session) {
-                var row =  host.session.selection.cursor.row;
-                text.setAttribute("aria-label", nls("text-input.aria-label", "Cursor at row $0", [row + 1]));
-            }
+            this.setAriaLabel();
         }
     };
 
-    this.setAriaOptions({role: "textbox"}); 
+    this.setAriaOptions({role: "textbox"});
 
     event.addListener(text, "blur", function(e) {
         if (ignoreFocusEvents) return;
@@ -14986,6 +15212,9 @@ TextInput= function(parentNode, host) {
         // sync value of textarea
         resetSelection();
     });
+
+    // if cursor changes position, we need to update the label with the correct row
+    host.on("changeSelection", this.setAriaLabel);
     
     // Convert from row,column position to the linear position with respect to the current
     // block of lines in the textarea.
@@ -15634,7 +15863,6 @@ __webpack_unused_export__ = function(_isMobile, _isIOS) {
 /***/ 41361:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../edit_session").EditSession} EditSession
@@ -15908,7 +16136,6 @@ exports.C = Cursor;
 /***/ 69945:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 var dom = __webpack_require__(25336);
 var oop = __webpack_require__(42011);
@@ -16192,7 +16419,7 @@ class FontMetrics {
     
     $getZoom(element) {
         if (!element || !element.parentElement) return 1;
-        return (window.getComputedStyle(element)["zoom"] || 1) * this.$getZoom(element.parentElement);
+        return (Number(window.getComputedStyle(element)["zoom"]) || 1) * this.$getZoom(element.parentElement);
     }
     
     $initTransformMeasureNodes() {
@@ -16267,7 +16494,6 @@ exports.c = FontMetrics;
 /***/ 89749:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../edit_session").EditSession} EditSession
@@ -16341,26 +16567,34 @@ class Gutter{
             var row = annotation.row;
             var rowInfo = this.$annotations[row];
             if (!rowInfo)
-                rowInfo = this.$annotations[row] = {text: [], type: []};
+                rowInfo = this.$annotations[row] = {text: [], type: [], displayText: []};
            
             var annoText = annotation.text;
+            var displayAnnoText = annotation.text;
             var annoType = annotation.type;
             annoText = annoText ? lang.escapeHTML(annoText) : annotation.html || "";
+            displayAnnoText = displayAnnoText ? displayAnnoText : annotation.html || "";
 
             if (rowInfo.text.indexOf(annoText) === -1){
                 rowInfo.text.push(annoText);
                 rowInfo.type.push(annoType);
+                rowInfo.displayText.push(displayAnnoText);
             }
 
             var className = annotation.className;
-            if (className) 
+            if (className) {
                 rowInfo.className = className;
-            else if (annoType == "error")
+            } else if (annoType === "error") {
                 rowInfo.className = " ace_error";
-            else if (annoType == "warning" && rowInfo.className != " ace_error")
+            } else if (annoType === "security" && !/\bace_error\b/.test(rowInfo.className)) {
+                rowInfo.className = " ace_security";
+            } else if (annoType === "warning" && !/\bace_(error|security)\b/.test(rowInfo.className)) {
                 rowInfo.className = " ace_warning";
-            else if (annoType == "info" && (!rowInfo.className))
+            } else if (annoType === "info" && !rowInfo.className) {
                 rowInfo.className = " ace_info";
+            } else if (annoType === "hint" && !rowInfo.className) {
+                rowInfo.className = " ace_hint";
+            }
         }
     }
 
@@ -16641,24 +16875,29 @@ class Gutter{
         if (c) {
             var foldClass = "ace_fold-widget ace_" + c;
             var isClosedFold = c == "start" && row == foldStart && row < fold.end.row;
-            if (isClosedFold){
+            if (isClosedFold) {
                 foldClass += " ace_closed";
-                var foldAnnotationClass = '';
+                var foldAnnotationClass = "";
                 var annotationInFold = false;
 
-                for (var i = row + 1; i <= fold.end.row; i++){
-                    if (!this.$annotations[i])
-                        continue;
+                for (var i = row + 1; i <= fold.end.row; i++) {
+                    if (!this.$annotations[i]) continue;
 
-                    if (this.$annotations[i].className === " ace_error"){
+                    if (this.$annotations[i].className === " ace_error") {
                         annotationInFold = true;
                         foldAnnotationClass = " ace_error_fold";
                         break;
-                    } 
-                    if (this.$annotations[i].className === " ace_warning"){
+                    }
+
+                    if (this.$annotations[i].className === " ace_security") {
+                        annotationInFold = true;
+                        foldAnnotationClass = " ace_security_fold";
+                    } else if (
+                        this.$annotations[i].className === " ace_warning" &&
+                        foldAnnotationClass !== " ace_security_fold"
+                    ) {
                         annotationInFold = true;
                         foldAnnotationClass = " ace_warning_fold";
-                        continue;
                     }
                 }
 
@@ -16671,7 +16910,7 @@ class Gutter{
 
             dom.setStyle(foldWidget.style, "height", lineHeight);
             dom.setStyle(foldWidget.style, "display", "inline-block");
-            
+
             // Set a11y properties.
             foldWidget.setAttribute("role", "button");
             foldWidget.setAttribute("tabindex", "-1");
@@ -16679,19 +16918,33 @@ class Gutter{
 
             // getFoldWidgetRange is optional to be implemented by fold modes, if not available we fall-back.
             if (foldRange)
-                foldWidget.setAttribute("aria-label", nls("gutter.code-folding.range.aria-label", "Toggle code folding, rows $0 through $1", [foldRange.start.row + 1, foldRange.end.row + 1]));
+                foldWidget.setAttribute(
+                    "aria-label",
+                    nls("gutter.code-folding.range.aria-label", "Toggle code folding, rows $0 through $1", [
+                        foldRange.start.row + 1,
+                        foldRange.end.row + 1
+                    ])
+                );
             else {
                 if (fold)
-                    foldWidget.setAttribute("aria-label", nls("gutter.code-folding.closed.aria-label", "Toggle code folding, rows $0 through $1", [fold.start.row + 1, fold.end.row + 1]));
+                    foldWidget.setAttribute(
+                        "aria-label",
+                        nls("gutter.code-folding.closed.aria-label", "Toggle code folding, rows $0 through $1", [
+                            fold.start.row + 1,
+                            fold.end.row + 1
+                        ])
+                    );
                 else
-                    foldWidget.setAttribute("aria-label", nls("gutter.code-folding.open.aria-label", "Toggle code folding, row $0", [row + 1]));
+                    foldWidget.setAttribute(
+                        "aria-label",
+                        nls("gutter.code-folding.open.aria-label", "Toggle code folding, row $0", [row + 1])
+                    );
             }
 
             if (isClosedFold) {
                 foldWidget.setAttribute("aria-expanded", "false");
                 foldWidget.setAttribute("title", nls("gutter.code-folding.closed.title", "Unfold code"));
-            }
-            else {
+            } else {
                 foldWidget.setAttribute("aria-expanded", "true");
                 foldWidget.setAttribute("title", nls("gutter.code-folding.open.title", "Fold code"));
             }
@@ -16715,11 +16968,15 @@ class Gutter{
             var ariaLabel;
             switch(foldAnnotationClass) {
                 case " ace_error_fold":
-                    ariaLabel = nls("gutter.annotation.aria-label.error", "Read annotations row $0", [rowText]);
+                    ariaLabel = nls("gutter.annotation.aria-label.error", "Error, read annotations row $0", [rowText]);
+                    break;
+
+                case " ace_security_fold":
+                    ariaLabel = nls("gutter.annotation.aria-label.security", "Security finding, read annotations row $0", [rowText]);
                     break;
 
                 case " ace_warning_fold":
-                    ariaLabel = nls("gutter.annotation.aria-label.warning", "Read annotations row $0", [rowText]);
+                    ariaLabel = nls("gutter.annotation.aria-label.warning", "Warning, read annotations row $0", [rowText]);
                     break;
             }
             annotationNode.setAttribute("aria-label", ariaLabel);
@@ -16741,15 +16998,23 @@ class Gutter{
             var ariaLabel;
             switch(this.$annotations[row].className) {
                 case " ace_error":
-                    ariaLabel = nls("gutter.annotation.aria-label.error", "Read annotations row $0", [rowText]);
+                    ariaLabel = nls("gutter.annotation.aria-label.error", "Error, read annotations row $0", [rowText]);
+                    break;
+
+                case " ace_security":
+                    ariaLabel = nls("gutter.annotation.aria-label.security", "Security finding, read annotations row $0", [rowText]);
                     break;
 
                 case " ace_warning":
-                    ariaLabel = nls("gutter.annotation.aria-label.warning", "Read annotations row $0", [rowText]);
+                    ariaLabel = nls("gutter.annotation.aria-label.warning", "Warning, read annotations row $0", [rowText]);
                     break;
 
                 case " ace_info":
-                    ariaLabel = nls("gutter.annotation.aria-label.info", "Read annotations row $0", [rowText]);
+                    ariaLabel = nls("gutter.annotation.aria-label.info", "Info, read annotations row $0", [rowText]);
+                    break;
+
+                case " ace_hint":
+                    ariaLabel = nls("gutter.annotation.aria-label.hint", "Suggestion, read annotations row $0", [rowText]);
                     break;
             }
             annotationNode.setAttribute("aria-label", ariaLabel);
@@ -16878,7 +17143,6 @@ exports.T = Gutter;
 /***/ 45130:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../edit_session").EditSession} EditSession
@@ -17035,7 +17299,6 @@ exports.x = Lines;
 /***/ 88890:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../edit_session").EditSession} EditSession
@@ -17203,7 +17466,7 @@ class Marker {
         } else {
             this.elt(
                 clazz + " ace_br1 ace_start",
-                "height:"+ height+ "px;"+ "right:0;"+ "top:"+top+ "px;left:"+ left+ "px;" + (extraStyle || "")
+                "height:"+ height+ "px;"+ "right:" + padding + "px;"+ "top:"+top+ "px;left:"+ left+ "px;" + (extraStyle || "")
             );
         }
         // from start of the last line to the selection end
@@ -17235,7 +17498,7 @@ class Marker {
         this.elt(
             clazz + (radiusClass ? " ace_br" + radiusClass : ""),
             "height:"+ height+ "px;"+
-            "right:0;"+
+            "right:" + padding + "px;"+
             "top:"+ top+ "px;"+
             "left:"+ padding+ "px;"+ (extraStyle || "")
         );
@@ -17348,7 +17611,6 @@ exports.J = Marker;
 /***/ 88235:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../../ace-internal").Ace.LayerConfig} LayerConfig
@@ -17701,7 +17963,7 @@ class Text {
 
     $renderToken(parent, screenColumn, token, value) {
         var self = this;
-        var re = /(\t)|( +)|([\x00-\x1f\x80-\xa0\xad\u1680\u180E\u2000-\u200f\u2028\u2029\u202F\u205F\uFEFF\uFFF9-\uFFFC\u2066\u2067\u2068\u202A\u202B\u202D\u202E\u202C\u2069]+)|(\u3000)|([\u1100-\u115F\u11A3-\u11A7\u11FA-\u11FF\u2329-\u232A\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u2FF0-\u2FFB\u3001-\u303E\u3041-\u3096\u3099-\u30FF\u3105-\u312D\u3131-\u318E\u3190-\u31BA\u31C0-\u31E3\u31F0-\u321E\u3220-\u3247\u3250-\u32FE\u3300-\u4DBF\u4E00-\uA48C\uA490-\uA4C6\uA960-\uA97C\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFAFF\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE66\uFE68-\uFE6B\uFF01-\uFF60\uFFE0-\uFFE6]|[\uD800-\uDBFF][\uDC00-\uDFFF])/g;
+        var re = /(\t)|( +)|([\x00-\x1f\x80-\xa0\xad\u1680\u180E\u2000-\u200f\u2028\u2029\u202F\u205F\uFEFF\uFFF9-\uFFFC\u2066\u2067\u2068\u202A\u202B\u202D\u202E\u202C\u2069\u2060\u2061\u2062\u2063\u2064\u206A\u206B\u206B\u206C\u206D\u206E\u206F]+)|(\u3000)|([\u1100-\u115F\u11A3-\u11A7\u11FA-\u11FF\u2329-\u232A\u2E80-\u2E99\u2E9B-\u2EF3\u2F00-\u2FD5\u2FF0-\u2FFB\u3001-\u303E\u3041-\u3096\u3099-\u30FF\u3105-\u312D\u3131-\u318E\u3190-\u31BA\u31C0-\u31E3\u31F0-\u321E\u3220-\u3247\u3250-\u32FE\u3300-\u4DBF\u4E00-\uA48C\uA490-\uA4C6\uA960-\uA97C\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFAFF\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE66\uFE68-\uFE6B\uFF01-\uFF60\uFFE0-\uFFE6]|[\uD800-\uDBFF][\uDC00-\uDFFF])/g;
 
         var valueFragment = this.dom.createFragment(this.element);
 
@@ -18226,18 +18488,20 @@ function warn(message) {
 }
 
 var messages;
+var nlsPlaceholders;
 
 class AppConfig {
     constructor() {
             this.$defaultOptions = {};
             messages = defaultEnglishMessages;
+            nlsPlaceholders = "dollarSigns";
         }
-    
+
     /**
      * @param {Object} obj
      * @param {string} path
      * @param {{ [key: string]: any }} options
-     * @returns {AppConfig}
+     * @returns {import("../../ace-internal").Ace.AppConfig}
      */
     defineOptions(obj, path, options) {
         if (!obj.$options)
@@ -18305,9 +18569,13 @@ class AppConfig {
 
     /**
      * @param {any} value
+     * @param {{placeholders?: "dollarSigns" | "curlyBrackets"}} [options]
      */
-    setMessages(value) {
+    setMessages(value, options) {
         messages = value;
+        if (options && options.placeholders) {
+            nlsPlaceholders = options.placeholders;
+        }
     }
 
     /**
@@ -18317,18 +18585,28 @@ class AppConfig {
      */
     nls(key, defaultString, params) {
         if (!messages[key])  {
-            warn("No message found for the key '" + key + "' in the provided messages, trying to find a translation for the default string '" + defaultString + "'.");
+            warn("No message found for the key '" + key + "' in messages with id " + messages.$id + ", trying to find a translation for the default string '" + defaultString + "'.");
             if (!messages[defaultString]) {
                 warn("No message found for the default string '" + defaultString + "' in the provided messages. Falling back to the default English message.");
             }
-        } 
+        }
 
         var translated = messages[key] || messages[defaultString] || defaultString;
         if (params) {
-            translated = translated.replace(/\$(\$|[\d]+)/g, function(_, name) {
-                if (name == "$") return "$";
-                return params[name];
-            });
+            // We support both $n or {n} as placeholder indicators in the provided translated strings
+            if (nlsPlaceholders === "dollarSigns") {
+                // Replace $n with the nth element in params
+                translated = translated.replace(/\$(\$|[\d]+)/g, function(_, dollarMatch) {
+                    if (dollarMatch == "$") return "$";
+                    return params[dollarMatch];
+                });
+            }
+            if (nlsPlaceholders === "curlyBrackets") {
+                // Replace {n} with the nth element in params
+                translated = translated.replace(/\{([^\}]+)\}/g, function(_, curlyBracketMatch) {
+                    return params[curlyBracketMatch];
+                });
+            }
         }
         return translated;
     }
@@ -18347,7 +18625,6 @@ exports.X = AppConfig;
 /***/ 7199:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 var ArabicAlefBetIntervalsBegine = (/* unused pure expression or super */ null && (['\u0621', '\u0641']));
@@ -18766,7 +19043,7 @@ var defaultEnglishMessages = {
     "autocomplete.loading": "Loading...",
     "editor.scroller.aria-roledescription": "editor",
     "editor.scroller.aria-label": "Editor content, press Enter to start editing, press Escape to exit",
-    "editor.gutter.aria-roledescription": "editor",
+    "editor.gutter.aria-roledescription": "editor gutter",
     "editor.gutter.aria-label": "Editor gutter, press Enter to interact with controls using arrow keys, press Escape to exit",
     "error-marker.good-state": "Looks good!",
     "prompt.recently-used": "Recently used",
@@ -18799,7 +19076,13 @@ var defaultEnglishMessages = {
     "gutter-tooltip.aria-label.warning.singular": "warning",
     "gutter-tooltip.aria-label.warning.plural": "warnings",
     "gutter-tooltip.aria-label.info.singular": "information message",
-    "gutter-tooltip.aria-label.info.plural": "information messages"
+    "gutter-tooltip.aria-label.info.plural": "information messages",
+    "gutter.annotation.aria-label.security": "Security finding, read annotations row $0",
+    "gutter.annotation.aria-label.hint": "Suggestion, read annotations row $0",
+    "gutter-tooltip.aria-label.security.singular": "security finding",
+    "gutter-tooltip.aria-label.security.plural": "security findings",
+    "gutter-tooltip.aria-label.hint.singular": "suggestion",
+    "gutter-tooltip.aria-label.hint.plural": "suggestions"
 }
 
 exports.x = defaultEnglishMessages;
@@ -18809,7 +19092,6 @@ exports.x = defaultEnglishMessages;
 /***/ 25336:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var useragent = __webpack_require__(98057); 
@@ -19042,6 +19324,11 @@ function insertPendingStyles() {
     });
 }
 
+/**
+ * @param {string} cssText
+ * @param {string} [id]
+ * @param {any} [target]
+ */
 function importCssString(cssText, id, target) {
     if (typeof document == "undefined")
         return;
@@ -19191,7 +19478,6 @@ if (exports.HAS_CSS_TRANSFORMS) {
 /***/ 78215:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 /** @type {any} */var keys = __webpack_require__(21492);
@@ -19229,7 +19515,15 @@ EventListener.prototype.destroy = function() {
     this.elem = this.type = this.callback = undefined;
 };
 
-var addListener = exports.addListener = function(elem, type, callback, /**@type{any?}*/destroyer) {
+/**
+ * Adds an event listener to the specified element.
+ *
+ * @param {any} elem - The element to add the event listener to.
+ * @param {string} type - The type of event to listen for.
+ * @param {any} callback - The callback function to be executed when the event is triggered.
+ * @param {any} [destroyer] - An optional object that will have the created EventListener instance added to its $toDestroy array, allowing it to be easily destroyed later.
+ */
+var addListener = exports.addListener = function(elem, type, callback, destroyer) {
     elem.addEventListener(type, callback, getListenerOptions());
     if (destroyer)
         destroyer.$toDestroy.push(new EventListener(elem, type, callback));
@@ -19397,6 +19691,10 @@ exports.getModifierString = function(e) {
 function normalizeCommandKeys(callback, e, keyCode) {
     var hashId = getModifierHash(e);
 
+    if (!keyCode && e.code) {
+        keyCode = keys.$codeToKeyCode[e.code] || keyCode;
+    }
+
     if (!useragent.isMac && pressedKeys) {
         if (e.getModifierState && (e.getModifierState("OS") || e.getModifierState("Win")))
             hashId |= 8;
@@ -19544,7 +19842,6 @@ else
 /***/ 17858:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 /**@type {any}*/
 var EventEmitter = {};
@@ -19684,158 +19981,156 @@ exports.v = EventEmitter;
 /***/ 21492:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
-/*! @license
-==========================================================================
-SproutCore -- JavaScript Application Framework
-copyright 2006-2009, Sprout Systems Inc., Apple Inc. and contributors.
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-DEALINGS IN THE SOFTWARE.
-
-SproutCore and the SproutCore logo are trademarks of Sprout Systems, Inc.
-
-For more information about SproutCore, visit http://www.sproutcore.com
-
-
-==========================================================================
-@license */
-
-// Most of the following code is taken from SproutCore with a few changes.
-
 
 
 var oop = __webpack_require__(42011);
 
-/*
- * Helper functions and hashes for key handling.
- */
-var Keys = (function() {
-    var ret = {
-        MODIFIER_KEYS: {
-            16: 'Shift', 17: 'Ctrl', 18: 'Alt', 224: 'Meta',
-            91: 'MetaLeft', 92: 'MetaRight', 93: 'ContextMenu'
-        },
 
-        KEY_MODS: {
-            "ctrl": 1, "alt": 2, "option" : 2, "shift": 4,
-            "super": 8, "meta": 8, "command": 8, "cmd": 8, 
-            "control": 1
-        },
+var Keys = {
+    MODIFIER_KEYS: {
+        16: 'Shift', 17: 'Ctrl', 18: 'Alt', 224: 'Meta',
+        91: 'MetaLeft', 92: 'MetaRight', 93: 'ContextMenu'
+    },
 
-        FUNCTION_KEYS : {
-            8  : "Backspace",
-            9  : "Tab",
-            13 : "Return",
-            19 : "Pause",
-            27 : "Esc",
-            32 : "Space",
-            33 : "PageUp",
-            34 : "PageDown",
-            35 : "End",
-            36 : "Home",
-            37 : "Left",
-            38 : "Up",
-            39 : "Right",
-            40 : "Down",
-            44 : "Print",
-            45 : "Insert",
-            46 : "Delete",
-            96 : "Numpad0",
-            97 : "Numpad1",
-            98 : "Numpad2",
-            99 : "Numpad3",
-            100: "Numpad4",
-            101: "Numpad5",
-            102: "Numpad6",
-            103: "Numpad7",
-            104: "Numpad8",
-            105: "Numpad9",
-            '-13': "NumpadEnter",
-            112: "F1",
-            113: "F2",
-            114: "F3",
-            115: "F4",
-            116: "F5",
-            117: "F6",
-            118: "F7",
-            119: "F8",
-            120: "F9",
-            121: "F10",
-            122: "F11",
-            123: "F12",
-            144: "Numlock",
-            145: "Scrolllock"
-        },
+    KEY_MODS: {
+        "ctrl": 1, "alt": 2, "option" : 2, "shift": 4,
+        "super": 8, "meta": 8, "command": 8, "cmd": 8, 
+        "control": 1
+    },
 
-        PRINTABLE_KEYS: {
-           32: ' ',  48: '0',  49: '1',  50: '2',  51: '3',  52: '4', 53:  '5',
-           54: '6',  55: '7',  56: '8',  57: '9',  59: ';',  61: '=', 65:  'a',
-           66: 'b',  67: 'c',  68: 'd',  69: 'e',  70: 'f',  71: 'g', 72:  'h',
-           73: 'i',  74: 'j',  75: 'k',  76: 'l',  77: 'm',  78: 'n', 79:  'o',
-           80: 'p',  81: 'q',  82: 'r',  83: 's',  84: 't',  85: 'u', 86:  'v',
-           87: 'w',  88: 'x',  89: 'y',  90: 'z', 107: '+', 109: '-', 110: '.',
-          186: ';', 187: '=', 188: ',', 189: '-', 190: '.', 191: '/', 192: '`',
-          219: '[', 220: '\\',221: ']', 222: "'", 111: '/', 106: '*'
-        }
-    };
+    FUNCTION_KEYS : {
+        8  : "Backspace",
+        9  : "Tab",
+        13 : "Return",
+        19 : "Pause",
+        27 : "Esc",
+        32 : "Space",
+        33 : "PageUp",
+        34 : "PageDown",
+        35 : "End",
+        36 : "Home",
+        37 : "Left",
+        38 : "Up",
+        39 : "Right",
+        40 : "Down",
+        44 : "Print",
+        45 : "Insert",
+        46 : "Delete",
+        '-13': "NumpadEnter",
+        144: "Numlock",
+        145: "Scrolllock"
+    },
 
-    // workaround for firefox bug
-    ret.PRINTABLE_KEYS[173] = '-';
-
-    // A reverse map of FUNCTION_KEYS
-    var name, i;
-    for (i in ret.FUNCTION_KEYS) {
-        name = ret.FUNCTION_KEYS[i].toLowerCase();
-        ret[name] = parseInt(i, 10);
+    PRINTABLE_KEYS: {
+        32: ' ',  59: ';',  61: '=', 107: '+', 109: '-', 110: '.',
+        186: ';', 187: '=', 188: ',', 189: '-', 190: '.', 191: '/', 192: '`',
+        219: '[', 220: '\\',221: ']', 222: "'", 111: '/', 106: '*'
     }
+};
 
-    // A reverse map of PRINTABLE_KEYS
-    for (i in ret.PRINTABLE_KEYS) {
-        name = ret.PRINTABLE_KEYS[i].toLowerCase();
-        ret[name] = parseInt(i, 10);
+var codeToKeyCode = {
+    Command: 224,
+    Backspace: 8,
+    Tab: 9,
+    Return: 13,
+    Enter: 13,
+    Pause: 19,
+    Escape: 27,
+    PageUp: 33,
+    PageDown: 34,
+    End: 35,
+    Home: 36,
+    Insert: 45,
+    Delete: 46,
+    ArrowLeft: 37,
+    ArrowUp: 38,
+    ArrowRight: 39,
+    ArrowDown: 40,
+    // special keys
+    Backquote: 192,
+    Minus: 189,
+    Equal: 187,
+    BracketLeft: 219,
+    Backslash: 220,
+    BracketRight: 221,
+    Semicolon: 186,
+    Quote: 222,
+    Comma: 188,
+    Period: 190,
+    Slash: 191,
+    Space: 32,
+    NumpadAdd: 107,
+    NumpadDecimal: 110,
+    NumpadSubtract: 109,
+    NumpadDivide: 111,
+    NumpadMultiply: 106
+};
+for (var i = 0; i < 10; i++) {
+    codeToKeyCode["Digit" + i] = 48 + i;
+    codeToKeyCode["Numpad" + i] = 96 + i;
+    Keys.PRINTABLE_KEYS[48 + i] = "" + i;
+    Keys.FUNCTION_KEYS[96 + i] = "Numpad" + i;
+}
+for (var i = 65; i < 91; i++) {
+    var chr = String.fromCharCode(i + 32);
+    codeToKeyCode["Key" + chr.toUpperCase()] = i;
+    Keys.PRINTABLE_KEYS[i] = chr;
+}
+for (var i = 1; i < 13; i++) {
+    codeToKeyCode["F" + i] = 111 + i;
+    Keys.FUNCTION_KEYS[111 + i] = "F" + i;
+}
+var modifiers = { 
+    Shift: 16,
+    Control: 17,
+    Alt: 18,
+    Meta: 224
+};
+for (var mod in modifiers) {
+    codeToKeyCode[mod] = codeToKeyCode[mod + "Left"]
+        = codeToKeyCode[mod + "Right"] = modifiers[mod];
+}
+exports.$codeToKeyCode = codeToKeyCode;
+
+// workaround for firefox bug
+Keys.PRINTABLE_KEYS[173] = '-';
+
+// A reverse map of FUNCTION_KEYS
+for (var j in Keys.FUNCTION_KEYS) {
+    var name = Keys.FUNCTION_KEYS[j].toLowerCase();
+    Keys[name] = parseInt(j, 10);
+}
+
+// A reverse map of PRINTABLE_KEYS
+for (var j in Keys.PRINTABLE_KEYS) {
+    var name = Keys.PRINTABLE_KEYS[j].toLowerCase();
+    Keys[name] = parseInt(j, 10);
+}
+
+// Add the MODIFIER_KEYS, FUNCTION_KEYS and PRINTABLE_KEYS to the KEY
+// variables as well.
+oop.mixin(Keys, Keys.MODIFIER_KEYS);
+oop.mixin(Keys, Keys.PRINTABLE_KEYS);
+oop.mixin(Keys, Keys.FUNCTION_KEYS);
+
+// aliases
+Keys.enter = Keys["return"];
+Keys.escape = Keys.esc;
+Keys.del = Keys["delete"];
+
+(function() {
+    var mods = ["cmd", "ctrl", "alt", "shift"];
+    for (var i = Math.pow(2, mods.length); i--;) {
+        Keys.KEY_MODS[i] = mods.filter(function(x) {
+            return i & Keys.KEY_MODS[x];
+        }).join("-") + "-";
     }
-
-    // Add the MODIFIER_KEYS, FUNCTION_KEYS and PRINTABLE_KEYS to the KEY
-    // variables as well.
-    oop.mixin(ret, ret.MODIFIER_KEYS);
-    oop.mixin(ret, ret.PRINTABLE_KEYS);
-    oop.mixin(ret, ret.FUNCTION_KEYS);
-
-    // aliases
-    ret.enter = ret["return"];
-    ret.escape = ret.esc;
-    ret.del = ret["delete"];
-    
-    (function() {
-        var mods = ["cmd", "ctrl", "alt", "shift"];
-        for (var i = Math.pow(2, mods.length); i--;) {
-            ret.KEY_MODS[i] = mods.filter(function(x) {
-                return i & ret.KEY_MODS[x];
-            }).join("-") + "-";
-        }
-    })();
-
-    ret.KEY_MODS[0] = "";
-    ret.KEY_MODS[-1] = "input-";
-
-    return ret;
 })();
+
+Keys.KEY_MODS[0] = "";
+Keys.KEY_MODS[-1] = "input-";
+
+
 oop.mixin(exports, Keys);
 
 exports["default"] = exports;
@@ -19855,13 +20150,14 @@ exports.keyCodeToString = function(keyCode) {
 /***/ 10732:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 exports.last = function(a) {
     return a[a.length - 1];
 };
 
+
+/** @param {string} string */
 exports.stringReverse = function(string) {
     return string.split("").reverse().join("");
 };
@@ -19888,8 +20184,13 @@ exports.stringTrimLeft = function (string) {
 exports.stringTrimRight = function (string) {
     return string.replace(trimEndRegexp, '');
 };
-
+/**
+ * @template T
+ * @param {T} obj
+ * @return {T}
+ */
 exports.copyObject = function(obj) {
+    /** @type Object*/
     var copy = {};
     for (var key in obj) {
         copy[key] = obj[key];
@@ -19902,7 +20203,7 @@ exports.copyArray = function(array){
     for (var i=0, l=array.length; i<l; i++) {
         if (array[i] && typeof array[i] == "object")
             copy[i] = this.copyObject(array[i]);
-        else 
+        else
             copy[i] = array[i];
     }
     return copy;
@@ -19986,7 +20287,7 @@ exports.deferredCall = function(fcn) {
         timer = null;
         return deferred;
     };
-    
+
     deferred.isPending = function() {
         return timer;
     };
@@ -19994,19 +20295,25 @@ exports.deferredCall = function(fcn) {
     return deferred;
 };
 
-
+/**
+ * @param {number} [defaultTimeout]
+ */
 exports.delayedCall = function(fcn, defaultTimeout) {
     var timer = null;
     var callback = function() {
         timer = null;
         fcn();
     };
-
+    /**
+     * @param {number} [timeout]
+     */
     var _self = function(timeout) {
         if (timer == null)
             timer = setTimeout(callback, timeout || defaultTimeout);
     };
-
+    /**
+     * @param {number} [timeout]
+     */
     _self.delay = function(timeout) {
         timer && clearTimeout(timer);
         timer = setTimeout(callback, timeout || defaultTimeout);
@@ -20049,7 +20356,6 @@ exports.skipEmptyMatch = function(line, last, supportsUnicodeFlag) {
 /***/ 98999:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 /*
  * based on code from:
  *
@@ -20107,7 +20413,6 @@ exports.qualifyURL = function(url) {
 /***/ 42011:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 exports.inherits = function(ctor, superCtor) {
@@ -20182,7 +20487,6 @@ exports.D = function preventParentScroll(event) {
 /***/ 98057:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 /*
@@ -20269,7 +20573,6 @@ exports.isMobile = exports.isIOS || exports.isAndroid;
 /***/ 1252:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
@@ -20309,7 +20612,7 @@ class LineWidgets {
         var h;
         if (this.lineWidgets)
             h = this.lineWidgets[row] && this.lineWidgets[row].rowCount || 0;
-        else 
+        else
             h = 0;
         if (!this["$useWrapMode"] || !this["$wrapData"][row]) {
             return 1 + h;
@@ -20328,14 +20631,14 @@ class LineWidgets {
                 screenRows += w.rowCount;
         });
         return screenRows;
-    }    
-    
+    }
+
     $onChangeEditor(e) {
         this.attach(e.editor);
     }
 
     /**
-     * 
+     *
      * @param {Editor} editor
      */
     attach(editor) {
@@ -20348,7 +20651,7 @@ class LineWidgets {
         this.detach();
         /**@type {Editor} */
         this.editor = editor;
-        
+
         if (editor) {
             editor.widgetManager = this;
             editor.renderer.on("beforeRender", this.measureWidgets);
@@ -20359,10 +20662,10 @@ class LineWidgets {
         var editor = this.editor;
         if (!editor)
             return;
-        
+
         this.editor = null;
         editor.widgetManager = null;
-        
+
         editor.renderer.off("beforeRender", this.measureWidgets);
         editor.renderer.off("afterRender", this.renderWidgets);
         var lineWidgets = this.session.lineWidgets;
@@ -20375,7 +20678,7 @@ class LineWidgets {
     }
 
     /**
-     * 
+     *
      * @param e
      * @param {EditSession} session
      */
@@ -20406,13 +20709,13 @@ class LineWidgets {
     }
 
     /**
-     * 
+     *
      * @param {import("../ace-internal").Ace.Delta} delta
      */
     updateOnChange(delta) {
         var lineWidgets = this.session.lineWidgets;
         if (!lineWidgets) return;
-        
+
         var startRow = delta.start.row;
         var len = delta.end.row - startRow;
 
@@ -20438,7 +20741,7 @@ class LineWidgets {
             this.$updateRows();
         }
     }
-    
+
     $updateRows() {
         var lineWidgets = this.session.lineWidgets;
         if (!lineWidgets) return;
@@ -20458,14 +20761,14 @@ class LineWidgets {
     }
 
     /**
-     * 
+     *
      * @param {LineWidget} w
      * @return {LineWidget}
      */
     $registerLineWidget(w) {
         if (!this.session.lineWidgets)
             this.session.lineWidgets = new Array(this.session.getLength());
-        
+
         var old = this.session.lineWidgets[w.row];
         if (old) {
             w.$oldWidget = old;
@@ -20474,7 +20777,7 @@ class LineWidgets {
                 old._inDocument = false;
             }
         }
-            
+
         this.session.lineWidgets[w.row] = w;
         return w;
     }
@@ -20487,9 +20790,9 @@ class LineWidgets {
     addLineWidget(w) {
         this.$registerLineWidget(w);
         w.session = this.session;
-        
+
         if (!this.editor) return w;
-        
+
         var renderer = this.editor.renderer;
         if (w.html && !w.el) {
             w.el = dom.createElement("div");
@@ -20508,7 +20811,7 @@ class LineWidgets {
             w.el.style.zIndex = "5";
             renderer.container.appendChild(w.el);
             w._inDocument = true;
-            
+
             if (!w.coverGutter) {
                 w.el.style.zIndex = "3";
             }
@@ -20519,7 +20822,7 @@ class LineWidgets {
         if (w.rowCount == null) {
             w.rowCount = w.pixelHeight / renderer.layerConfig.lineHeight;
         }
-        
+
         var fold = this.session.getFoldAt(w.row, 0);
         w.$fold = fold;
         if (fold) {
@@ -20529,15 +20832,15 @@ class LineWidgets {
             else
                 w.hidden = true;
         }
-            
+
         this.session._emit("changeFold", {data:{start:{row: w.row}}});
-        
+
         this.$updateRows();
         this.renderWidgets(null, renderer);
         this.onWidgetChanged(w);
         return w;
     }
-    
+
     /**
      * @param {LineWidget} w
      */
@@ -20570,7 +20873,7 @@ class LineWidgets {
     }
 
     /**
-     * 
+     *
      * @param {number} row
      * @return {LineWidget[]}
      */
@@ -20587,6 +20890,7 @@ class LineWidgets {
 
     /**
      * @param {LineWidget} w
+     * @internal
      */
     onWidgetChanged(w) {
         this.session._changedWidgets.push(w);
@@ -20600,7 +20904,7 @@ class LineWidgets {
     measureWidgets(e, renderer) {
         var changedWidgets = this.session._changedWidgets;
         var config = renderer.layerConfig;
-        
+
         if (!changedWidgets || !changedWidgets.length) return;
         var min = Infinity;
         for (var i = 0; i < changedWidgets.length; i++) {
@@ -20613,14 +20917,14 @@ class LineWidgets {
                 w._inDocument = true;
                 renderer.container.appendChild(w.el);
             }
-            
+
             w.h = w.el.offsetHeight;
-            
+
             if (!w.fixedWidth) {
                 w.w = w.el.offsetWidth;
                 w.screenWidth = Math.ceil(w.w / config.characterWidth);
             }
-            
+
             var rowCount = w.h / config.lineHeight;
             if (w.coverLine) {
                 rowCount -= this.session.getRowLineCount(w.row);
@@ -20651,15 +20955,16 @@ class LineWidgets {
             return;
         var first = Math.min(this.firstRow, config.firstRow);
         var last = Math.max(this.lastRow, config.lastRow, lineWidgets.length);
-        
+
         while (first > 0 && !lineWidgets[first])
             first--;
-        
+
         this.firstRow = config.firstRow;
         this.lastRow = config.lastRow;
 
         renderer.$cursorLayer.config = config;
         for (var i = first; i <= last; i++) {
+            /**@type{LineWidget}*/
             var w = lineWidgets[i];
             if (!w || !w.el) continue;
             if (w.hidden) {
@@ -20674,16 +20979,16 @@ class LineWidgets {
             if (!w.coverLine)
                 top += config.lineHeight * this.session.getRowLineCount(w.row);
             w.el.style.top = top - config.offset + "px";
-            
+
             var left = w.coverGutter ? 0 : renderer.gutterWidth;
             if (!w.fixedWidth)
                 left -= renderer.scrollLeft;
             w.el.style.left = left + "px";
-            
+
             if (w.fullWidth && w.screenWidth) {
                 w.el.style.minWidth = config.width + 2 * config.padding + "px";
             }
-            
+
             if (w.fixedWidth) {
                 w.el.style.right = renderer.scrollBar.getWidth() + "px";
             } else {
@@ -20691,7 +20996,7 @@ class LineWidgets {
             }
         }
     }
-    
+
 }
 
 
@@ -20703,11 +21008,11 @@ exports.H = LineWidgets;
 /***/ 43287:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
  * @typedef {{range: import("./range").Range, className: string}} MarkerGroupItem
+ * @typedef {import("../ace-internal").Ace.LayerConfig} LayerConfig
  */
 /**
  * @typedef {import("./layer/marker").Marker} Marker
@@ -20721,8 +21026,16 @@ Potential improvements:
 class MarkerGroup {
     /**
      * @param {EditSession} session
+     * @param {{markerType: "fullLine" | "line" | undefined}} [options] Options controlling the behvaiour of the marker.
+     * User `markerType` to control how the markers which are part of this group will be rendered:
+     * - `undefined`: uses `text` type markers where only text characters within the range will be highlighted.
+     * - `fullLine`: will fully highlight all the rows within the range, including the characters before and after the range on the respective rows.
+     * - `line`: will fully highlight the lines within the range but will only cover the characters between the start and end of the range.
      */
-    constructor(session) {
+    constructor(session, options) {
+        if (options)
+            this.markerType = options.markerType;
+        /**@type {import("../ace-internal").Ace.MarkerGroupItem[]}*/
         this.markers = [];
         /**@type {EditSession}*/
         this.session = session;
@@ -20732,8 +21045,8 @@ class MarkerGroup {
 
     /**
      * Finds the first marker containing pos
-     * @param {import("../ace-internal").Ace.Point} pos 
-     * @returns import("../ace-internal").Ace.MarkerGroupItem
+     * @param {import("../ace-internal").Ace.Point} pos
+     * @returns {import("../ace-internal").Ace.MarkerGroupItem | undefined}
      */
     getMarkerAtPosition(pos) {
         return this.markers.find(function(marker) {
@@ -20743,7 +21056,7 @@ class MarkerGroup {
 
     /**
      * Comparator for Array.sort function, which sorts marker definitions by their positions
-     * 
+     *
      * @param {MarkerGroupItem} a first marker.
      * @param {MarkerGroupItem} b second marker.
      * @returns {number} negative number if a should be before b, positive number if b should be before a, 0 otherwise.
@@ -20765,7 +21078,7 @@ class MarkerGroup {
      * @param {any} html
      * @param {Marker} markerLayer
      * @param {EditSession} session
-     * @param {{ firstRow: any; lastRow: any; }} config
+     * @param {LayerConfig} config
      */
     update(html, markerLayer, session, config) {
         if (!this.markers || !this.markers.length)
@@ -20809,10 +21122,15 @@ class MarkerGroup {
                 continue;
             }
 
-            if (screenRange.isMultiLine()) {
-                markerLayer.drawTextMarker(html, screenRange, marker.className, config);
+            if (this.markerType === "fullLine") {
+                markerLayer.drawFullLineMarker(html, screenRange, marker.className, config);
+            } else if (screenRange.isMultiLine()) {
+                if (this.markerType === "line")
+                    markerLayer.drawMultiLineMarker(html, screenRange, marker.className, config);
+                else
+                    markerLayer.drawTextMarker(html, screenRange, marker.className, config);
             } else {
-                markerLayer.drawSingleLineMarker(html, screenRange, marker.className, config);
+                markerLayer.drawSingleLineMarker(html, screenRange, marker.className + " ace_br15", config);
             }
         }
     }
@@ -20831,13 +21149,8 @@ exports.Y = MarkerGroup;
 /***/ 32463:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
-/**
- * @typedef {Behaviour & {[key: string]: any}} IBehaviour
- */
 
-/**@type {any}*/
 var Behaviour;
 Behaviour = function() {
    this.$behaviours = {};
@@ -20891,7 +21204,7 @@ Behaviour = function() {
     };
 
     /**
-     * 
+     *
      * @param [filter]
      * @returns {{}|*}
      * @this {Behaviour & this}
@@ -20920,7 +21233,6 @@ exports.T = Behaviour;
 /***/ 95478:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 var oop = __webpack_require__(42011);
 var Behaviour = (__webpack_require__(32463)/* .Behaviour */ .T);
@@ -20970,7 +21282,6 @@ var getWrapped = function(selection, selected, opening, closing) {
 };
 /**
  * Creates a new Cstyle behaviour object with the specified options.
- * @constructor
  * @param {Object} [options] - The options for the Cstyle behaviour object.
  * @param {boolean} [options.braces] - Whether to force braces auto-pairing.
  * @param {boolean} [options.closeDocComment] - enables automatic insertion of closing tags for documentation comments.
@@ -21167,7 +21478,7 @@ CstyleBehaviour = function(options) {
     this.add("string_dquotes", "insertion", function(state, action, editor, session, text) {
         var quotes = session.$mode.$quotes || defaultQuotes;
         if (text.length == 1 && quotes[text]) {
-            if (this.lineCommentStart && this.lineCommentStart.indexOf(text) != -1) 
+            if (this.lineCommentStart && this.lineCommentStart.indexOf(text) != -1)
                 return;
             initContext(editor);
             var quote = text;
@@ -21180,16 +21491,16 @@ CstyleBehaviour = function(options) {
                 var line = session.doc.getLine(cursor.row);
                 var leftChar = line.substring(cursor.column-1, cursor.column);
                 var rightChar = line.substring(cursor.column, cursor.column + 1);
-                
+
                 var token = session.getTokenAt(cursor.row, cursor.column);
                 var rightToken = session.getTokenAt(cursor.row, cursor.column + 1);
                 // We're escaped.
                 if (leftChar == "\\" && token && /escape/.test(token.type))
                     return null;
-                
+
                 var stringBefore = token && /string|escape/.test(token.type);
                 var stringAfter = !rightToken || /string|escape/.test(rightToken.type);
-                
+
                 var pair;
                 if (rightChar == quote) {
                     pair = stringBefore !== stringAfter;
@@ -21208,7 +21519,7 @@ CstyleBehaviour = function(options) {
 
                     var pairQuotesAfter = session.$mode.$pairQuotesAfter;
                     var shouldPairQuotes = pairQuotesAfter && pairQuotesAfter[quote] && pairQuotesAfter[quote].test(leftChar);
-                    
+
                     if ((!shouldPairQuotes && isWordBefore) || isWordAfter)
                         return null; // before or after alphanumeric
                     if (rightChar && !/[\s;,.})\]\\]/.test(rightChar))
@@ -21240,19 +21551,55 @@ CstyleBehaviour = function(options) {
             }
         }
     });
-    
+
     if (options.closeDocComment !== false) {
         this.add("doc comment end", "insertion", function (state, action, editor, session, text) {
             if (state === "doc-start" && (text === "\n" || text === "\r\n") && editor.selection.isEmpty()) {
                 var cursor = editor.getCursorPosition();
+                if (cursor.column === 0) {
+                    return;
+                }
                 var line = session.doc.getLine(cursor.row);
                 var nextLine = session.doc.getLine(cursor.row + 1);
+                var tokens = session.getTokens(cursor.row);
+                var index = 0;
+                for (var i = 0; i < tokens.length; i++) {
+                    index += tokens[i].value.length;
+                    var currentToken = tokens[i];
+                    if (index >= cursor.column) {
+                        if (index === cursor.column) {
+                            if (!/\.doc/.test(currentToken.type)) {
+                                return;
+                            }
+                            if (/\*\//.test(currentToken.value)) {
+                                var nextToken = tokens[i + 1];
+                                if (!nextToken || !/\.doc/.test(nextToken.type)) {
+                                    return;
+                                }
+                            }
+                        }
+                        var cursorPosInToken = cursor.column - (index - currentToken.value.length);
+
+                        // Check for the pattern `*/` followed by `/**` within the token
+                        var closeDocPos = currentToken.value.indexOf("*/");
+                        var openDocPos = currentToken.value.indexOf("/**", closeDocPos > - 1 ? closeDocPos + 2 : 0);
+
+                        if (openDocPos !== -1 && cursorPosInToken > openDocPos && cursorPosInToken < openDocPos + 3) {
+                            return;
+                        }
+                        if (closeDocPos !== -1 && openDocPos !== -1 && cursorPosInToken >= closeDocPos
+                            && cursorPosInToken <= openDocPos || !/\.doc/.test(currentToken.type)) {
+                            return;
+                        }
+                        break;
+                    }
+                }
                 var indent = this.$getIndent(line);
                 if (/\s*\*/.test(nextLine)) {
                     if (/^\s*\*/.test(line)) {
                         return {
                             text: text + indent + "* ",
-                            selection: [1, 3 + indent.length, 1, 3 + indent.length]
+                            selection: [1, 2 + indent.length, 1, 2 + indent.length]
                         };
                     }
                     else {
@@ -21281,7 +21628,7 @@ CstyleBehaviour = function(options) {
 CstyleBehaviour.isSaneInsertion = function(editor, session) {
     var cursor = editor.getCursorPosition();
     var iterator = new TokenIterator(session, cursor.row, cursor.column);
-    
+
     // Don't insert in the middle of a keyword/identifier/lexical
     if (!this.$matchTokenType(iterator.getCurrentToken() || "text", SAFE_INSERT_IN_TOKENS)) {
         if (/[)}\]]/.test(editor.session.getLine(cursor.row)[cursor.column]))
@@ -21291,7 +21638,7 @@ CstyleBehaviour.isSaneInsertion = function(editor, session) {
         if (!this.$matchTokenType(iterator2.getCurrentToken() || "text", SAFE_INSERT_IN_TOKENS))
             return false;
     }
-    
+
     // Only insert in front of whitespace/comments
     iterator.stepForward();
     return iterator.getCurrentTokenRow() !== cursor.row ||
@@ -21361,7 +21708,6 @@ exports.B = CstyleBehaviour;
 /***/ 9372:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var Range = (__webpack_require__(93069)/* .Range */ .e);
@@ -21459,7 +21805,10 @@ var FoldMode = exports.FoldMode = function() {};
 /***/ 72113:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
+
+/**
+ * @typedef {import("../../ace-internal").Ace.SyntaxMode} SyntaxMode
+ */
 
 var config = __webpack_require__(33294);
 
@@ -21472,7 +21821,7 @@ var lang = __webpack_require__(10732);
 var TokenIterator = (__webpack_require__(7726).TokenIterator);
 var Range = (__webpack_require__(93069)/* .Range */ .e);
 
-var Mode; 
+var Mode;
 Mode = function() {
     this.HighlightRules = TextHighlightRules;
 };
@@ -21485,7 +21834,7 @@ Mode = function() {
     this.nonTokenRe = new RegExp("^(?:[^" + unicode.wordChars + "\\$_]|\\s])+", "g");
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.getTokenizer = function() {
         if (!this.$tokenizer) {
@@ -21499,7 +21848,7 @@ Mode = function() {
     this.blockComment = "";
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.toggleCommentLines = function(state, session, startRow, endRow) {
         var doc = session.doc;
@@ -21559,7 +21908,7 @@ Mode = function() {
                 var lineCommentStart = this.lineCommentStart;
             }
             regexpStart = new RegExp("^(\\s*)(?:" + regexpStart + ") ?");
-            
+
             insertAtTabStop = session.getUseSoftTabs();
 
             var uncomment = function(line, i) {
@@ -21583,7 +21932,7 @@ Mode = function() {
             var testRemove = function(line, i) {
                 return regexpStart.test(line);
             };
-            
+
             var shouldInsertSpace = function(line, before, after) {
                 var spaces = 0;
                 while (before-- && line.charAt(before) == " ")
@@ -21632,7 +21981,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.toggleBlockComment = function(state, session, range, cursor) {
         var comment = this.blockComment;
@@ -21730,14 +22079,14 @@ Mode = function() {
             }
         }
 
-        var delegations = ["toggleBlockComment", "toggleCommentLines", "getNextLineIndent", 
+        var delegations = ["toggleBlockComment", "toggleCommentLines", "getNextLineIndent",
             "checkOutdent", "autoOutdent", "transformAction", "getCompletions"];
 
         for (let i = 0; i < delegations.length; i++) {
             (function(scope) {
               var functionName = delegations[i];
               var defaultHandler = scope[functionName];
-              scope[delegations[i]] = 
+              scope[delegations[i]] =
                   /** @this {import("../../ace-internal").Ace.SyntaxMode} */
                   function () {
                       return this.$delegator(functionName, arguments, defaultHandler);
@@ -21747,7 +22096,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.$delegator = function(method, args, defaultHandler) {
         var state = args[0] || "start";
@@ -21760,7 +22109,7 @@ Mode = function() {
             }
             state = state[0] || "start";
         }
-            
+
         for (var i = 0; i < this.$embeds.length; i++) {
             if (!this.$modes[this.$embeds[i]]) continue;
 
@@ -21776,7 +22125,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.transformAction = function(state, action, editor, session, param) {
         if (this.$behaviour) {
@@ -21793,7 +22142,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.getKeywords = function(append) {
         // this is for autocompletion to pick up regexp'ed keywords
@@ -21808,7 +22157,7 @@ Mode = function() {
                             completionKeywords.push(ruleItr[r].regex);
                     }
                     else if (typeof ruleItr[r].token === "object") {
-                        for (var a = 0, aLength = ruleItr[r].token.length; a < aLength; a++) {    
+                        for (var a = 0, aLength = ruleItr[r].token.length; a < aLength; a++) {
                             if (/keyword|support|storage/.test(ruleItr[r].token[a])) {
                                 // drop surrounding parens
                                 var rule = ruleItr[r].regex.match(/\(.+?\)/g)[a];
@@ -21827,7 +22176,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.$createKeywordList = function() {
         if (!this.$highlightRules)
@@ -21836,7 +22185,7 @@ Mode = function() {
     };
 
     /**
-     * @this {import("../../ace-internal").Ace.SyntaxMode}
+     * @this {SyntaxMode}
      */
     this.getCompletions = function(state, session, pos, prefix) {
         var keywords = this.$keywordList || this.$createKeywordList();
@@ -21861,7 +22210,6 @@ exports.A = Mode;
 /***/ 99697:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 const deepCopy = (__webpack_require__(90692).deepCopy);
@@ -22109,7 +22457,6 @@ exports.K = TextHighlightRules;
 /***/ 14334:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./mouse_handler").MouseHandler} MouseHandler
@@ -22118,6 +22465,7 @@ var dom = __webpack_require__(25336);
 var event = __webpack_require__(78215);
 var Tooltip = (__webpack_require__(71692)/* .Tooltip */ .u);
 var nls = (__webpack_require__(33294).nls);
+var lang = __webpack_require__(10732);
 
 /**
  * @param {MouseHandler} mouseHandler
@@ -22244,6 +22592,8 @@ class GutterTooltip extends Tooltip {
     constructor(editor) {
         super(editor.container);
         this.editor = editor;
+        /**@type {Number | Undefined}*/
+        this.visibleTooltipRow;
     }
 
     setPosition(x, y) {
@@ -22262,18 +22612,27 @@ class GutterTooltip extends Tooltip {
         Tooltip.prototype.setPosition.call(this, x, y);
     }
     
-    static get annotationLabels() { return {
+    static get annotationLabels() {
+        return {
             error: {
-                singular: nls("gutter-tooltip.aria-label.error.singular", "error"), 
+                singular: nls("gutter-tooltip.aria-label.error.singular", "error"),
                 plural: nls("gutter-tooltip.aria-label.error.plural", "errors")
             },
+            security: {
+                singular: nls("gutter-tooltip.aria-label.security.singular", "security finding"),
+                plural: nls("gutter-tooltip.aria-label.security.plural", "security findings")
+            },
             warning: {
-                singular: nls("gutter-tooltip.aria-label.warning.singular", "warning"), 
+                singular: nls("gutter-tooltip.aria-label.warning.singular", "warning"),
                 plural: nls("gutter-tooltip.aria-label.warning.plural", "warnings")
             },
             info: {
-                singular: nls("gutter-tooltip.aria-label.info.singular", "information message"), 
+                singular: nls("gutter-tooltip.aria-label.info.singular", "information message"),
                 plural: nls("gutter-tooltip.aria-label.info.plural", "information messages")
+            },
+            hint: {
+                singular: nls("gutter-tooltip.aria-label.hint.singular", "suggestion"),
+                plural: nls("gutter-tooltip.aria-label.hint.plural", "suggestions")
             }
         };
     }
@@ -22284,79 +22643,108 @@ class GutterTooltip extends Tooltip {
         var annotation;
 
         if (annotationsInRow)
-            annotation = {text: Array.from(annotationsInRow.text), type: Array.from(annotationsInRow.type)};
-        else
-            annotation = {text: [], type: []};
+            annotation = {
+                displayText: Array.from(annotationsInRow.displayText),
+                type: Array.from(annotationsInRow.type)
+            };
+        else annotation = {displayText: [], type: []};
 
         // If the tooltip is for a row which has a closed fold, check whether there are
         // annotations in the folded lines. If so, add a summary to the list of annotations.
         var fold = gutter.session.getFoldLine(row);
-        if (fold && gutter.$showFoldedAnnotations){
-            var annotationsInFold = {error: [], warning: [], info: []};
-            var mostSevereAnnotationInFoldType;
+        if (fold && gutter.$showFoldedAnnotations) {
+            var annotationsInFold = {error: [], security: [], warning: [], info: [], hint: []};
+            var severityRank = {error: 1, security: 2, warning: 3, info: 4, hint: 5};
+            var mostSevereAnnotationTypeInFold;
 
-            for (let i = row + 1; i <= fold.end.row; i++){
-                if (!gutter.$annotations[i])
-                    continue;
+            for (let i = row + 1; i <= fold.end.row; i++) {
+                if (!gutter.$annotations[i]) continue;
 
                 for (var j = 0; j < gutter.$annotations[i].text.length; j++) {
                     var annotationType = gutter.$annotations[i].type[j];
                     annotationsInFold[annotationType].push(gutter.$annotations[i].text[j]);
 
-                    if (annotationType === "error"){
-                        mostSevereAnnotationInFoldType = "error_fold";
-                        continue;
-                    }
-
-                    if (annotationType === "warning"){
-                        mostSevereAnnotationInFoldType = "warning_fold";
-                        continue;
+                    if (
+                        !mostSevereAnnotationTypeInFold ||
+                        severityRank[annotationType] < severityRank[mostSevereAnnotationTypeInFold]
+                    ) {
+                        mostSevereAnnotationTypeInFold = annotationType;
                     }
                 }
             }
-           
-            if (mostSevereAnnotationInFoldType === "error_fold" || mostSevereAnnotationInFoldType === "warning_fold"){
-                var summaryFoldedAnnotations = `${GutterTooltip.annotationsToSummaryString(annotationsInFold)} in folded code.`;
 
-                annotation.text.push(summaryFoldedAnnotations);
-                annotation.type.push(mostSevereAnnotationInFoldType);
+            if (["error", "security", "warning"].includes(mostSevereAnnotationTypeInFold)) {
+                var summaryFoldedAnnotations = `${GutterTooltip.annotationsToSummaryString(
+                    annotationsInFold
+                )} in folded code.`;
+
+                annotation.displayText.push(summaryFoldedAnnotations);
+                annotation.type.push(mostSevereAnnotationTypeInFold + "_fold");
             }
         }
-        
-        if (annotation.text.length === 0)
-            return this.hide();
 
-        var annotationMessages = {error: [], warning: [], info: []};
+        if (annotation.displayText.length === 0) return this.hideTooltip();
+
+        var annotationMessages = {error: [], security: [], warning: [], info: [], hint: []};
         var iconClassName = gutter.$useSvgGutterIcons ? "ace_icon_svg" : "ace_icon";
 
         // Construct the contents of the tooltip.
-        for (let i = 0; i < annotation.text.length; i++) {
-            var line = `<span class='ace_${annotation.type[i]} ${iconClassName}' aria-label='${GutterTooltip.annotationLabels[annotation.type[i].replace("_fold","")].singular}' role=img> </span> ${annotation.text[i]}`;
-            annotationMessages[annotation.type[i].replace("_fold","")].push(line);
+        for (let i = 0; i < annotation.displayText.length; i++) {
+            var lineElement = dom.createElement("span");
+
+            var iconElement = dom.createElement("span");
+            iconElement.classList.add(...[`ace_${annotation.type[i]}`, iconClassName]);
+            iconElement.setAttribute(
+                "aria-label",
+                `${GutterTooltip.annotationLabels[annotation.type[i].replace("_fold", "")].singular}`
+            );
+            iconElement.setAttribute("role", "img");
+            // Set empty content to the img span to get it to show up
+            iconElement.appendChild(dom.createTextNode(" "));
+
+            lineElement.appendChild(iconElement);
+            lineElement.appendChild(dom.createTextNode(annotation.displayText[i]));
+            lineElement.appendChild(dom.createElement("br"));
+
+            annotationMessages[annotation.type[i].replace("_fold", "")].push(lineElement);
         }
-        var tooltipContent = [].concat(annotationMessages.error, annotationMessages.warning, annotationMessages.info).join("<br>");
- 
-        this.setHtml(tooltipContent);
-        this.$element.setAttribute("aria-live", "polite");
-        
+
+        // Clear the current tooltip content
+        var tooltipElement = this.getElement();
+        dom.removeChildren(tooltipElement);
+
+        // Update the tooltip content
+        annotationMessages.error.forEach((el) => tooltipElement.appendChild(el));
+        annotationMessages.security.forEach((el) => tooltipElement.appendChild(el));
+        annotationMessages.warning.forEach((el) => tooltipElement.appendChild(el));
+        annotationMessages.info.forEach((el) => tooltipElement.appendChild(el));
+        annotationMessages.hint.forEach((el) => tooltipElement.appendChild(el));
+
+        tooltipElement.setAttribute("aria-live", "polite");
+
         if (!this.isOpen) {
             this.setTheme(this.editor.renderer.theme);
             this.setClassName("ace_gutter-tooltip");
         }
 
         this.show();
+        this.visibleTooltipRow = row;
         this.editor._signal("showGutterTooltip", this);
     }
 
     hideTooltip() {
+        if(!this.isOpen){
+            return;
+        }
         this.$element.removeAttribute("aria-live");
         this.hide();
+        this.visibleTooltipRow = undefined;
         this.editor._signal("hideGutterTooltip", this);
     }
 
     static annotationsToSummaryString(annotations) {
         const summary = [];
-        const annotationTypes = ['error', 'warning', 'info'];
+        const annotationTypes = ["error", "security", "warning", "info", "hint"];
         for (const annotationType of annotationTypes) {
             if (!annotations[annotationType].length) continue;
             const label = annotations[annotationType].length === 1 ? GutterTooltip.annotationLabels[annotationType].singular : GutterTooltip.annotationLabels[annotationType].plural;
@@ -22374,7 +22762,6 @@ exports.w = GutterTooltip;
 /***/ 76763:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./mouse_handler").MouseHandler} MouseHandler
@@ -22702,7 +23089,6 @@ function calcRangeOrientation(range, cursor) {
 /***/ 52482:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./mouse_handler").MouseHandler} MouseHandler
@@ -23143,7 +23529,6 @@ exports.q = DragdropHandler;
 /***/ 6049:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 var dom = __webpack_require__(25336);
 
@@ -23222,7 +23607,6 @@ exports.z = FoldHandler;
 /***/ 27224:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var event = __webpack_require__(78215);
@@ -23341,7 +23725,6 @@ exports.T = MouseEvent;
 /***/ 56581:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("../editor").Editor} Editor
@@ -23424,7 +23807,7 @@ class MouseHandler {
             } else {
                 renderer.setCursorStyle("");
             }
-            
+
         }, //@ts-expect-error TODO: seems mistyping - should be boolean
             editor);
     }
@@ -23444,7 +23827,7 @@ class MouseHandler {
     }
 
     /**
-     * @param {string} name
+     * @param {any} name
      * @param {{ wheelX: number; wheelY: number; }} e
      */
     onMouseWheel(name, e) {
@@ -23456,7 +23839,7 @@ class MouseHandler {
 
         this.editor._emit(name, mouseEvent);
     }
-    
+
     setState(state) {
         this.state = state;
     }
@@ -23512,7 +23895,7 @@ class MouseHandler {
 
         var onOperationEnd = function(e) {
             if (!self.releaseMouse) return;
-            // some touchpads fire mouseup event after a slight delay, 
+            // some touchpads fire mouseup event after a slight delay,
             // which can cause problems if user presses a keyboard shortcut quickly
             if (editor.curOp.command.name && editor.curOp.selectionChanged) {
                 self[self.state + "End"] && self[self.state + "End"]();
@@ -23739,7 +24122,6 @@ exports.P = onMouseDown;
 /***/ 30461:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var MouseEvent = (__webpack_require__(27224)/* .MouseEvent */ .T);
@@ -23770,17 +24152,22 @@ exports.W = function(el, editor) {
             var hasUndo = editor.session.getUndoManager().hasUndo();
             contextMenu.replaceChild(
                 dom.buildDom(isOpen ? ["span",
-                    !selected && ["span", { class: "ace_mobile-button", action: "selectall" }, "Select All"],
-                    selected && ["span", { class: "ace_mobile-button", action: "copy" }, "Copy"],
-                    selected && ["span", { class: "ace_mobile-button", action: "cut" }, "Cut"],
-                    clipboard && ["span", { class: "ace_mobile-button", action: "paste" }, "Paste"],
-                    hasUndo && ["span", { class: "ace_mobile-button", action: "undo" }, "Undo"],
-                    ["span", { class: "ace_mobile-button", action: "find" }, "Find"],
-                    ["span", { class: "ace_mobile-button", action: "openCommandPalette" }, "Palette"]
+                    !selected && canExecuteCommand("selectall") && ["span", { class: "ace_mobile-button", action: "selectall" }, "Select All"],
+                    selected && canExecuteCommand("copy") && ["span", { class: "ace_mobile-button", action: "copy" }, "Copy"],
+                    selected && canExecuteCommand("cut") && ["span", { class: "ace_mobile-button", action: "cut" }, "Cut"],
+                    clipboard && canExecuteCommand("paste") && ["span", { class: "ace_mobile-button", action: "paste" }, "Paste"],
+                    hasUndo && canExecuteCommand("undo") && ["span", { class: "ace_mobile-button", action: "undo" }, "Undo"],
+                    canExecuteCommand("find") && ["span", { class: "ace_mobile-button", action: "find" }, "Find"],
+                    canExecuteCommand("openCommandPalette") && ["span", { class: "ace_mobile-button", action: "openCommandPalette" }, "Palette"]
                 ] : ["span"]),
                 contextMenu.firstChild
             );
         };
+        
+        var canExecuteCommand = function (/** @type {string} */ cmd) {
+            return editor.commands.canExecute(cmd, editor);
+        };
+        
         var handleClick = function(e) {
             var action = e.target.getAttribute("action");
 
@@ -23828,6 +24215,12 @@ exports.W = function(el, editor) {
         ], editor.container);
     }
     function showContextMenu() {
+        if (!editor.getOption("enableMobileMenu")) {
+            if (contextMenu) {
+                hideContextMenu();
+            }
+            return;
+        }
         if (!contextMenu) createContextMenu();
         var cursor = editor.selection.cursor;
         var pagePos = editor.renderer.textToScreenCoordinates(cursor.row, cursor.column);
@@ -24112,7 +24505,7 @@ var EditSession = (__webpack_require__(48827)/* .EditSession */ .m);
     /**@type {RangeList | null} */
     this.rangeList = null;
 
-    /** 
+    /**
      * Adds a range to a selection by entering multiselect mode, if necessary.
      * @param {Range} range The new range to add
      * @param {Boolean} $blockChangeEvents Whether or not to block changing events
@@ -24317,7 +24710,7 @@ var EditSession = (__webpack_require__(48827)/* .EditSession */ .m);
 
     /**
      * Gets list of ranges composing rectangular block on the screen
-     * 
+     *
      * @param {ScreenCoordinates} screenCursor The cursor to use
      * @param {ScreenCoordinates} screenAnchor The anchor to use
      * @param {Boolean} [includeEmptyLines] If true, this includes ranges inside the block which are empty due to clipping
@@ -24398,8 +24791,8 @@ var EditSession = (__webpack_require__(48827)/* .EditSession */ .m);
 var Editor = (__webpack_require__(77180)/* .Editor */ .M);
 (function() {
 
-    /** 
-     * 
+    /**
+     *
      * Updates the cursor and marker layers.
      * @method Editor.updateSelectionMarkers
      * @this {Editor}
@@ -24409,7 +24802,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
         this.renderer.updateBackMarkers();
     };
 
-    /** 
+    /**
      * Adds the selection and cursor.
      * @param {Range & {marker?}} orientedRange A range containing a cursor
      * @returns {Range & {marker?}}
@@ -24427,7 +24820,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
         return orientedRange;
     };
 
-    /** 
+    /**
      * Removes the selection marker.
      * @param {Range & {marker?}} range The selection range added with [[Editor.addSelectionMarker `addSelectionMarker()`]].
      * @this {Editor}
@@ -24541,13 +24934,13 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
         return result;
     };
 
-    /** 
+    /**
      * Executes a command for each selection range.
      * @param {any} cmd The command to execute
      * @param {String} [args] Any arguments for the command
      * @param {Object|true} [options]
      * @this {Editor}
-     **/ 
+     **/
     this.forEachSelection = function(cmd, args, options) {
         if (this.inVirtualSelectionMode)
             return;
@@ -24558,10 +24951,10 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
         var rangeList = selection.rangeList;
         var ranges = (keepOrder ? selection : rangeList).ranges;
         var result;
-        
+
         if (!ranges.length)
             return cmd.exec ? cmd.exec(this, args || {}) : cmd(this, args || {});
-        
+
         var reg = selection._eventRegistry;
         selection._eventRegistry = {};
         var tmpSel = new Selection(session);
@@ -24587,17 +24980,17 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
         selection.mergeOverlappingRanges();
         if (selection.ranges[0])
             selection.fromOrientedRange(selection.ranges[0]);
-        
+
         var anim = this.renderer.$scrollAnimation;
         this.onCursorChange();
         this.onSelectionChange();
         if (anim && anim.from == anim.to)
             this.renderer.animateScrolling(anim.from);
-        
+
         return result;
     };
 
-    /** 
+    /**
     * Removes all the selections except the last added one.
     * @this {Editor}
     **/
@@ -24642,7 +25035,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
             var pos = anchor == this.multiSelect.anchor
                 ? range.cursor == range.start ? range.end : range.start
                 : range.cursor;
-            if (pos.row != anchor.row 
+            if (pos.row != anchor.row
                 || this.session.$clipPositionToDocument(pos.row, pos.column).column != anchor.column)
                 this.multiSelect.toSingleRange(this.multiSelect.toOrientedRange());
             else
@@ -24656,7 +25049,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
      * @param {Partial<import("../ace-internal").Ace.SearchOptions>} [options] The search options
      * @param {Boolean} [additive] keeps
      *
-     * @returns {Number} The cumulative count of all found matches 
+     * @returns {Number} The cumulative count of all found matches
      * @this {Editor}
      **/
     this.findAll = function(needle, options, additive) {
@@ -24667,9 +25060,9 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
                 ? this.selection.getWordRange()
                 : this.selection.getRange();
             options.needle = this.session.getTextRange(range);
-        }    
+        }
         this.$search.set(options);
-        
+
         var ranges = this.$search.findAll(this.session);
         if (!ranges.length)
             return 0;
@@ -24685,17 +25078,17 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
         // keep old selection as primary if possible
         if (range && selection.rangeList.rangeAtPoint(range.start))
             selection.addRange(range, true);
-        
+
         return ranges.length;
     };
 
     /**
      * Adds a cursor above or below the active cursor.
-     * 
+     *
      * @param {Number} dir The direction of lines to select: -1 for up, 1 for down
      * @param {Boolean} [skip] If `true`, removes the active selection range
      *
-     * @this {Editor} 
+     * @this {Editor}
      */
     this.selectMoreLines = function(dir, skip) {
         var range = this.selection.toOrientedRange();
@@ -24737,7 +25130,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
             this.selection.substractPoint(toRemove);
     };
 
-    /** 
+    /**
      * Transposes the selected ranges.
      * @param {Number} dir The direction to rotate selections
      * @this {Editor}
@@ -24780,7 +25173,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
         sel.fromOrientedRange(sel.ranges[0]);
     };
 
-    /** 
+    /**
      * Finds the next occurrence of text in an active selection and adds it to the selections.
      * @param {Number} dir The direction of lines to select: -1 for up, 1 for down
      * @param {Boolean} [skip] If `true`, removes the active selection range
@@ -24812,7 +25205,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
             this.multiSelect.substractPoint(range.cursor);
     };
 
-    /** 
+    /**
      * Aligns the cursors or selected text.
      * @this {Editor}
      **/
@@ -24827,7 +25220,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
                 return true;
             row = r.cursor.row;
         });
-        
+
         if (!ranges.length || sameRowRanges.length == ranges.length - 1) {
             var range = this.selection.getRange();
             var fr = range.start.row, lr = range.end.row;
@@ -24841,7 +25234,7 @@ var Editor = (__webpack_require__(77180)/* .Editor */ .M);
                 do {
                     line = this.session.getLine(fr);
                 } while (/[=:]/.test(line) && --fr > 0);
-                
+
                 if (fr < 0) fr = 0;
                 if (lr >= max) lr = max - 1;
             }
@@ -24963,7 +25356,7 @@ function isSamePoint(p1, p2) {
  * patch
  * adds multicursor support to a session
  * @this {Editor}
- * @type {(e) => void}
+ * @type {(e: any) => void}
  */
 exports.onSessionChange = function(e) {
     var session = e.session;
@@ -25090,7 +25483,6 @@ exports.MultiSelect = MultiSelect;
 /***/ 98916:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
@@ -25099,7 +25491,7 @@ var Range = (__webpack_require__(93069)/* .Range */ .e);
 var EventEmitter = (__webpack_require__(17858)/* .EventEmitter */ .v);
 var oop = __webpack_require__(42011);
 
-class PlaceHolder { 
+class PlaceHolder {
     /**
      * @param {EditSession} session
      * @param {Number} length
@@ -25144,7 +25536,7 @@ class PlaceHolder {
         var _self = this;
         var doc = this.doc;
         var session = this.session;
-        
+
         this.selectionBefore = session.selection.toJSON();
         if (session.selection.inMultiSelectMode)
             session.selection.toSingleRange();
@@ -25163,7 +25555,7 @@ class PlaceHolder {
         });
         session.setUndoSelect(false);
     }
-    
+
     /**
      * PlaceHolder.showOtherMarkers()
      *
@@ -25179,7 +25571,7 @@ class PlaceHolder {
             anchor.markerId = session.addMarker(new Range(anchor.row, anchor.column, anchor.row, anchor.column+_self.length), _self.othersClass, null, false);
         });
     }
-    
+
     /**
      * PlaceHolder.hideOtherMarkers()
      *
@@ -25196,14 +25588,15 @@ class PlaceHolder {
 
     /**
      * PlaceHolder@onUpdate(e)
-     * 
+     *
      * Emitted when the place holder updates.
      * @param {import("../ace-internal").Ace.Delta} delta
+     * @internal
      */
     onUpdate(delta) {
         if (this.$updating)
             return this.updateAnchors(delta);
-            
+
         var range = delta;
         if (range.start.row !== range.end.row) return;
         if (range.start.row !== this.pos.row) return;
@@ -25211,9 +25604,9 @@ class PlaceHolder {
         var lengthDiff = delta.action === "insert" ? range.end.column - range.start.column : range.start.column - range.end.column;
         var inMainRange = range.start.column >= this.pos.column && range.start.column <= this.pos.column + this.length + 1;
         var distanceFromStart = range.start.column - this.pos.column;
-        
+
         this.updateAnchors(delta);
-        
+
         if (inMainRange)
             this.length += lengthDiff;
 
@@ -25232,7 +25625,7 @@ class PlaceHolder {
                 }
             }
         }
-        
+
         this.$updating = false;
         this.updateMarkers();
     }
@@ -25246,7 +25639,7 @@ class PlaceHolder {
             this.others[i].onChange(delta);
         this.updateMarkers();
     }
-    
+
     updateMarkers() {
         if (this.$updating)
             return;
@@ -25264,9 +25657,10 @@ class PlaceHolder {
 
     /**
      * PlaceHolder@onCursorChange(e)
-     * 
+     *
      * Emitted when the cursor changes.
      * @param {any} [event]
+     * @internal
      */
     onCursorChange(event) {
         if (this.$updating || !this.session) return;
@@ -25279,13 +25673,13 @@ class PlaceHolder {
             this._emit("cursorLeave", event);
         }
     }
-    
+
     /**
      * PlaceHolder.detach()
-     * 
+     *
      * TODO
      *
-     **/    
+     **/
     detach() {
         this.session.removeMarker(this.pos && this.pos.markerId);
         this.hideOtherMarkers();
@@ -25294,10 +25688,10 @@ class PlaceHolder {
         this.session.setUndoSelect(true);
         this.session = null;
     }
-    
+
     /**
      * PlaceHolder.cancel()
-     * 
+     *
      * TODO
      *
      **/
@@ -25324,7 +25718,6 @@ exports.PlaceHolder = PlaceHolder;
 /***/ 93069:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 /**
@@ -25797,7 +26190,6 @@ exports.e = Range;
 /***/ 59204:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
@@ -26112,7 +26504,6 @@ exports.$ = RangeList;
 /***/ 79224:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var event = __webpack_require__(78215);
@@ -26173,7 +26564,6 @@ exports.d = RenderLoop;
 /***/ 6038:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
@@ -26214,7 +26604,7 @@ class Scrollbar {
         event.addListener(this.element, "scroll", this.onScroll.bind(this));
         event.addListener(this.element, "mousedown", event.preventDefault);
     }
-    
+
     setVisible(isVisible) {
         this.element.style.display = isVisible ? "" : "none";
         this.isVisible = isVisible;
@@ -26241,18 +26631,19 @@ class VScrollBar extends Scrollbar {
         // element to show the scrollbar but still pretend that the scrollbar has a width
         // of 0px
         // in Firefox 6+ scrollbar is hidden if element has the same width as scrollbar
-        // make element a little bit wider to retain scrollbar when page is zoomed 
+        // make element a little bit wider to retain scrollbar when page is zoomed
         renderer.$scrollbarWidth =
             this.width = dom.scrollbarWidth(parent.ownerDocument);
         this.inner.style.width =
             this.element.style.width = (this.width || 15) + 5 + "px";
         this.$minWidth = 0;
     }
-    
+
 
     /**
      * Emitted when the scroll bar, well, scrolls.
      * @event scroll
+     * @internal
      **/
 
     onScroll() {
@@ -26282,7 +26673,7 @@ class VScrollBar extends Scrollbar {
     setHeight(height) {
         this.element.style.height = height + "px";
     }
-    
+
     /**
      * Sets the scroll height of the scroll bar, in pixels.
      * @param {Number} height The new scroll height
@@ -26339,15 +26730,16 @@ class HScrollBar extends Scrollbar {
         // element to show the scrollbar but still pretend that the scrollbar has a width
         // of 0px
         // in Firefox 6+ scrollbar is hidden if element has the same width as scrollbar
-        // make element a little bit wider to retain scrollbar when page is zoomed 
+        // make element a little bit wider to retain scrollbar when page is zoomed
         this.height = renderer.$scrollbarWidth;
         this.inner.style.height =
             this.element.style.height = (this.height || 15) + 5 + "px";
     }
-    
+
     /**
      * Emitted when the scroll bar, well, scrolls.
      * @event scroll
+     * @internal
      **/
     onScroll() {
         if (!this.skipEvent) {
@@ -26419,7 +26811,6 @@ exports.ii = HScrollBar;
 /***/ 29975:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 
@@ -26514,7 +26905,7 @@ oop.implement(ScrollBar.prototype, EventEmitter);
  * @constructor
  **/
 class VScrollBar extends ScrollBar {
-    
+
     constructor(parent, renderer) {
         super(parent, '-v');
         this.scrollTop = 0;
@@ -26525,9 +26916,10 @@ class VScrollBar extends ScrollBar {
         this.inner.style.width = this.element.style.width = (this.width || 15) + "px";
         this.$minWidth = 0;
     }
-    
+
     /**
      * Emitted when the scroll thumb dragged or scrollbar canvas clicked.
+     * @internal
      **/
     onMouseDown(eType, e) {
         if (eType !== "mousedown") return;
@@ -26661,9 +27053,10 @@ class HScrollBar extends ScrollBar {
         this.inner.style.height = this.element.style.height = (this.height || 12) + "px";
         this.renderer = renderer;
     }
-    
+
     /**
      * Emitted when the scroll thumb dragged or scrollbar canvas clicked.
+     * @internal
      **/
     onMouseDown(eType, e) {
         if (eType !== "mousedown") return;
@@ -26792,10 +27185,10 @@ exports.ii = HScrollBar;
 /***/ 33002:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
+ * @typedef {import("../ace-internal").Ace.SearchOptions} SearchOptions
  */
 var lang = __webpack_require__(10732);
 var oop = __webpack_require__(42011);
@@ -26805,34 +27198,15 @@ var Range = (__webpack_require__(93069)/* .Range */ .e);
  * A class designed to handle all sorts of text searches within a [[Document `Document`]].
  **/
 class Search {
-    /**
-     * Creates a new `Search` object. The following search options are available:
-     * @typedef SearchOptions
-     * 
-     * @property {string|RegExp} [needle] - The string or regular expression you're looking for
-     * @property {boolean} [backwards] - Whether to search backwards from where cursor currently is
-     * @property {boolean} [wrap] - Whether to wrap the search back to the beginning when it hits the end
-     * @property {boolean} [caseSensitive] - Whether the search ought to be case-sensitive
-     * @property {boolean} [wholeWord] - Whether the search matches only on whole words
-     * @property {Range|null} [range] - The [[Range]] to search within. Set this to `null` for the whole document
-     * @property {boolean} [regExp] - Whether the search is a regular expression or not
-     * @property {Range|import("../ace-internal").Ace.Position} [start] - The starting [[Range]] or cursor position to begin the search
-     * @property {boolean} [skipCurrent] - Whether or not to include the current line in the search
-     * @property {boolean} [$isMultiLine] - true, if needle has \n or \r\n
-     * @property {boolean} [preserveCase]
-     * @property {boolean} [preventScroll]
-     * @property {boolean} [$supportsUnicodeFlag] - internal property, determine if browser supports unicode flag
-     * @property {any} [re]
-     **/
-    
+
     constructor() {
-        /**@type {SearchOptions}*/
+        /**@type {Partial<SearchOptions>}*/
         this.$options = {};
     }
-    
+
     /**
      * Sets the search options via the `options` parameter.
-     * @param {Partial<import("../ace-internal").Ace.SearchOptions>} options An object containing all the new search properties
+     * @param {Partial<SearchOptions>} options An object containing all the new search properties
      * @returns {Search}
      * @chainable
     **/
@@ -26843,15 +27217,15 @@ class Search {
 
     /**
      * [Returns an object containing all the search options.]{: #Search.getOptions}
-     * @returns {Partial<import("../ace-internal").Ace.SearchOptions>}
+     * @returns {Partial<SearchOptions>}
     **/
     getOptions() {
         return lang.copyObject(this.$options);
     }
-    
+
     /**
      * Sets the search options via the `options` parameter.
-     * @param {SearchOptions} options object containing all the search propertie
+     * @param {Partial<SearchOptions>} options object containing all the search propertie
      * @related Search.set
     **/
     setOptions(options) {
@@ -26861,7 +27235,7 @@ class Search {
     /**
      * Searches for `options.needle`. If found, this method returns the [[Range `Range`]] where the text first occurs. If `options.backwards` is `true`, the search goes backwards in the session.
      * @param {EditSession} session The session to search with
-     * @returns {Range|false}
+     * @returns {Range | null | false}
      **/
     find(session) {
         var options = this.$options;
@@ -26878,7 +27252,7 @@ class Search {
                 firstRange = null;
                 return false;
             }
-            
+
             return true;
         });
 
@@ -26911,12 +27285,12 @@ class Search {
                 for (var j = 0; j < len; j++)
                     if (lines[row + j].search(re[j]) == -1)
                         continue outer;
-                
+
                 var startLine = lines[row];
                 var line = lines[row + len - 1];
                 var startIndex = startLine.length - startLine.match(re[0])[0].length;
                 var endIndex = line.match(re[len - 1])[0].length;
-                
+
                 if (prevRange && prevRange.end.row === row &&
                     prevRange.end.column > startIndex
                 ) {
@@ -26948,7 +27322,7 @@ class Search {
             var endRow = range.end.row - range.start.row;
             while (i < j && ranges[j].end.column > endColumn && ranges[j].end.row == endRow)
                 j--;
-            
+
             ranges = ranges.slice(i, j + 1);
             for (i = 0, j = ranges.length; i < j; i++) {
                 ranges[i].start.row += range.start.row;
@@ -26966,7 +27340,7 @@ class Search {
      * + (String): If `options.regExp` is `true`, this function returns `input` with the replacement already made. Otherwise, this function just returns `replacement`.<br/>
      * If `options.needle` was not found, this function returns `null`.
      *
-     * 
+     *
      * @returns {String}
     **/
     replace(input, replacement) {
@@ -26985,7 +27359,7 @@ class Search {
         if (!options.regExp) {
             replacement = replacement.replace(/\$/g, "$$$$");
         }
-        
+
         replacement = input.replace(re, replacement);
         if (options.preserveCase) {
             replacement = replacement.split("");
@@ -26998,20 +27372,20 @@ class Search {
             }
             replacement = replacement.join("");
         }
-        
+
         return replacement;
     }
 
     /**
-     * 
-     * @param {SearchOptions} options
+     *
+     * @param {Partial<SearchOptions>} options
      * @param {boolean} [$disableFakeMultiline]
      * @return {RegExp|boolean|*[]|*}
      */
     $assembleRegExp(options, $disableFakeMultiline) {
         if (options.needle instanceof RegExp)
             return options.re = options.needle;
-        
+
         var needle = options.needle;
 
         if (!options.needle)
@@ -27032,7 +27406,7 @@ class Search {
 
         if (options.wholeWord)
             needle = addWordBoundary(needle, options);
-        
+
         options.$isMultiLine = !$disableFakeMultiline && /[\n\r]/.test(needle);
         if (options.$isMultiLine)
             return options.re = this.$assembleMultilineRegExp(needle, modifier);
@@ -27076,13 +27450,13 @@ class Search {
         var start = options.start;
         if (!start)
             start = range ? range[backwards ? "end" : "start"] : session.selection.getRange();
-         
+
         if (start.start)
             start = start[skipCurrent != backwards ? "end" : "start"];
 
         var firstRow = range ? range.start.row : 0;
         var lastRow = range ? range.end.row : session.getLength() - 1;
-        
+
         if (backwards) {
             var forEach = function(callback) {
                 var row = start.row;
@@ -27113,7 +27487,7 @@ class Search {
                         return;
             };
         }
-        
+
         if (options.$isMultiLine) {
             var len = re.length;
             var forEachInLine = function(row, offset, callback) {
@@ -27182,9 +27556,9 @@ class Search {
 }
 
 /**
- * 
+ *
  * @param {string} needle
- * @param {SearchOptions} options
+ * @param {Partial<SearchOptions>} options
  * @return {string}
  */
 function addWordBoundary(needle, options) {
@@ -27218,7 +27592,6 @@ exports.o = Search;
 /***/ 30349:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./layer/marker").Marker} Marker
@@ -27294,7 +27667,6 @@ exports.t = SearchHighlight;
 /***/ 82094:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 var oop = __webpack_require__(42011);
@@ -28229,7 +28601,6 @@ exports.Y = Selection;
 /***/ 82384:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef Snippet
@@ -28351,7 +28722,7 @@ class SnippetManager {
     getTokenizer() {
         return SnippetManager["$tokenizer"] || this.createTokenizer();
     }
-    
+
     createTokenizer() {
         function TabstopToken(str) {
             str = str.substr(1);
@@ -28363,7 +28734,7 @@ class SnippetManager {
             return "(?:[^\\\\" + ch + "]|\\\\.)";
         }
         var formatMatcher = {
-            regex: "/(" + escape("/") + "+)/", 
+            regex: "/(" + escape("/") + "+)/",
             onMatch: function(val, state, stack) {
                 var ts = stack[0];
                 ts.fmtString = true;
@@ -28373,7 +28744,7 @@ class SnippetManager {
             },
             next: "formatString"
         };
-        
+
         SnippetManager["$tokenizer"] = new Tokenizer({
             start: [
                 {regex: /\\./, onMatch: function(val, state, stack) {
@@ -28478,13 +28849,13 @@ class SnippetManager {
             return x.value || x;
         });
     }
-    
+
     getVariableValue(editor, name, indentation) {
         if (/^\d+$/.test(name))
             return (this.variables.__ || {})[name] || "";
         if (/^[A-Z]\d+$/.test(name))
             return (this.variables[name[0] + "__"] || {})[name.substr(1)] || "";
-        
+
         name = name.replace(/^TM_/, "");
         if (!this.variables.hasOwnProperty(name))
             return "";
@@ -28493,7 +28864,7 @@ class SnippetManager {
             value = this.variables[name](editor, name, indentation);
         return value == null ? "" : value;
     }
-    
+
     // returns string formatted according to http://manual.macromates.com/en/regular_expressions#replacement_string_syntax_format_strings
     tmStrFormat(str, ch, editor) {
         if (!ch.fmt) return str;
@@ -28534,7 +28905,7 @@ class SnippetManager {
         });
         return formatted;
     }
-    
+
     tmFormatFunction(str, ch, editor) {
         if (ch.formatFunction == "upcase")
             return str.toUpperCase();
@@ -28563,21 +28934,21 @@ class SnippetManager {
             }
             if (!ch)  continue;
             afterNewLine = false;
-            
+
             if (ch.fmtString) {
                 var j = snippet.indexOf(ch, i + 1);
                 if (j == -1) j = snippet.length;
                 ch.fmt = snippet.slice(i + 1, j);
                 i = j;
             }
-            
+
             if (ch.text) {
                 var value = this.getVariableValue(editor, ch.text, indentation) + "";
                 if (ch.fmtString)
                     value = this.tmStrFormat(value, ch, editor);
                 if (ch.formatFunction)
                     value = this.tmFormatFunction(value, ch, editor);
-                
+
                 if (value && !ch.ifEnd) {
                     result.push(value);
                     gotoNext(ch);
@@ -28607,7 +28978,7 @@ class SnippetManager {
 
     insertSnippetForSelection(editor, snippetText, options={}) {
         var processedSnippet = processSnippetText.call(this, editor, snippetText, options);
-        
+
         var range = editor.getSelectionRange();
         var end = editor.session.replace(range, processedSnippet.text);
 
@@ -28620,11 +28991,11 @@ class SnippetManager {
         var self = this;
         if (editor.inVirtualSelectionMode)
             return self.insertSnippetForSelection(editor, snippetText, options);
-        
+
         editor.forEachSelection(function() {
             self.insertSnippetForSelection(editor, snippetText, options);
         }, null, {keepOrder: true});
-        
+
         if (editor.tabstopManager)
             editor.tabstopManager.tabNext();
     }
@@ -28634,7 +29005,7 @@ class SnippetManager {
         scope = scope.split("/").pop();
         if (scope === "html" || scope === "php") {
             // PHP is actually HTML
-            if (scope === "php" && !editor.session.$mode.inlinePhp) 
+            if (scope === "php" && !editor.session.$mode.inlinePhp)
                 scope = "html";
             var c = editor.getCursorPosition();
             var state = editor.session.getState(c.row);
@@ -28650,7 +29021,7 @@ class SnippetManager {
                     scope = "php";
             }
         }
-        
+
         return scope;
     }
 
@@ -28674,7 +29045,7 @@ class SnippetManager {
             editor.tabstopManager.tabNext();
         return result;
     }
-    
+
     expandSnippetForSelection(editor, options) {
         var cursor = editor.getCursorPosition();
         var line = editor.session.getLine(cursor.row);
@@ -28740,10 +29111,10 @@ class SnippetManager {
         var snippetMap = this.snippetMap;
         var snippetNameMap = this.snippetNameMap;
         var self = this;
-        
-        if (!snippets) 
+
+        if (!snippets)
             snippets = [];
-        
+
         function wrapRegexp(src) {
             if (src && !/^\^?\(.*\)\$?$|^\\b$/.test(src))
                 src = "(?:" + src + ")";
@@ -28794,10 +29165,10 @@ class SnippetManager {
                     s.guard = "\\b";
                 s.trigger = lang.escapeRegExp(s.tabTrigger);
             }
-            
+
             if (!s.trigger && !s.guard && !s.endTrigger && !s.endGuard)
                 return;
-            
+
             s.startRe = guardedRegexp(s.trigger, s.guard, true);
             s.triggerRe = new RegExp(s.trigger);
 
@@ -28889,7 +29260,7 @@ var processSnippetText = function(editor, snippetText, options={}) {
     var line = editor.session.getLine(cursor.row);
     var tabString = editor.session.getTabString();
     var indentString = line.match(/^\s*/)[0];
-    
+
     if (cursor.column < indentString.length)
         indentString = indentString.slice(0, cursor.column);
 
@@ -28981,7 +29352,7 @@ var processSnippetText = function(editor, snippetText, options={}) {
         if (ts.indexOf(p) === -1)
             ts.push(p);
     }
-    
+
     // convert to plain text
     var row = 0, column = 0;
     var text = "";
@@ -29050,7 +29421,9 @@ class TabstopManager {
         this.session = null;
         this.editor = null;
     }
-
+    /**
+     * @internal
+     */
     onChange(delta) {
         var isRemove = delta.action[0] == "r";
         var selectedTabstop = this.selectedTabstop || {};
@@ -29060,7 +29433,7 @@ class TabstopManager {
             var ts = tabstops[i];
             var active = ts == selectedTabstop || parents[ts.index];
             ts.rangeList.$bias = active ? 0 : 1;
-            
+
             if (delta.action == "remove" && ts !== selectedTabstop) {
                 var parentActive = ts.parents && ts.parents[selectedTabstop.index];
                 var startIndex = ts.rangeList.pointIndex(delta.start, parentActive);
@@ -29094,10 +29467,16 @@ class TabstopManager {
         }
         this.$inChange = false;
     }
+    /**
+     * @internal
+     */
     onAfterExec(e) {
         if (e.command && !e.command.readOnly)
             this.updateLinkedFields();
     }
+    /**
+     * @internal
+     */
     onChangeSelection() {
         if (!this.editor)
             return;
@@ -29114,6 +29493,9 @@ class TabstopManager {
         }
         this.detach();
     }
+    /**
+     * @internal
+     */
     onChangeSession() {
         this.detach();
     }
@@ -29138,7 +29520,7 @@ class TabstopManager {
         ts = this.tabstops[this.index];
         if (!ts || !ts.length)
             return;
-        
+
         this.selectedTabstop = ts;
         var range = ts.firstNonLinked || ts;
         if (ts.choices) range.cursor = range.start;
@@ -29153,14 +29535,14 @@ class TabstopManager {
         } else {
             this.editor.selection.fromOrientedRange(range);
         }
-        
+
         this.editor.keyBinding.addKeyboardHandler(this.keyboardHandler);
         if (this.selectedTabstop && this.selectedTabstop.choices)
             this.editor.execCommand("startAutocomplete", {matches: this.selectedTabstop.choices});
     }
     addTabstops(tabstops, start, end) {
         var useLink = this.useLink || !this.editor.getOption("enableMultiselect");
-        
+
         if (!this.$openTabstops)
             this.$openTabstops = [];
         // add final tabstop if missing
@@ -29209,7 +29591,7 @@ class TabstopManager {
             dest.rangeList.$bias = 0;
             dest.rangeList.addList(dest);
         }, this);
-        
+
         if (arg.length > 2) {
             // when adding new snippet inside existing one, make sure 0 tabstop is at the end
             if (this.tabstops.length)
@@ -29489,7 +29871,6 @@ module.exports = `.ace-tm .ace_gutter {
 /***/ 39609:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 
 exports.isDark = false;
@@ -29506,7 +29887,6 @@ dom.importCssString(exports.cssText, exports.cssClass, false);
 /***/ 7726:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
@@ -29646,7 +30026,6 @@ exports.TokenIterator = TokenIterator;
 /***/ 39754:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 const reportError = (__webpack_require__(80755)/* .reportError */ .e);
 
@@ -30013,7 +30392,6 @@ exports.Tokenizer = Tokenizer;
 /***/ 71692:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 var __webpack_unused_export__;
 
 /**
@@ -30038,7 +30416,7 @@ class Tooltip {
         this.$element = null;
         this.$parentNode = parentNode;
     }
-    
+
     $init() {
         this.$element = dom.createElement("div");
         this.$element.className = CLASSNAME;
@@ -30129,7 +30507,7 @@ class Tooltip {
     getWidth() {
         return this.getElement().offsetWidth;
     }
-    
+
     destroy() {
         this.isOpen = false;
         if (this.$element && this.$element.parentNode) {
@@ -30177,7 +30555,7 @@ class PopupManager {
                     break;
                 }
             }
-            
+
             if (shouldDisplay) {
                 visiblepopups.push(popup);
             } else {
@@ -30209,23 +30587,23 @@ exports.u = Tooltip;
 class HoverTooltip extends Tooltip {
     constructor(parentNode=document.body) {
         super(parentNode);
-        
+
         this.timeout = undefined;
         this.lastT = 0;
         this.idleTime = 350;
         this.lastEvent = undefined;
-        
+
         this.onMouseOut = this.onMouseOut.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
         this.waitForHover = this.waitForHover.bind(this);
         this.hide = this.hide.bind(this);
-        
+
         var el = this.getElement();
         el.style.whiteSpace = "pre-wrap";
         el.style.pointerEvents = "auto";
         el.addEventListener("mouseout", this.onMouseOut);
         el.tabIndex = -1;
-        
+
         el.addEventListener("blur", function() {
             if (!el.contains(document.activeElement)) this.hide();
         }.bind(this));
@@ -30258,6 +30636,7 @@ class HoverTooltip extends Tooltip {
     /**
      * @param {MouseEvent} e
      * @param {Editor} editor
+     * @internal
      */
     onMouseMove(e, editor) {
         this.lastEvent = e;
@@ -30266,7 +30645,7 @@ class HoverTooltip extends Tooltip {
         if (this.isOpen) {
             var pos = this.lastEvent && this.lastEvent.getDocumentPosition();
             if (
-                !this.range 
+                !this.range
                 || !this.range.contains(pos.row, pos.column)
                 || isMousePressed
                 || this.isOutsideOfText(this.lastEvent)
@@ -30285,7 +30664,7 @@ class HoverTooltip extends Tooltip {
             this.timeout = setTimeout(this.waitForHover, this.idleTime - dt);
             return;
         }
-        
+
         this.timeout = null;
         if (this.lastEvent && !this.isOutsideOfText(this.lastEvent)) {
             this.$gatherData(this.lastEvent, this.lastEvent.editor);
@@ -30313,7 +30692,7 @@ class HoverTooltip extends Tooltip {
     }
 
     /**
-     * @param {any} value
+     * @param {(event: MouseEvent, editor: Editor) => void} value
      */
     setDataProvider(value) {
         this.$gatherData = value;
@@ -30322,14 +30701,14 @@ class HoverTooltip extends Tooltip {
     /**
      * @param {Editor} editor
      * @param {Range} range
-     * @param {any} domNode
+     * @param {HTMLElement} domNode
      * @param {MouseEvent} startingEvent
      */
     showForRange(editor, range, domNode, startingEvent) {
         var MARGIN = 10;
         if (startingEvent && startingEvent != this.lastEvent) return;
         if (this.isOpen && document.activeElement == this.getElement()) return;
-        
+
         var renderer = editor.renderer;
         if (!this.isOpen) {
             popupManager.addPopup(this);
@@ -30337,23 +30716,23 @@ class HoverTooltip extends Tooltip {
             this.setTheme(renderer.theme);
         }
         this.isOpen = true;
-        
+
         this.addMarker(range, editor.session);
         this.range = Range.fromPoints(range.start, range.end);
         var position = renderer.textToScreenCoordinates(range.start.row, range.start.column);
-        
+
         var rect = renderer.scroller.getBoundingClientRect();
         // clip position to visible area of the editor
         if (position.pageX < rect.left)
             position.pageX = rect.left;
-        
+
         var element = this.getElement();
         element.innerHTML = "";
         element.appendChild(domNode);
-        
+
         element.style.maxHeight = "";
-        element.style.display = "block";        
-        
+        element.style.display = "block";
+
         // measure the size of tooltip, without constraints on its height
         var labelHeight = element.clientHeight;
         var labelWidth = element.clientWidth;
@@ -30364,11 +30743,11 @@ class HoverTooltip extends Tooltip {
         if (position.pageY - labelHeight < 0 && position.pageY < spaceBelow) {
             isAbove = false;
         }
-        
+
         element.style.maxHeight = (isAbove ? position.pageY : spaceBelow) - MARGIN + "px";
         element.style.top = isAbove ? "" : position.pageY + renderer.lineHeight + "px";
         element.style.bottom = isAbove ?  window.innerHeight - position.pageY  + "px" : "";
-        
+
         // try to align tooltip left with the range, but keep it on screen
         element.style.left = Math.min(position.pageX, window.innerWidth - labelWidth - MARGIN) + "px";
     }
@@ -30384,7 +30763,7 @@ class HoverTooltip extends Tooltip {
         this.$markerSession = session;
         this.marker = session && session.addMarker(range, "ace_highlight-marker", "text");
     }
-    
+
     hide(e) {
         if (!e && document.activeElement == this.getElement())
             return;
@@ -30414,6 +30793,9 @@ class HoverTooltip extends Tooltip {
         window.removeEventListener("mousedown", this.hide, true);
     }
 
+    /**
+     * @internal
+     */
     onMouseOut(e) {
         if (this.timeout) {
             clearTimeout(this.timeout);
@@ -30437,7 +30819,6 @@ exports.MZ = HoverTooltip;
 /***/ 11966:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
@@ -31130,7 +31511,6 @@ exports.H = UndoManager;
 /***/ 17913:
 /***/ ((__unused_webpack_module, exports) => {
 
-"use strict";
 
 
 // generated by tool/unicode.js
@@ -31152,7 +31532,6 @@ exports.wordChars = String.fromCharCode.apply(null, str);
 /***/ 28390:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-"use strict";
 
 /**
  * @typedef {import("./edit_session").EditSession} EditSession
@@ -31178,19 +31557,20 @@ var editorCss = __webpack_require__(36567);
 var Decorator = (__webpack_require__(69945)/* .Decorator */ .S);
 
 var useragent = __webpack_require__(98057);
+const isTextToken = (__webpack_require__(40209)/* .isTextToken */ .Z);
 
 dom.importCssString(editorCss, "ace_editor.css", false);
 
 /**
  * The class that is responsible for drawing everything you see on the screen!
- * @related editor.renderer 
+ * @related editor.renderer
  **/
 class VirtualRenderer {
     /**
      * Constructs a new `VirtualRenderer` within the `container` specified, applying the given `theme`.
      * @param {HTMLElement | null} [container] The root element of the editor
      * @param {String} [theme] The starting theme
-     
+
      **/
     constructor(container, theme) {
         var _self = this;
@@ -31358,7 +31738,7 @@ class VirtualRenderer {
     setSession(session) {
         if (this.session)
             this.session.doc.off("changeNewLineMode", this.onChangeNewLineMode);
-            
+
         this.session = session;
         if (session && this.scrollMargin.top && session.getScrollTop() <= 0)
             session.setScrollTop(-this.scrollMargin.top);
@@ -31370,11 +31750,11 @@ class VirtualRenderer {
         this.$textLayer.setSession(session);
         if (!session)
             return;
-        
+
         this.$loop.schedule(this.CHANGE_FULL);
         this.session.$setFontMetrics(this.$fontMetrics);
         this.scrollBarH.scrollLeft = this.scrollBarV.scrollTop = null;
-        
+
         this.onChangeNewLineMode = this.onChangeNewLineMode.bind(this);
         this.onChangeNewLineMode();
         this.session.doc.on("changeNewLineMode", this.onChangeNewLineMode);
@@ -31419,12 +31799,18 @@ class VirtualRenderer {
         this.$loop.schedule(this.CHANGE_LINES);
     }
 
+    /**
+     * @internal
+     */
     onChangeNewLineMode() {
         this.$loop.schedule(this.CHANGE_TEXT);
         this.$textLayer.$updateEolChar();
         this.session.$bidiHandler.setEolChar(this.$textLayer.EOL_CHAR);
     }
-    
+
+    /**
+     * @internal
+     */
     onChangeTabSize() {
         this.$loop.schedule(this.CHANGE_TEXT | this.CHANGE_MARKER);
         this.$textLayer.onChangeTabSize();
@@ -31440,7 +31826,7 @@ class VirtualRenderer {
     /**
      * Triggers a full update of all the layers, for all the rows.
      * @param {Boolean} [force] If `true`, forces the changes through
-     
+
      **/
     updateFull(force) {
         if (force)
@@ -31468,7 +31854,7 @@ class VirtualRenderer {
      * @param {Number} [gutterWidth] The width of the gutter in pixels
      * @param {Number} [width] The width of the editor in pixels
      * @param {Number} [height] The hiehgt of the editor, in pixels
-     
+     * @internal
      **/
     onResize(force, gutterWidth, width, height) {
         if (this.resizing > 2)
@@ -31477,17 +31863,25 @@ class VirtualRenderer {
             this.resizing++;
         else
             this.resizing = force ? 1 : 0;
-        // `|| el.scrollHeight` is required for outosizing editors on ie
-        // where elements with clientHeight = 0 alsoe have clientWidth = 0
+        // `|| el.scrollHeight` is required for autosizing editors on ie
+        // where elements with clientHeight = 0 also have clientWidth = 0
         var el = this.container;
         if (!height)
             height = el.clientHeight || el.scrollHeight;
+        if (!height && this.$maxLines && this.lineHeight > 1) {
+            // if we are supposed to fit to content set height at least to 1
+            // so that render does not exit early before calling $autosize
+            if (!el.style.height || el.style.height == "0px") {
+                el.style.height = "1px";
+                height = el.clientHeight || el.scrollHeight;
+            }
+        }
         if (!width)
             width = el.clientWidth || el.scrollWidth;
         var changes = this.$updateCachedSize(force, gutterWidth, width, height);
 
         if (this.$resizeTimer) this.$resizeTimer.cancel();
-        
+
         if (!this.$size.scrollerHeight || (!width && !height))
             return this.resizing = 0;
 
@@ -31515,7 +31909,7 @@ class VirtualRenderer {
      * @param [width]
      * @param [height]
      * @return {number}
-     
+
      */
     $updateCachedSize(force, gutterWidth, width, height) {
         height -= (this.$extraHeight || 0);
@@ -31534,7 +31928,7 @@ class VirtualRenderer {
             size.scrollerHeight = size.height;
             if (this.$horizScroll)
                 size.scrollerHeight -= this.scrollBarH.getHeight();
-                
+
             this.scrollBarV.setHeight(size.scrollerHeight);
             this.scrollBarV.element.style.bottom = this.scrollBarH.getHeight() + "px";
 
@@ -31544,29 +31938,29 @@ class VirtualRenderer {
         if (width && (force || size.width != width)) {
             changes |= this.CHANGE_SIZE;
             size.width = width;
-            
+
             if (gutterWidth == null)
                 gutterWidth = this.$showGutter ? this.$gutter.offsetWidth : 0;
-            
+
             this.gutterWidth = gutterWidth;
-            
+
             dom.setStyle(this.scrollBarH.element.style, "left", gutterWidth + "px");
             dom.setStyle(this.scroller.style, "left", gutterWidth + this.margin.left + "px");
             size.scrollerWidth = Math.max(0, width - gutterWidth - this.scrollBarV.getWidth() - this.margin.h);
             dom.setStyle(this.$gutter.style, "left", this.margin.left + "px");
-            
+
             var right = this.scrollBarV.getWidth() + "px";
             dom.setStyle(this.scrollBarH.element.style, "right", right);
             dom.setStyle(this.scroller.style, "right", right);
             dom.setStyle(this.scroller.style, "bottom", this.scrollBarH.getHeight());
-                
+
             this.scrollBarH.setWidth(size.scrollerWidth);
 
             if (this.session && this.session.getUseWrapMode() && this.adjustWrapLimit() || force) {
                 changes |= this.CHANGE_FULL;
             }
         }
-        
+
         size.$dirty = !width || !height;
 
         if (changes)
@@ -31576,9 +31970,9 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {number} width
-     
+     * @internal
      */
     onGutterResize(width) {
         var gutterWidth = this.$showGutter ? width : 0;
@@ -31596,7 +31990,7 @@ class VirtualRenderer {
 
     /**
      * Adjusts the wrap limit, which is the number of characters that can fit within the width of the edit area on screen.
-     
+
      **/
     adjustWrapLimit() {
         var availableWidth = this.$size.scrollerWidth - this.$padding * 2;
@@ -31607,7 +32001,7 @@ class VirtualRenderer {
     /**
      * Identifies whether you want to have an animated scroll or not.
      * @param {Boolean} shouldAnimate Set to `true` to show animated scrolls
-     
+
      **/
     setAnimatedScroll(shouldAnimate){
         this.setOption("animatedScroll", shouldAnimate);
@@ -31616,7 +32010,7 @@ class VirtualRenderer {
     /**
      * Returns whether an animated scroll happens or not.
      * @returns {Boolean}
-     
+
      **/
     getAnimatedScroll() {
         return this.$animatedScroll;
@@ -31625,7 +32019,7 @@ class VirtualRenderer {
     /**
      * Identifies whether you want to show invisible characters or not.
      * @param {Boolean} showInvisibles Set to `true` to show invisibles
-     
+
      **/
     setShowInvisibles(showInvisibles) {
         this.setOption("showInvisibles", showInvisibles);
@@ -31635,7 +32029,7 @@ class VirtualRenderer {
     /**
      * Returns whether invisible characters are being shown or not.
      * @returns {Boolean}
-     
+
      **/
     getShowInvisibles() {
         return this.getOption("showInvisibles");
@@ -31643,7 +32037,7 @@ class VirtualRenderer {
 
     /**
      * @return {boolean}
-     
+
      */
     getDisplayIndentGuides() {
         return this.getOption("displayIndentGuides");
@@ -31651,14 +32045,14 @@ class VirtualRenderer {
 
     /**
      * @param {boolean} display
-     
+
      */
     setDisplayIndentGuides(display) {
         this.setOption("displayIndentGuides", display);
     }
 
     /**
-     
+
      * @return {boolean}
      */
     getHighlightIndentGuides() {
@@ -31666,7 +32060,7 @@ class VirtualRenderer {
     }
 
     /**
-     
+
      * @param {boolean} highlight
      */
     setHighlightIndentGuides(highlight) {
@@ -31676,7 +32070,7 @@ class VirtualRenderer {
     /**
      * Identifies whether you want to show the print margin or not.
      * @param {Boolean} showPrintMargin Set to `true` to show the print margin
-     
+
      **/
     setShowPrintMargin(showPrintMargin) {
         this.setOption("showPrintMargin", showPrintMargin);
@@ -31685,7 +32079,7 @@ class VirtualRenderer {
     /**
      * Returns whether the print margin is being shown or not.
      * @returns {Boolean}
-     
+
      **/
     getShowPrintMargin() {
         return this.getOption("showPrintMargin");
@@ -31693,7 +32087,7 @@ class VirtualRenderer {
     /**
      * Identifies whether you want to show the print margin column or not.
      * @param {number} printMarginColumn Set to `true` to show the print margin column
-     
+
      **/
     setPrintMarginColumn(printMarginColumn) {
         this.setOption("printMarginColumn", printMarginColumn);
@@ -31702,7 +32096,7 @@ class VirtualRenderer {
     /**
      * Returns whether the print margin column is being shown or not.
      * @returns {number}
-     
+
      **/
     getPrintMarginColumn() {
         return this.getOption("printMarginColumn");
@@ -31711,7 +32105,7 @@ class VirtualRenderer {
     /**
      * Returns `true` if the gutter is being shown.
      * @returns {Boolean}
-     
+
      **/
     getShowGutter(){
         return this.getOption("showGutter");
@@ -31720,14 +32114,14 @@ class VirtualRenderer {
     /**
      * Identifies whether you want to show the gutter or not.
      * @param {Boolean} show Set to `true` to show the gutter
-     
+
      **/
     setShowGutter(show){
         return this.setOption("showGutter", show);
     }
 
     /**
-     
+
      * @returns {boolean}
      */
     getFadeFoldWidgets(){
@@ -31735,7 +32129,7 @@ class VirtualRenderer {
     }
 
     /**
-     
+
      * @param {boolean} show
      */
     setFadeFoldWidgets(show) {
@@ -31751,7 +32145,7 @@ class VirtualRenderer {
     }
 
     /**
-     
+
      * @returns {boolean}
      */
     getHighlightGutterLine() {
@@ -31759,7 +32153,7 @@ class VirtualRenderer {
     }
 
     /**
-     
+
      */
     $updatePrintMargin() {
         if (!this.$showPrintMargin && !this.$printMarginEl)
@@ -31777,7 +32171,7 @@ class VirtualRenderer {
         var style = this.$printMarginEl.style;
         style.left = Math.round(this.characterWidth * this.$printMarginColumn + this.$padding) + "px";
         style.visibility = this.$showPrintMargin ? "visible" : "hidden";
-        
+
         if (this.session && this.session.$wrap == -1)
             this.adjustWrapLimit();
     }
@@ -31812,7 +32206,7 @@ class VirtualRenderer {
     // move text input over the cursor
     // this is required for IME
     /**
-     
+
      */
     $moveTextAreaToCursor() {
         if (this.$isMousePressed) return;
@@ -31827,7 +32221,7 @@ class VirtualRenderer {
             return;
         if (composition && composition.markerRange)
             pixelPos = this.$cursorLayer.getPixelPosition(composition.markerRange.start, true);
-        
+
         var config = this.layerConfig;
         var posTop = pixelPos.top;
         var posLeft = pixelPos.left;
@@ -31853,7 +32247,7 @@ class VirtualRenderer {
                 posTop += this.lineHeight + 2;
             }
         }
-        
+
         posLeft -= this.scrollLeft;
         if (posLeft > this.$size.scrollerWidth - w)
             posLeft = this.$size.scrollerWidth - w;
@@ -31908,7 +32302,7 @@ class VirtualRenderer {
     /**
      * Sets the padding for all the layers.
      * @param {Number} padding A new padding value (in pixels)
-     
+
      **/
     setPadding(padding) {
         this.$padding = padding;
@@ -31921,12 +32315,12 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {number} [top]
      * @param {number} [bottom]
      * @param {number} [left]
      * @param {number} [right]
-     
+
      */
     setScrollMargin(top, bottom, left, right) {
         var sm = this.scrollMargin;
@@ -31947,7 +32341,7 @@ class VirtualRenderer {
      * @param {number} [bottom]
      * @param {number} [left]
      * @param {number} [right]
-     
+
      */
     setMargin(top, bottom, left, right) {
         var sm = this.margin;
@@ -31964,7 +32358,7 @@ class VirtualRenderer {
     /**
      * Returns whether the horizontal scrollbar is set to be always visible.
      * @returns {Boolean}
-     
+
      **/
     getHScrollBarAlwaysVisible() {
         return this.$hScrollBarAlwaysVisible;
@@ -31973,7 +32367,7 @@ class VirtualRenderer {
     /**
      * Identifies whether you want to show the horizontal scrollbar or not.
      * @param {Boolean} alwaysVisible Set to `true` to make the horizontal scroll bar visible
-     
+
      **/
     setHScrollBarAlwaysVisible(alwaysVisible) {
         this.setOption("hScrollBarAlwaysVisible", alwaysVisible);
@@ -31981,7 +32375,7 @@ class VirtualRenderer {
     /**
      * Returns whether the horizontal scrollbar is set to be always visible.
      * @returns {Boolean}
-     
+
      **/
     getVScrollBarAlwaysVisible() {
         return this.$vScrollBarAlwaysVisible;
@@ -31996,7 +32390,7 @@ class VirtualRenderer {
     }
 
     /**
-     
+
      */
     $updateScrollBarV() {
         var scrollHeight = this.layerConfig.maxHeight;
@@ -32019,17 +32413,17 @@ class VirtualRenderer {
     freeze() {
         this.$frozen = true;
     }
-    
+
     unfreeze() {
         this.$frozen = false;
     }
 
     /**
-     * 
+     *
      * @param {number} changes
      * @param {boolean} [force]
      * @returns {number}
-     
+
      */
     $renderChanges(changes, force) {
         if (this.$changes) {
@@ -32038,8 +32432,8 @@ class VirtualRenderer {
         }
         if ((!this.session || !this.container.offsetWidth || this.$frozen) || (!changes && !force)) {
             this.$changes |= changes;
-            return; 
-        } 
+            return;
+        }
         if (this.$size.$dirty) {
             this.$changes |= changes;
             return this.onResize(true);
@@ -32048,9 +32442,9 @@ class VirtualRenderer {
             this.$textLayer.checkForSizeChanges();
         }
         // this.$logChanges(changes);
-        
+
         this._signal("beforeRender", changes);
-        
+
         if (this.session && this.session.$bidiHandler)
             this.session.$bidiHandler.updateCharacterWidths(this.$fontMetrics);
 
@@ -32066,7 +32460,7 @@ class VirtualRenderer {
             changes |= this.$computeLayerConfig() | this.$loop.clear();
             // If a change is made offscreen and wrapMode is on, then the onscreen
             // lines may have been pushed down. If so, the first screen row will not
-            // have changed, but the first actual row will. In that case, adjust 
+            // have changed, but the first actual row will. In that case, adjust
             // scrollTop so that the cursor and onscreen content stays in the same place.
             // TODO: find a better way to handle this, that works non wrapped case and doesn't compute layerConfig twice
             if (config.firstRow != this.layerConfig.firstRow && config.firstRowScreen == this.layerConfig.firstRowScreen) {
@@ -32083,16 +32477,16 @@ class VirtualRenderer {
             this.$updateScrollBarV();
             if (changes & this.CHANGE_H_SCROLL)
                 this.$updateScrollBarH();
-            
+
             dom.translate(this.content, -this.scrollLeft, -config.offset);
-            
+
             var width = config.width + 2 * this.$padding + "px";
             var height = config.minHeight + "px";
-            
+
             dom.setStyle(this.content.style, "width", width);
             dom.setStyle(this.content.style, "height", height);
         }
-        
+
         // horizontal scrolling
         if (changes & this.CHANGE_H_SCROLL) {
             dom.translate(this.content, -this.scrollLeft, -config.offset);
@@ -32192,53 +32586,53 @@ class VirtualRenderer {
     }
 
     /**
-     
+
      */
     $autosize() {
         var height = this.session.getScreenLength() * this.lineHeight;
         var maxHeight = this.$maxLines * this.lineHeight;
-        var desiredHeight = Math.min(maxHeight, 
+        var desiredHeight = Math.min(maxHeight,
             Math.max((this.$minLines || 1) * this.lineHeight, height)
         ) + this.scrollMargin.v + (this.$extraHeight || 0);
         if (this.$horizScroll)
             desiredHeight += this.scrollBarH.getHeight();
         if (this.$maxPixelHeight && desiredHeight > this.$maxPixelHeight)
             desiredHeight = this.$maxPixelHeight;
-        
+
         var hideScrollbars = desiredHeight <= 2 * this.lineHeight;
         var vScroll = !hideScrollbars && height > maxHeight;
-        
+
         if (desiredHeight != this.desiredHeight ||
             this.$size.height != this.desiredHeight || vScroll != this.$vScroll) {
             if (vScroll != this.$vScroll) {
                 this.$vScroll = vScroll;
                 this.scrollBarV.setVisible(vScroll);
             }
-            
+
             var w = this.container.clientWidth;
             this.container.style.height = desiredHeight + "px";
             this.$updateCachedSize(true, this.$gutterWidth, w, desiredHeight);
             // this.$loop.changes = 0;
             this.desiredHeight = desiredHeight;
-            
+
             this._signal("autosize");
         }
     }
 
     /**
-     
+
      * @returns {number}
      */
     $computeLayerConfig() {
         var session = this.session;
         var size = this.$size;
-        
+
         var hideScrollbars = size.height <= 2 * this.lineHeight;
         var screenLines = this.session.getScreenLength();
         var maxHeight = screenLines * this.lineHeight;
 
         var longestLine = this.$getLongestLine();
-        
+
         var horizScroll = !hideScrollbars && (this.$hScrollBarAlwaysVisible ||
             size.scrollerWidth - longestLine - 2 * this.$padding < 0);
 
@@ -32253,19 +32647,19 @@ class VirtualRenderer {
             this.$autosize();
 
         var minHeight = size.scrollerHeight + this.lineHeight;
-        
+
         var scrollPastEnd = !this.$maxLines && this.$scrollPastEnd
             ? (size.scrollerHeight - this.lineHeight) * this.$scrollPastEnd
             : 0;
         maxHeight += scrollPastEnd;
-        
+
         var sm = this.scrollMargin;
         this.session.setScrollTop(Math.max(-sm.top,
             Math.min(this.scrollTop, maxHeight - size.scrollerHeight + sm.bottom)));
 
-        this.session.setScrollLeft(Math.max(-sm.left, Math.min(this.scrollLeft, 
+        this.session.setScrollLeft(Math.max(-sm.left, Math.min(this.scrollLeft,
             longestLine + 2 * this.$padding - size.scrollerWidth + sm.right)));
-        
+
         var vScroll = !hideScrollbars && (this.$vScrollBarAlwaysVisible ||
             size.scrollerHeight - maxHeight + scrollPastEnd < 0 || this.scrollTop > sm.top);
         var vScrollChanged = vScrollBefore !== vScroll;
@@ -32301,7 +32695,7 @@ class VirtualRenderer {
         offset = this.scrollTop - firstRowScreen * lineHeight;
 
         var changes = 0;
-        if (this.layerConfig.width != longestLine || hScrollChanged) 
+        if (this.layerConfig.width != longestLine || hScrollChanged)
             changes = this.CHANGE_H_SCROLL;
         // Horizontal scrollbar visibility may have changed, which changes
         // the client height of the scroller
@@ -32311,7 +32705,7 @@ class VirtualRenderer {
             if (vScrollChanged)
                 longestLine = this.$getLongestLine();
         }
-        
+
         this.layerConfig = {
             width : longestLine,
             padding : this.$padding,
@@ -32337,7 +32731,7 @@ class VirtualRenderer {
 
     /**
      * @returns {boolean | undefined}
-     
+
      */
     $updateLines() {
         if (!this.$changedLines) return;
@@ -32364,15 +32758,15 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @returns {number}
-     
+
      */
     $getLongestLine() {
         var charCount = this.session.getScreenWidth();
         if (this.showInvisibles && !this.session.$useWrapMode)
             charCount += 1;
-            
+
         if (this.$textLayer && charCount > this.$textLayer.MAX_LINE_LENGTH)
             charCount = this.$textLayer.MAX_LINE_LENGTH + 30;
 
@@ -32414,7 +32808,7 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * Redraw breakpoints.
      * @param {any} [rows]
      */
@@ -32458,7 +32852,7 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {Point} anchor
      * @param {Point} lead
      * @param {number} [offset]
@@ -32470,7 +32864,7 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * Scrolls the cursor into the first visibile area of the editor
      * @param {Point} [cursor]
      * @param {number} [offset]
@@ -32572,7 +32966,7 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {Point} cursor
      * @param {number} [alignment]
      * @returns {number}
@@ -32590,7 +32984,7 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {number} fromValue
      * @param {number} toValue
      * @returns {*[]}
@@ -32616,7 +33010,7 @@ class VirtualRenderer {
      * @param {Boolean} center If `true`, centers the editor the to indicated line
      * @param {Boolean} animate If `true` animates scrolling
      * @param {() => void} [callback] Function to be called after the animation has finished
-     
+
      **/
     scrollToLine(line, center, animate, callback) {
         var pos = this.$cursorLayer.getPixelPosition({row: line, column: 0});
@@ -32631,20 +33025,20 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param fromValue
      * @param [callback]
-     
+
      */
     animateScrolling(fromValue, callback) {
         var toValue = this.scrollTop;
         if (!this.$animatedScroll)
             return;
         var _self = this;
-        
+
         if (fromValue == toValue)
             return;
-        
+
         if (this.$scrollAnimation) {
             var oldSteps = this.$scrollAnimation.steps;
             if (oldSteps.length) {
@@ -32653,7 +33047,7 @@ class VirtualRenderer {
                     return;
             }
         }
-        
+
         var steps = _self.$calcSteps(fromValue, toValue);
         this.$scrollAnimation = {from: fromValue, to: toValue, steps: steps};
 
@@ -32662,7 +33056,7 @@ class VirtualRenderer {
         _self.session.setScrollTop(steps.shift());
         // trick session to think it's already scrolled to not loose toValue
         _self.session.$scrollTop = toValue;
-        
+
         function endAnimation() {
             // @ts-ignore
             _self.$timer = clearInterval(_self.$timer);
@@ -32670,14 +33064,14 @@ class VirtualRenderer {
             _self.$stopAnimation = false;
             callback && callback();
         }
-        
+
         this.$timer = setInterval(function() {
             if (_self.$stopAnimation) {
                 endAnimation();
                 return;
             }
 
-            if (!_self.session) 
+            if (!_self.session)
                 return clearInterval(_self.$timer);
             if (steps.length) {
                 _self.session.setScrollTop(steps.shift());
@@ -32725,7 +33119,7 @@ class VirtualRenderer {
         this.session.setScrollTop(y);
         this.session.setScrollLeft(x);
     }
-    
+
     /**
      * Scrolls the editor across both x- and y-axes.
      * @param {Number} deltaX The x value to scroll by
@@ -32757,11 +33151,11 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {number} x
      * @param {number} y
      * @returns {import("../ace-internal").Ace.ScreenCoordinates}
-     
+
      */
     pixelToScreenCoordinates(x, y) {
         var canvasPos;
@@ -32773,7 +33167,7 @@ class VirtualRenderer {
         } else {
             canvasPos = this.scroller.getBoundingClientRect();
         }
-        
+
         var offsetX = x + this.scrollLeft - canvasPos.left - this.$padding;
         var offset = offsetX / this.characterWidth;
         var row = Math.floor((y + this.scrollTop - canvasPos.top) / this.lineHeight);
@@ -32783,11 +33177,11 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {number} x
      * @param {number} y
      * @returns {Point}
-     
+
      */
     screenToTextCoordinates(x, y) {
         var canvasPos;
@@ -32823,7 +33217,7 @@ class VirtualRenderer {
         var x = this.$padding + (this.session.$bidiHandler.isBidiRow(pos.row, row)
              ? this.session.$bidiHandler.getPosLeft(pos.column)
              : Math.round(pos.column * this.characterWidth));
-        
+
         var y = pos.row * this.lineHeight;
 
         return {
@@ -32850,7 +33244,7 @@ class VirtualRenderer {
 
     /**
      * @param {Object} composition
-     
+
      **/
     showComposition(composition) {
         this.$composition = composition;
@@ -32859,7 +33253,7 @@ class VirtualRenderer {
         }
         if (composition.useTextareaForIME == undefined)
             composition.useTextareaForIME = this.$useTextareaForIME;
-        
+
         if (this.$useTextareaForIME) {
             dom.addCssClass(this.textarea, "ace_composition");
             this.textarea.style.cssText = "";
@@ -32875,7 +33269,7 @@ class VirtualRenderer {
      * @param {String} text A string of text to use
      *
      * Sets the inner text of the current composition to `text`.
-     
+
      **/
     setCompositionText(text) {
         var cursor = this.session.selection.cursor;
@@ -32886,12 +33280,12 @@ class VirtualRenderer {
     /**
      *
      * Hides the current composition.
-     
+
      **/
     hideComposition() {
         if (!this.$composition)
             return;
-        
+
         if (this.$composition.markerId)
             this.session.removeMarker(this.$composition.markerId);
 
@@ -32913,8 +33307,9 @@ class VirtualRenderer {
 
         this.removeGhostText();
 
-        var textLines = text.split("\n");
-        this.addToken(textLines[0], "ghost_text", insertPosition.row, insertPosition.column);
+        var textChunks = this.$calculateWrappedTextChunks(text, insertPosition);
+        this.addToken(textChunks[0].text, "ghost_text", insertPosition.row, insertPosition.column);
+
         this.$ghostText = {
             text: text,
             position: {
@@ -32922,12 +33317,47 @@ class VirtualRenderer {
                 column: insertPosition. column
             }
         };
-        if (textLines.length > 1) {
+
+        var widgetDiv = dom.createElement("div");
+        if (textChunks.length > 1) {
+            // If there are tokens to the right of the cursor, hide those.
+            var hiddenTokens = this.hideTokensAfterPosition(insertPosition.row, insertPosition.column);
+
+            var lastLineDiv;
+            textChunks.slice(1).forEach(el => {
+                var chunkDiv = dom.createElement("div");
+                var chunkSpan = dom.createElement("span");
+                chunkSpan.className = "ace_ghost_text";
+
+                // If the line is wider than the viewport, wrap the line
+                if (el.wrapped) chunkDiv.className = "ghost_text_line_wrapped";
+
+                // If a given line doesn't have text (e.g. it's a line of whitespace), set a space as the
+                // textcontent so that browsers render the empty line div.
+                if (el.text.length === 0) el.text = " ";
+
+                chunkSpan.appendChild(dom.createTextNode(el.text));
+                chunkDiv.appendChild(chunkSpan);
+                widgetDiv.appendChild(chunkDiv);
+
+                // Overwrite lastLineDiv every iteration so at the end it points to
+                // the last added element.
+                lastLineDiv = chunkDiv;
+            });
+
+            // Add the hidden tokens to the last line of the ghost text.
+            hiddenTokens.forEach(token => {
+                var element = dom.createElement("span");
+                if (!isTextToken(token.type)) element.className = "ace_" + token.type.replace(/\./g, " ace_");
+                element.appendChild(dom.createTextNode(token.value));
+                lastLineDiv.appendChild(element);
+            });
+
             this.$ghostTextWidget = {
-                text: textLines.slice(1).join("\n"),
+                el: widgetDiv,
                 row: insertPosition.row,
                 column: insertPosition.column,
-                className: "ace_ghost_text"
+                className: "ace_ghost_text_container"
             };
             this.session.widgetManager.addLineWidget(this.$ghostTextWidget);
 
@@ -32935,22 +33365,58 @@ class VirtualRenderer {
             var pixelPosition = this.$cursorLayer.getPixelPosition(insertPosition, true);
             var el = this.container;
             var height = el.getBoundingClientRect().height;
-            var ghostTextHeight = textLines.length * this.lineHeight;
+            var ghostTextHeight = textChunks.length * this.lineHeight;
             var fitsY = ghostTextHeight < (height - pixelPosition.top);
 
             // If it fits, no action needed
             if (fitsY) return;
-            
+
             // If it can fully fit in the screen, scroll down until it fits on the screen
             // if it cannot fully fit, scroll so that the row with the cursor
             // is at the top of the screen.
             if (ghostTextHeight < height) {
-                this.scrollBy(0, (textLines.length - 1) * this.lineHeight);
+                this.scrollBy(0, (textChunks.length - 1) * this.lineHeight);
             } else {
                 this.scrollToRow(insertPosition.row);
-            }   
+            }
         }
-        
+
+    }
+
+    /**
+     * Calculates and organizes text into wrapped chunks. Initially splits the text by newline characters,
+     * then further processes each line based on display tokens and session settings for tab size and wrapping limits.
+     *
+     * @param {string} text
+     * @param {Point} position
+     * @return {{text: string, wrapped: boolean}[]}
+     */
+    $calculateWrappedTextChunks(text, position) {
+        var availableWidth = this.$size.scrollerWidth - this.$padding * 2;
+        var limit = Math.floor(availableWidth / this.characterWidth) - 2;
+        limit = limit <= 0 ? 60 : limit; // this is a hack to prevent the editor from crashing when the window is too small
+
+        var textLines = text.split(/\r?\n/);
+        var textChunks = [];
+        for (var i = 0; i < textLines.length; i++) {
+            var displayTokens = this.session.$getDisplayTokens(textLines[i], position.column);
+            var wrapSplits = this.session.$computeWrapSplits(displayTokens, limit, this.session.$tabSize);
+
+            if (wrapSplits.length > 0) {
+                var start = 0;
+                wrapSplits.push(textLines[i].length);
+
+                for (var j = 0; j < wrapSplits.length; j++) {
+                    let textSlice = textLines[i].slice(start, wrapSplits[j]);
+                    textChunks.push({text: textSlice, wrapped: true});
+                    start = wrapSplits[j];
+                }
+            }
+            else {
+                textChunks.push({text: textLines[i], wrapped: false});
+            }
+        }
+        return textChunks;
     }
 
     removeGhostText() {
@@ -32987,13 +33453,42 @@ class VirtualRenderer {
                     var diff = token.value.length - (l - column);
                     var before = token.value.slice(0, diff);
                     var after = token.value.slice(diff);
-    
+
                     tokens.splice(i, 1, {type: token.type, value: before},  newToken,  {type: token.type, value: after});
                     break;
                 }
             }
         }
         this.updateLines(row, row);
+    }
+
+    // Hide all non-ghost-text tokens to the right of a given position.
+    hideTokensAfterPosition(row, column) {
+        var tokens = this.session.getTokens(row);
+        var l = 0;
+        var hasPassedCursor = false;
+        var hiddenTokens = [];
+        // Loop over all tokens and track at what position in the line they end.
+        for (var i = 0; i < tokens.length; i++) {
+            var token = tokens[i];
+            l += token.value.length;
+
+            if (token.type === "ghost_text") continue;
+
+            // If we've already passed the current cursor position, mark all of them as hidden.
+            if (hasPassedCursor) {
+                hiddenTokens.push({type: token.type, value: token.value});
+                token.type = "hidden_token";
+                continue;
+            }
+            // We call this method after we call addToken, so we are guaranteed a new token starts at the cursor position.
+            // Once we reached that point in the loop, flip the flag.
+            if (l === column) {
+                hasPassedCursor = true;
+            }
+        }
+        this.updateLines(row, row);
+        return hiddenTokens;
     }
 
     removeExtraToken(row, column) {
@@ -33005,7 +33500,7 @@ class VirtualRenderer {
      * [Sets a new theme for the editor. `theme` should exist, and be a directory path, like `ace/theme/textmate`.]{: #VirtualRenderer.setTheme}
      * @param {String | Theme} [theme] The path to a theme
      * @param {() => void} [cb] optional callback
-     
+
      **/
     setTheme(theme, cb) {
         var _self = this;
@@ -33039,11 +33534,11 @@ class VirtualRenderer {
             if (_self.theme)
                 dom.removeCssClass(_self.container, _self.theme.cssClass);
             /**@type {any}*/
-            var padding = "padding" in module ? module.padding 
+            var padding = "padding" in module ? module.padding
                 : "padding" in (_self.theme || {}) ? 4 : _self.$padding;
             if (_self.$padding && padding != _self.$padding)
                 _self.setPadding(padding);
-                
+
             // this is kept only for backwards compatibility
             _self.$theme = module.cssClass;
 
@@ -33059,6 +33554,13 @@ class VirtualRenderer {
 
             _self._dispatchEvent('themeLoaded', {theme:module});
             cb && cb();
+
+            // workaround for safari not redrawing the editor
+            // https://github.com/ajaxorg/ace/issues/5569
+            if (useragent.isSafari && _self.scroller) {
+                _self.scroller.style.background = "red";
+                _self.scroller.style.background = "";
+            }
         }
     }
 
@@ -33105,14 +33607,14 @@ class VirtualRenderer {
     setMouseCursor(cursorStyle) {
         dom.setStyle(this.scroller.style, "cursor", cursorStyle);
     }
-    
+
     attachToShadowRoot() {
         dom.importCssString(editorCss, "ace_editor.css", this.container);
     }
 
     /**
      * Destroys the text and cursor layers for this renderer.
-     
+
      **/
     destroy() {
         this.freeze();
@@ -33124,7 +33626,7 @@ class VirtualRenderer {
     }
 
     /**
-     * 
+     *
      * @param {boolean} [val]
      */
     $updateCustomScrollbar(val) {
@@ -33165,7 +33667,7 @@ class VirtualRenderer {
     }
 
     /**
-     
+
      */
     $addResizeObserver() {
         if (!window.ResizeObserver || this.$resizeObserver) return;
@@ -33252,7 +33754,7 @@ config.defineOptions(VirtualRenderer.prototype, "renderer", {
             this.$updatePrintMargin();
         },
         get: function() {
-            return this.$showPrintMargin && this.$printMarginColumn; 
+            return this.$showPrintMargin && this.$printMarginColumn;
         }
     },
     showGutter: {
@@ -33425,91 +33927,78 @@ exports.WorkerClient = WorkerClient;
 
 /***/ })
 
-/******/ 	});
+/******/ });
 /************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
+/******/ // The module cache
+/******/ var __webpack_module_cache__ = {};
+/******/ 
+/******/ // The require function
+/******/ function __webpack_require__(moduleId) {
+/******/ 	// Check if module is in cache
+/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 	if (cachedModule !== undefined) {
+/******/ 		return cachedModule.exports;
 /******/ 	}
-/******/ 	
+/******/ 	// Create a new module (and put it into the cache)
+/******/ 	var module = __webpack_module_cache__[moduleId] = {
+/******/ 		id: moduleId,
+/******/ 		loaded: false,
+/******/ 		exports: {}
+/******/ 	};
+/******/ 
+/******/ 	// Execute the module function
+/******/ 	__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 
+/******/ 	// Flag the module as loaded
+/******/ 	module.loaded = true;
+/******/ 
+/******/ 	// Return the exports of the module
+/******/ 	return module.exports;
+/******/ }
+/******/ 
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
+/******/ /* webpack/runtime/define property getters */
+/******/ (() => {
+/******/ 	// define getter functions for harmony exports
+/******/ 	__webpack_require__.d = (exports, definition) => {
+/******/ 		for(var key in definition) {
+/******/ 			if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
 /******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__webpack_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
-/******/ 		};
-/******/ 	})();
-/******/ 	
+/******/ 		}
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/hasOwnProperty shorthand */
+/******/ (() => {
+/******/ 	__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/node module decorator */
+/******/ (() => {
+/******/ 	__webpack_require__.nmd = (module) => {
+/******/ 		module.paths = [];
+/******/ 		if (!module.children) module.children = [];
+/******/ 		return module;
+/******/ 	};
+/******/ })();
+/******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-"use strict";
-__webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Autocomplete: () => (/* reexport safe */ ace_code_src_autocomplete__WEBPACK_IMPORTED_MODULE_4__.F2),
-/* harmony export */   EditSession: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.EditSession),
-/* harmony export */   Editor: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Editor),
-/* harmony export */   HoverTooltip: () => (/* reexport safe */ ace_code_src_tooltip__WEBPACK_IMPORTED_MODULE_3__.MZ),
-/* harmony export */   MarkerGroup: () => (/* reexport safe */ ace_code_src_marker_group__WEBPACK_IMPORTED_MODULE_2__.Y),
-/* harmony export */   Range: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Range),
-/* harmony export */   UndoManager: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.UndoManager),
-/* harmony export */   VirtualRenderer: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.VirtualRenderer),
-/* harmony export */   config: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.config),
-/* harmony export */   createEditSession: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.createEditSession),
-/* harmony export */   edit: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.edit)
+/* harmony export */   F2: () => (/* reexport safe */ ace_code_src_autocomplete__WEBPACK_IMPORTED_MODULE_4__.F2),
+/* harmony export */   H6: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.UndoManager),
+/* harmony export */   ML: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Editor),
+/* harmony export */   MZ: () => (/* reexport safe */ ace_code_src_tooltip__WEBPACK_IMPORTED_MODULE_3__.MZ),
+/* harmony export */   Y$: () => (/* reexport safe */ ace_code_src_marker_group__WEBPACK_IMPORTED_MODULE_2__.Y),
+/* harmony export */   _D: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.VirtualRenderer),
+/* harmony export */   e6: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.Range),
+/* harmony export */   eP: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.edit),
+/* harmony export */   mf: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.EditSession),
+/* harmony export */   vc: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.config),
+/* harmony export */   yV: () => (/* reexport safe */ ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__.createEditSession)
 /* harmony export */ });
 /* harmony import */ var ace_code_src_ext_language_tools__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(54224);
 /* harmony import */ var ace_code_src_ace__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(28151);
@@ -33524,8 +34013,17 @@ __webpack_require__.r(__webpack_exports__);
 
 })();
 
-/******/ 	return __webpack_exports__;
-/******/ })()
-;
-});
+var __webpack_exports__Autocomplete = __webpack_exports__.F2;
+var __webpack_exports__EditSession = __webpack_exports__.mf;
+var __webpack_exports__Editor = __webpack_exports__.ML;
+var __webpack_exports__HoverTooltip = __webpack_exports__.MZ;
+var __webpack_exports__MarkerGroup = __webpack_exports__.Y$;
+var __webpack_exports__Range = __webpack_exports__.e6;
+var __webpack_exports__UndoManager = __webpack_exports__.H6;
+var __webpack_exports__VirtualRenderer = __webpack_exports__._D;
+var __webpack_exports__config = __webpack_exports__.vc;
+var __webpack_exports__createEditSession = __webpack_exports__.yV;
+var __webpack_exports__edit = __webpack_exports__.eP;
+export { __webpack_exports__Autocomplete as Autocomplete, __webpack_exports__EditSession as EditSession, __webpack_exports__Editor as Editor, __webpack_exports__HoverTooltip as HoverTooltip, __webpack_exports__MarkerGroup as MarkerGroup, __webpack_exports__Range as Range, __webpack_exports__UndoManager as UndoManager, __webpack_exports__VirtualRenderer as VirtualRenderer, __webpack_exports__config as config, __webpack_exports__createEditSession as createEditSession, __webpack_exports__edit as edit };
+
 //# sourceMappingURL=ace-editor.js.map

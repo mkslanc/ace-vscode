@@ -1,6 +1,6 @@
-import {Ace} from "./ace-editor";
+import {Ace} from "./ace-editor.js";
 
-declare module "./ace-modes" {
+declare module "./ace-modes.js" {
 	export var AbapMode: { new(): Ace.SyntaxMode };
 	export var AbcMode: { new(): Ace.SyntaxMode };
 	export var ActionscriptMode: { new(): Ace.SyntaxMode };

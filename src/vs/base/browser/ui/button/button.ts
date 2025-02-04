@@ -26,6 +26,8 @@ import type { IManagedHover } from '../hover/hover.js';
 import { getBaseLayerHoverDelegate } from '../hover/hoverDelegate2.js';
 import { IActionProvider } from '../dropdown/dropdown.js';
 
+import {Button as AceButton} from  '../../ace-layout/bundle.index.js';
+
 export interface IButtonOptions extends Partial<IButtonStyles> {
 	readonly title?: boolean | string;
 	/**
@@ -78,6 +80,100 @@ export interface IButtonWithDescription extends IButton {
 }
 
 export class Button extends Disposable implements IButton {
+	element: HTMLElement;
+
+	protected _label: string | IMarkdownString = '';
+
+	private _onDidClick = this._register(new Emitter<Event>());
+	get onDidClick(): BaseEvent<Event> { return this._onDidClick.event; }
+
+
+	button: AceButton;
+
+	constructor(container: HTMLElement, options: IButtonOptions) {
+		super();
+		const button = new AceButton({value: options.title});
+		button.render();
+		container.appendChild(button.element);
+		this.element = button.element;
+	}
+
+	setTitle(title: string) {
+		//TODO:
+	}
+
+
+	set checked(value: boolean) {
+	}
+
+	set enabled(value: boolean) {
+	}
+
+	focus(): void {
+	}
+
+	hasFocus(): boolean {
+		return false;
+	}
+
+	set icon(value: ThemeIcon) {
+	}
+
+	set label(value: string | IMarkdownString) {
+		if (this._label === value) {
+			return;
+		}
+
+		if (isMarkdownString(this._label) && isMarkdownString(value) && markdownStringEqual(this._label, value)) {
+			return;
+		}
+
+		//this._element.classList.add('monaco-text-button');
+		const labelElement = this.element;
+			//this.options.supportShortLabel ? this._labelElement! : this._element;
+
+		if (isMarkdownString(value)) {
+			const rendered = renderMarkdown(value, { inline: true });
+			rendered.dispose();
+
+			// Don't include outer `<p>`
+			const root = rendered.element.querySelector('p')?.innerHTML;
+			if (root) {
+				// Only allow a very limited set of inline html tags
+				const sanitized = dompurify.sanitize(root, { ADD_TAGS: ['b', 'i', 'u', 'code', 'span'], ALLOWED_ATTR: ['class'], RETURN_TRUSTED_TYPE: true });
+				labelElement.innerHTML = sanitized as unknown as string;
+			} else {
+				reset(labelElement);
+			}
+		} else {
+			/*if (this.options.supportIcons) {
+				reset(labelElement, ...this.getContentElements(value));
+			} else {*/
+				labelElement.textContent = value;
+			//}
+		}
+
+		/*let title: string = '';
+		if (typeof this.options.title === 'string') {
+			title = this.options.title;
+		} else if (this.options.title) {
+			title = renderStringAsPlaintext(value);
+		}
+
+		this.setTitle(title);*/
+
+		//this._setAriaLabel();
+
+		this._label = value;
+	}
+
+	get label(): string | IMarkdownString {
+		return this._label;
+	}
+
+}
+
+/*export class Button extends Disposable implements IButton {
 
 	protected options: IButtonOptions;
 	protected _element: HTMLElement;
@@ -342,7 +438,7 @@ export class Button extends Disposable implements IButton {
 	hasFocus(): boolean {
 		return isActiveElement(this._element);
 	}
-}
+}*/
 
 export interface IButtonWithDropdownOptions extends IButtonOptions {
 	readonly contextMenuProvider: IContextMenuProvider;
